@@ -1,19 +1,27 @@
 package com.gu.ssm
 
+import java.io.File
+
 import com.amazonaws.regions.{Region, Regions}
 import com.gu.ssm.aws.{SSM, STS}
 import scopt.OptionParser
 
-import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.io.Source
 
 
 object Main {
+  implicit val ec = ExecutionContext.global
+
   def main(args: Array[String]): Unit = {
-    implicit val ec = ExecutionContext.global
+
+    // TODO attempt to read from stdin to get commands and populate initial arguments thus
 
     argParser.parse(args, Arguments.empty()) match {
-      case Some(Arguments(instances, Some(cmd), Some(profile), region)) =>
+      case Some(Arguments(instances, cmdOpt, srcFileOpt, Some(profile), region)) =>
+        val cmd = cmdOpt.orElse(srcFileOpt.map(Source.fromFile(_, "UTF-8").mkString)).get //
+
         val stsClient = STS.client(profile, region)
         val ssmClient = SSM.client(profile, region)
         val fProgramResult: Future[List[(Instance, Either[CommandStatus, CommandResult])]] = for {
@@ -36,7 +44,7 @@ object Main {
           }
         }
 
-      case Some(Arguments(instances, cmdOpt, profileOpt, region)) =>
+      case Some(Arguments(instances, cmdOpt, srcFileOpt, profileOpt, region)) =>
         throw new RuntimeException("Currently assuming command and profile are provided")
       case None =>
         // parsing cmd line args failed, help message will have been displayed
@@ -61,14 +69,25 @@ object Main {
       args.copy(region = Region.getRegion(Regions.fromName(region)))
     } text "AWS region name (defaults to eu-west-1)"
     // TODO: make these args instead of opts
-    opt[Seq[String]]("instances").required()
+    opt[Seq[String]]('i', "instances").required()
       .action { case (instanceIds, args) =>
         val instances = instanceIds.map(Instance).toList
         args.copy(instances = instances)
-      } text "specify the instance ID(s) on which this command should run"
-    opt[String]("cmd")
+      } text "specify the instance ID(s) on which the specified command(s) should execute"
+    opt[String]('c', "cmd")
       .action { case (command, args) =>
         args.copy(command = Some(command))
-      } text "the (bash) command to execute"
+      } text "a (bash) command to execute"
+    opt[File]('f', "src-file")
+        .action { case (file, args) =>
+          args.copy(srcFile = Some(file))
+        } text "a file containing bash commands to execute"
+    checkConfig { args =>
+      if (args.command.isEmpty && args.srcFile.isEmpty) {
+        Left("You must provide cmd or src-file")
+      } else {
+        Right(())
+      }
+    }
   }
 }

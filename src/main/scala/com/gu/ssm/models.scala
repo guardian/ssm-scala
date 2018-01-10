@@ -1,13 +1,15 @@
 package com.gu.ssm
 
+import java.io.File
+
 import com.amazonaws.regions.{Region, Regions}
 
 
 case class Instance(id: String)
 
-case class Arguments(instances: List[Instance], command: Option[String], profile: Option[String], region: Region)
+case class Arguments(instances: List[Instance], command: Option[String], srcFile: Option[File], profile: Option[String], region: Region)
 object Arguments {
-  def empty(): Arguments = Arguments(Nil, None, None, Region.getRegion(Regions.EU_WEST_1))
+  def empty(): Arguments = Arguments(Nil, None, None, None, Region.getRegion(Regions.EU_WEST_1))
 }
 
 sealed trait CommandStatus
