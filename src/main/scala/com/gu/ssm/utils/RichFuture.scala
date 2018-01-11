@@ -1,12 +1,12 @@
-package com.gu.ssm
+package com.gu.ssm.utils
 
 import java.util.{Timer, TimerTask}
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Try
 
-object Util {
+object RichFuture {
   def retryUntil[A](maxRetries: Int, delayDuration: FiniteDuration, errMsg: String)(block: () => Future[A])(condition: A => Boolean)(implicit ec: ExecutionContext): Future[A] = {
     def loop(remainingRetries: Int): Future[A] = {
       if (remainingRetries > 0) {

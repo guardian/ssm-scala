@@ -6,10 +6,14 @@ import com.amazonaws.regions.{Region, Regions}
 
 
 case class Instance(id: String)
+case class AppStackStage(app: String, stack: String, stage: String)
+case class ExecutionTarget(instances: Option[List[Instance]] = None, ass: Option[AppStackStage] = None)
 
-case class Arguments(instances: List[Instance], command: Option[String], srcFile: Option[File], profile: Option[String], region: Region)
+case class ToExecute(cmdOpt: Option[String] = None, scriptOpt: Option[File] = None)
+
+case class Arguments(executionTarget: Option[ExecutionTarget], toExecute: Option[ToExecute], profile: Option[String], region: Region)
 object Arguments {
-  def empty(): Arguments = Arguments(Nil, None, None, None, Region.getRegion(Regions.EU_WEST_1))
+  def empty(): Arguments = Arguments(None, None, None, Region.getRegion(Regions.EU_WEST_1))
 }
 
 sealed trait CommandStatus

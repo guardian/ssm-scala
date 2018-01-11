@@ -2,6 +2,21 @@ package com.gu.ssm
 
 
 object UI {
+  def output(results: List[(Instance, scala.Either[CommandStatus, CommandResult])]): Unit = {
+    results.foreach { case (instance, result) =>
+      UI.printMetadata(s"========= ${instance.id} =========")
+      if (result.isLeft) {
+        UI.printMetadata(result.left.get.toString)
+      } else {
+        val output = result.right.get
+        UI.printMetadata(s"STDOUT:")
+        println(output.stdOut)
+        UI.printMetadata(s"STDERR:")
+        UI.printErr(output.stdErr)
+      }
+    }
+  }
+
   def printMetadata(text: String): Unit = {
     System.err.println(text.colour(Console.CYAN))
   }

@@ -6,6 +6,7 @@ import com.amazonaws.services.simplesystemsmanagement.model._
 import com.amazonaws.services.simplesystemsmanagement.{AWSSimpleSystemsManagementAsync, AWSSimpleSystemsManagementAsyncClientBuilder}
 import com.gu.ssm.{CommandStatus, _}
 import com.gu.ssm.aws.AWS.asFuture
+import com.gu.ssm.utils.RichFuture
 
 import collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
@@ -53,7 +54,7 @@ object SSM {
   }
 
   def getCmdOutput(instance: Instance, commandId: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Future[(Instance, Either[CommandStatus, CommandResult])] = {
-    Util.retryUntil(30, 500.millis, "Attempting to get command output")(() => getCommandInvocation(instance, commandId, client))(_.isRight).map(instance -> _)
+    RichFuture.retryUntil(30, 500.millis, "Attempting to get command output")(() => getCommandInvocation(instance, commandId, client))(_.isRight).map(instance -> _)
   }
 
   def getCmdOutputs(instances: List[Instance], commandId: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Future[List[(Instance, Either[CommandStatus, CommandResult])]] = {
