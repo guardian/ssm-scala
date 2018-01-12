@@ -23,6 +23,7 @@ object EC2 {
   def resolveASSInstances(ass: AppStackStage, client: AmazonEC2Async)(implicit ec: ExecutionContext): Attempt[List[Instance]] = {
     val request = new DescribeInstancesRequest()
       .withFilters(
+        new Filter("instance-state-name", List("running").asJava),
         new Filter("tag:App", List(ass.app).asJava),
         new Filter("tag:Stack", List(ass.stack).asJava),
         new Filter("tag:Stage", List(ass.stage).asJava)
