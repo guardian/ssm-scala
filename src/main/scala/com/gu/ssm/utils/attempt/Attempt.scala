@@ -60,7 +60,7 @@ case class Attempt[A] private (underlying: Future[Either[FailedAttempt, A]]) {
     */
   def asFuture(implicit ec: ExecutionContext): Future[Either[FailedAttempt, A]] = {
     underlying recover { case err =>
-      val apiErrors = FailedAttempt(Failure(err.getMessage, "Unexpected error", 500, throwable = Some(err)))
+      val apiErrors = FailedAttempt(Failure(err.getMessage, "Unexpected error", 255, throwable = Some(err)))
       scala.Left(apiErrors)
     }
   }
@@ -153,7 +153,7 @@ object Attempt {
     }
     timer.schedule(unitTask, delay.toMillis)
     Attempt.fromFuture(prom.future) {
-      case NonFatal(e) => Failure("failed to run delay task", "Internal error while delaying operations", 500, throwable = Some(e)).attempt
+      case NonFatal(e) => Failure("failed to run delay task", "Internal error while delaying operations", 1, throwable = Some(e)).attempt
     }
   }
 
@@ -176,7 +176,7 @@ object Attempt {
             result <- loop(nextA, attemptCount + 1)
           } yield result
         } else {
-          Attempt.Left(Failure("exceeded max retries", "Exceeded maximum number of retries while performing an operation", 500))
+          Attempt.Left(Failure("exceeded max retries", "Exceeded maximum number of retries while performing an operation", 1))
         }
       }
     }

@@ -8,7 +8,7 @@ object Logic {
   def generateScript(toExecute: ToExecute): Either[FailedAttempt, String] = {
     val scriptSourceOpt = toExecute.scriptOpt.map(Source.fromFile(_, "UTF-8").mkString)
     toExecute.cmdOpt.orElse(scriptSourceOpt).toRight {
-      Failure("no execution commands provided", "You must provide commands to execute (src-file or cmd)", 500).attempt
+      Failure("no execution commands provided", "You must provide commands to execute (src-file or cmd)", 1).attempt
     }
   }
 

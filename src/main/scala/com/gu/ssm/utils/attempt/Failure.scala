@@ -2,7 +2,7 @@ package com.gu.ssm.utils.attempt
 
 
 case class FailedAttempt(failures: List[Failure]) {
-  def statusCode: Int = failures.map(_.statusCode).max
+  def statusCode: Int = failures.map(_.exitCode).max
 }
 
 object FailedAttempt {
@@ -17,7 +17,7 @@ object FailedAttempt {
 case class Failure(
   message: String,
   friendlyMessage: String,
-  statusCode: Int,
+  exitCode: Int,
   context: Option[String] = None,
   throwable: Option[Throwable] = None
 ) {

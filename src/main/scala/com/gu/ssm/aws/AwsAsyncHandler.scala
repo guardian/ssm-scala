@@ -26,14 +26,14 @@ object AwsAsyncHandler {
         case _ => None
       }
       if (e.getMessage.contains("The security token included in the request is expired")) {
-        Failure("expired AWS credentials", "Failed to request data from AWS, the temporary credentials have expired", 401).attempt
+        Failure("expired AWS credentials", "Failed to request data from AWS, the temporary credentials have expired", 1).attempt
       } else if (e.getMessage.contains("Unable to load AWS credentials from any provider in the chain")) {
-        Failure("Invalid AWS profile name", "No credentials found for the specified AWS profile", 401).attempt
+        Failure("Invalid AWS profile name", "No credentials found for the specified AWS profile", 1).attempt
       } else if (e.getMessage.contains("is not authorized to perform")) {
         val message = serviceNameOpt.fold("You do not have sufficient AWS privileges")(serviceName => s"You do not have sufficient privileges to perform actions on $serviceName")
-        Failure("insuficient permissions", message, 403).attempt
+        Failure("insuficient permissions", message, 1).attempt
       } else if (e.getMessage.contains("InvalidInstanceId")) {
-        Failure("InvalidInstanceId from AWS", "The specified instance(s) are not eligible targets (AWS said InvalidInstanceId)", 403).attempt
+        Failure("InvalidInstanceId from AWS", "The specified instance(s) are not eligible targets (AWS said InvalidInstanceId)", 1).attempt
       } else {
         val details = serviceNameOpt.fold("AWS unknown error, unknown service (check logs for stacktrace)") { serviceName =>
           s"AWS unknown error, service: $serviceName (check logs for stacktrace), ${e.getMessage}"
@@ -41,7 +41,7 @@ object AwsAsyncHandler {
         val friendlyMessage = serviceNameOpt.fold("Unknown error while making API calls to AWS.") { serviceName =>
           s"Unknown error while making an API call to AWS' $serviceName service, ${e.getMessage}"
         }
-        Failure(details, friendlyMessage, 500).attempt
+        Failure(details, friendlyMessage, 1).attempt
       }
     }
   }

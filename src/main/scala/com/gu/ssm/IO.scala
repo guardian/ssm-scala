@@ -14,7 +14,7 @@ object IO {
       executionTarget.ass.map { ass =>
         EC2.resolveASSInstances(ass, ec2Client)
       }
-    }.getOrElse(Attempt.Left(Failure("Unable to resolve execution target", "You must provide an execution target (instance(s) or tags)", 500)))
+    }.getOrElse(Attempt.Left(Failure("Unable to resolve execution target", "You must provide an execution target (instance(s) or tags)", 1)))
   }
 
   def executeOnInstances(instances: List[Instance], username: String, script: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[List[(Instance, Either[CommandStatus, CommandResult])]] = {
