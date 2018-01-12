@@ -5,11 +5,11 @@ import com.amazonaws.regions.Region
 import com.amazonaws.services.simplesystemsmanagement.model._
 import com.amazonaws.services.simplesystemsmanagement.{AWSSimpleSystemsManagementAsync, AWSSimpleSystemsManagementAsyncClientBuilder}
 import com.gu.ssm.{CommandStatus, _}
-import com.gu.ssm.aws.AWS.asFuture
-import com.gu.ssm.utils.RichFuture
+import com.gu.ssm.aws.AwsAsyncHandler.{awsToScala, handleAWSErrs}
+import com.gu.ssm.utils.attempt.Attempt
 
 import collection.JavaConverters._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 
@@ -21,25 +21,25 @@ object SSM {
       .build()
   }
 
-  def sendCommand(instances: List[Instance], cmd: String, username: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Future[String] = {
+  def sendCommand(instances: List[Instance], cmd: String, username: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[String] = {
     val parameters = Map("commands" -> List(cmd).asJava).asJava
     val sendCommandRequest = new SendCommandRequest()
       .withComment(s"Command submitted by $username")
       .withInstanceIds(instances.map(_.id).asJava)
       .withDocumentName("AWS-RunShellScript")
       .withParameters(parameters)
-    asFuture(client.sendCommandAsync)(sendCommandRequest).map(extractCommandId)
+    handleAWSErrs(awsToScala(client.sendCommandAsync)(sendCommandRequest).map(extractCommandId))
   }
 
   def extractCommandId(sendCommandResult: SendCommandResult): String = {
     sendCommandResult.getCommand.getCommandId
   }
 
-  def getCommandInvocation(instance: Instance, commandId: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Future[Either[CommandStatus, CommandResult]] = {
+  def getCommandInvocation(instance: Instance, commandId: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[Either[CommandStatus, CommandResult]] = {
     val request = new GetCommandInvocationRequest()
       .withCommandId(commandId)
       .withInstanceId(instance.id)
-    asFuture(client.getCommandInvocationAsync)(request).map(extractCommandResult)
+    handleAWSErrs(awsToScala(client.getCommandInvocationAsync)(request).map(extractCommandResult))
   }
 
   def extractCommandResult(getCommandInvocationResult: GetCommandInvocationResult): Either[CommandStatus, CommandResult] = {
@@ -53,12 +53,15 @@ object SSM {
     }
   }
 
-  def getCmdOutput(instance: Instance, commandId: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Future[(Instance, Either[CommandStatus, CommandResult])] = {
-    RichFuture.retryUntil(30, 500.millis, "Attempting to get command output")(() => getCommandInvocation(instance, commandId, client))(_.isRight).map(instance -> _)
+  def getCmdOutput(instance: Instance, commandId: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[(Instance, Either[CommandStatus, CommandResult])] = {
+    for {
+      initialDelay <- Attempt.delay(500.millis)
+      cmdResult <- Attempt.retryUntil(30, 500.millis, () => getCommandInvocation(instance, commandId, client))(_.isRight)
+    } yield instance -> cmdResult
   }
 
-  def getCmdOutputs(instances: List[Instance], commandId: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Future[List[(Instance, Either[CommandStatus, CommandResult])]] = {
-    Future.traverse(instances)(getCmdOutput(_, commandId, client))
+  def getCmdOutputs(instances: List[Instance], commandId: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[List[(Instance, Either[CommandStatus, CommandResult])]] = {
+    Attempt.traverse(instances)(getCmdOutput(_, commandId, client))
   }
 
   def commandStatus(statusDetail: String): CommandStatus = {

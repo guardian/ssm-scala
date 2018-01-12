@@ -1,5 +1,7 @@
 package com.gu.ssm
 
+import com.gu.ssm.utils.attempt.FailedAttempt
+
 
 object UI {
   def output(results: List[(Instance, scala.Either[CommandStatus, CommandResult])]): Unit = {
@@ -14,6 +16,12 @@ object UI {
         UI.printMetadata(s"STDERR:")
         UI.printErr(output.stdErr)
       }
+    }
+  }
+
+  def fail(failedAttempt: FailedAttempt): Unit = {
+    failedAttempt.failures.foreach { failure =>
+      printErr(failure.friendlyMessage)
     }
   }
 

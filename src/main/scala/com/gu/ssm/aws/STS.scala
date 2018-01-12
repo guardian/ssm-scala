@@ -4,9 +4,10 @@ import com.amazonaws.auth.profile.ProfileCredentialsProvider
 import com.amazonaws.regions.Region
 import com.amazonaws.services.securitytoken.model.{GetCallerIdentityRequest, GetCallerIdentityResult}
 import com.amazonaws.services.securitytoken.{AWSSecurityTokenServiceAsync, AWSSecurityTokenServiceAsyncClientBuilder}
-import com.gu.ssm.aws.AWS.asFuture
+import com.gu.ssm.aws.AwsAsyncHandler.{awsToScala, handleAWSErrs}
+import com.gu.ssm.utils.attempt.Attempt
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 
 object STS {
@@ -18,9 +19,9 @@ object STS {
       .build()
   }
 
-  def getCallerIdentity(client: AWSSecurityTokenServiceAsync)(implicit ec: ExecutionContext): Future[String] = {
+  def getCallerIdentity(client: AWSSecurityTokenServiceAsync)(implicit ec: ExecutionContext): Attempt[String] = {
     val request = new GetCallerIdentityRequest()
-    asFuture(client.getCallerIdentityAsync)(request).map(extractUserId)
+    handleAWSErrs(awsToScala(client.getCallerIdentityAsync)(request).map(extractUserId))
   }
 
   def extractUserId(getCallerIdentityResult: GetCallerIdentityResult): String = {

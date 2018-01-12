@@ -3,20 +3,21 @@ package com.gu.ssm
 import com.amazonaws.services.ec2.AmazonEC2Async
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
 import com.gu.ssm.aws.{EC2, SSM}
+import com.gu.ssm.utils.attempt.{Attempt, Failure}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 
 object IO {
-  def resolveInstances(executionTarget: ExecutionTarget, ec2Client: AmazonEC2Async)(implicit ec: ExecutionContext): Future[List[Instance]] = {
-    executionTarget.instances.map(Future.successful).orElse {
+  def resolveInstances(executionTarget: ExecutionTarget, ec2Client: AmazonEC2Async)(implicit ec: ExecutionContext): Attempt[List[Instance]] = {
+    executionTarget.instances.map(Attempt.Right).orElse {
       executionTarget.ass.map { ass =>
-        EC2.resolveSASInstances(ass, ec2Client)
+        EC2.resolveASSInstances(ass, ec2Client)
       }
-    }.getOrElse(throw new RuntimeException("No execution target provided"))
+    }.getOrElse(Attempt.Left(Failure("Unable to resolve execution target", "You must provide an execution target (instance(s) or tags)", 500)))
   }
 
-  def executeOnInstances(instances: List[Instance], username: String, script: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Future[List[(Instance, Either[CommandStatus, CommandResult])]] = {
+  def executeOnInstances(instances: List[Instance], username: String, script: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[List[(Instance, Either[CommandStatus, CommandResult])]] = {
     for {
       cmdId <- SSM.sendCommand(instances, script, username, client)
       results <- SSM.getCmdOutputs(instances, cmdId, client)

@@ -4,6 +4,7 @@ import java.io.File
 
 import com.amazonaws.regions.{Region, Regions}
 import com.gu.ssm.aws.{EC2, SSM, STS}
+import com.gu.ssm.utils.attempt.Attempt
 import scopt.OptionParser
 
 import scala.concurrent.duration._
@@ -27,17 +28,17 @@ object Main {
         val fProgramResult = for {
           name <- STS.getCallerIdentity(stsClient)
           instances <- IO.resolveInstances(executionTarget, ec2Client)
-          cmd = Logic.generateScript(toExecute)
+          cmd <- Attempt.fromEither(Logic.generateScript(toExecute))
           results <- IO.executeOnInstances(instances, name, cmd, ssmClient)
         } yield results
-        val instanceResults = Await.result(fProgramResult, 15.seconds)
+        val programResult = Await.result(fProgramResult.asFuture, 25.seconds)
 
         // output
-        UI.output(instanceResults)
+        programResult.fold(UI.fail, UI.output)
 
       case Some(Arguments(instances, toExecuteOpt, profileOpt, region)) =>
         // the CLI parser's `checkConfig` function means this should be unreachable code
-        throw new RuntimeException("Impossible application state! This should be enforced by the parser")
+        throw new RuntimeException("Impossible application state! This should be enforced by the CLI parser")
       case None =>
         // parsing cmd line args failed, help message will have been displayed
     }
@@ -66,7 +67,7 @@ object Main {
         val instances = instanceIds.map(Instance).toList
         args.copy(executionTarget = Some(ExecutionTarget(instances = Some(instances))))
       } text "specify the instance ID(s) on which the specified command(s) should execute"
-    opt[String]('t', "ssa-tags")
+    opt[String]('t', "ass-tags")
         .validate { tagsStr =>
           Logic.extractSASTags(tagsStr).map(_ => ())
         }
