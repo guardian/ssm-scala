@@ -4,7 +4,7 @@ import java.io.File
 
 import com.amazonaws.regions.{Region, Regions}
 import com.gu.ssm.aws.{EC2, SSM, STS}
-import com.gu.ssm.utils.attempt.Attempt
+import com.gu.ssm.utils.attempt.{ArgumentsError, Attempt, UnhandledError}
 import scopt.OptionParser
 
 import scala.concurrent.duration._
@@ -33,14 +33,17 @@ object Main {
         } yield results
         val programResult = Await.result(fProgramResult.asFuture, 25.seconds)
 
-        // output
-        programResult.fold(UI.fail, UI.output)
+        // output and exit
+        programResult.fold(UI.outputFailure, UI.output)
+        System.exit(programResult.fold(_.exitCode, _ => 0))
 
       case Some(Arguments(instances, toExecuteOpt, profileOpt, region)) =>
         // the CLI parser's `checkConfig` function means this should be unreachable code
-        throw new RuntimeException("Impossible application state! This should be enforced by the CLI parser")
+        UI.printErr("Impossible application state! This should be enforced by the CLI parser")
+        System.exit(UnhandledError.code)
       case None =>
         // parsing cmd line args failed, help message will have been displayed
+        System.exit(ArgumentsError.code)
     }
   }
 

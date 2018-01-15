@@ -19,7 +19,7 @@ object UI {
     }
   }
 
-  def fail(failedAttempt: FailedAttempt): Unit = {
+  def outputFailure(failedAttempt: FailedAttempt): Unit = {
     failedAttempt.failures.foreach { failure =>
       printErr(failure.friendlyMessage)
     }
