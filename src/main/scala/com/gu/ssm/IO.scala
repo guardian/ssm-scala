@@ -3,9 +3,9 @@ package com.gu.ssm
 import com.amazonaws.services.ec2.AmazonEC2Async
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
 import com.gu.ssm.aws.{EC2, SSM}
-import com.gu.ssm.utils.attempt.{Attempt, Failure}
+import com.gu.ssm.utils.attempt.{ArgumentsError, Attempt, Failure}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 
 object IO {
@@ -14,7 +14,7 @@ object IO {
       executionTarget.ass.map { ass =>
         EC2.resolveASSInstances(ass, ec2Client)
       }
-    }.getOrElse(Attempt.Left(Failure("Unable to resolve execution target", "You must provide an execution target (instance(s) or tags)", 1)))
+    }.getOrElse(Attempt.Left(Failure("Unable to resolve execution target", "You must provide an execution target (instance(s) or tags)", ArgumentsError)))
   }
 
   def executeOnInstances(instances: List[Instance], username: String, script: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[List[(Instance, Either[CommandStatus, CommandResult])]] = {

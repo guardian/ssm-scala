@@ -87,7 +87,7 @@ class AttemptTest extends FreeSpec with Matchers with EitherValues with AttemptV
     }
 
     "returns failure if the attempt fails" in {
-      val failure = Failure("test failure", "Test failure", 1).attempt
+      val failure = Failure("test failure", "Test failure", ErrorCode).attempt
       Attempt.retryUntil(5, Duration.Zero, () => Attempt.Left[Boolean](failure))(_ => true).leftValue() shouldEqual failure
     }
 
@@ -107,5 +107,5 @@ class AttemptTest extends FreeSpec with Matchers with EitherValues with AttemptV
   def checkError(errors: FailedAttempt, expected: String): Unit = {
     errors.failures.head.message shouldEqual expected
   }
-  def expectedFailure[A](message: String): Attempt[A] = Left[A](Failure(message, "this will fail", 1))
+  def expectedFailure[A](message: String): Attempt[A] = Left[A](Failure(message, "this will fail", ErrorCode))
 }
