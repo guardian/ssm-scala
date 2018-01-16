@@ -53,14 +53,20 @@ have those tags.
 
 ## Commands
 
-You can tell `ssm` the commands to execute with an argument that
-specifies the command or by providing a file that contains the
-commands to be run.
+You can tell `ssm` the commands to execute 
 
-    # specify command
+  * with an argument that specifies the command
+  * by providing a file that contains the commands to be run
+  * interactively
+
+	# specify command
 	--cmd ls
 	-c ls
 	
 	# provide script file
 	--src-file script
 	-f script
+	
+	# provide commands interactively (ctrl-d to quit)
+	--interactive
+	-I

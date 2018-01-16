@@ -4,7 +4,7 @@ import java.io.File
 
 import com.amazonaws.regions.{Region, Regions}
 import com.gu.ssm.aws.{EC2, SSM, STS}
-import com.gu.ssm.utils.attempt.{ArgumentsError, Attempt, UnhandledError}
+import com.gu.ssm.utils.attempt.{ArgumentsError, Attempt, FailedAttempt, UnhandledError}
 import scopt.OptionParser
 
 import scala.concurrent.duration._
@@ -18,26 +18,24 @@ object Main {
     // TODO attempt to read from stdin to get commands and populate initial arguments thus
 
     argParser.parse(args, Arguments.empty()) match {
-      case Some(Arguments(Some(executionTarget), Some(toExecute), Some(profile), region)) =>
+      case Some(Arguments(Some(executionTarget), Some(toExecute), Some(profile), region, false)) =>
         // config
-        val stsClient = STS.client(profile, region)
-        val ssmClient = SSM.client(profile, region)
-        val ec2Client = EC2.client(profile, region)
-
-        // execution
-        val fProgramResult = for {
-          name <- STS.getCallerIdentity(stsClient)
-          instances <- IO.resolveInstances(executionTarget, ec2Client)
-          cmd <- Attempt.fromEither(Logic.generateScript(toExecute))
-          results <- IO.executeOnInstances(instances, name, cmd, ssmClient)
-        } yield results
-        val programResult = Await.result(fProgramResult.asFuture, 25.seconds)
-
-        // output and exit
-        programResult.fold(UI.outputFailure, UI.output)
+        val programResult: Either[FailedAttempt, List[(Instance, Either[CommandStatus, CommandResult])]] = executeCommand(executionTarget, toExecute, profile, region)
         System.exit(programResult.fold(_.exitCode, _ => 0))
 
-      case Some(Arguments(instances, toExecuteOpt, profileOpt, region)) =>
+      case Some(Arguments(Some(executionTarget), None, Some(profile), region, true)) =>
+        // config
+        while (true) {
+          UI.printMetadata(s"========= Enter command (ctrl-D to quit) =========")
+          scala.io.StdIn.readLine() match {
+            case s: String => {
+              executeCommand(executionTarget, ToExecute(Some(s)), profile, region)
+            }
+            case _ => System.exit(0)
+          }
+        }
+
+      case Some(Arguments(instances, toExecuteOpt, profileOpt, region, _)) =>
         // the CLI parser's `checkConfig` function means this should be unreachable code
         UI.printErr("Impossible application state! This should be enforced by the CLI parser")
         System.exit(UnhandledError.code)
@@ -45,6 +43,25 @@ object Main {
         // parsing cmd line args failed, help message will have been displayed
         System.exit(ArgumentsError.code)
     }
+  }
+
+  private def executeCommand(executionTarget: ExecutionTarget, toExecute: ToExecute, profile: String, region: Region) = {
+    val stsClient = STS.client(profile, region)
+    val ssmClient = SSM.client(profile, region)
+    val ec2Client = EC2.client(profile, region)
+
+    // execution
+    val fProgramResult = for {
+      name <- STS.getCallerIdentity(stsClient)
+      instances <- IO.resolveInstances(executionTarget, ec2Client)
+      cmd <- Attempt.fromEither(Logic.generateScript(toExecute))
+      results <- IO.executeOnInstances(instances, name, cmd, ssmClient)
+    } yield results
+    val programResult = Await.result(fProgramResult.asFuture, 25.seconds)
+
+    // output and exit
+    programResult.fold(UI.outputFailure, UI.output)
+    programResult
   }
 
   private val argParser = new OptionParser[Arguments]("ssm") {
@@ -85,13 +102,17 @@ object Main {
       .action { case (command, args) =>
         args.copy(toExecute = Some(ToExecute(cmdOpt = Some(command))))
       } text "a (bash) command to execute"
+    opt[Unit]('I', "interactive")
+      .action { case (command, args) =>
+        args.copy(interactive = true)
+      } text "Execute interactively"
     opt[File]('f', "src-file")
         .action { case (file, args) =>
           args.copy(toExecute = Some(ToExecute(scriptOpt = Some(file))))
         } text "a file containing bash commands to execute"
     checkConfig { args =>
-      if (args.toExecute.isEmpty) {
-        Left("You must provide cmd or src-file")
+      if (args.toExecute.isEmpty && !args.interactive) {
+        Left("You must provide --cmd or --src-file, or set the interactive flag with --interactive")
       } else {
         if (args.executionTarget.isEmpty) {
           Left("You must provide a list of target instances, Stack, Stage, App tags")
