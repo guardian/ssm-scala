@@ -27,11 +27,13 @@ object AwsAsyncHandler {
       }
       if (e.getMessage.contains("The security token included in the request is expired")) {
         Failure("expired AWS credentials", "Failed to request data from AWS, the temporary credentials have expired", AwsPermissionsError).attempt
-      } else if (e.getMessage.contains("Unable to load AWS credentials from any provider in the chain")) {
+      } else if (e.getMessage.contains("Unable to load AWS credentials from any provider in the chain") || e.getMessage.contains("No AWS profile named")) {
         Failure("Invalid AWS profile name", "No credentials found for the specified AWS profile", AwsPermissionsError).attempt
       } else if (e.getMessage.contains("is not authorized to perform")) {
         val message = serviceNameOpt.fold("You do not have sufficient AWS privileges")(serviceName => s"You do not have sufficient privileges to perform actions on $serviceName")
         Failure("insuficient permissions", message, AwsPermissionsError).attempt
+      } else if (e.getMessage.contains("Command Invocation contains null instance Id")) {
+        Failure("No instances matched", "No instances with the specified tags exist (AWS said InvalidInstanceId); check your '--ass-tags app,stack,stage' parameter?", AwsError).attempt
       } else if (e.getMessage.contains("InvalidInstanceId")) {
         Failure("InvalidInstanceId from AWS", "The specified instance(s) are not eligible targets (AWS said InvalidInstanceId)", AwsError).attempt
       } else {
