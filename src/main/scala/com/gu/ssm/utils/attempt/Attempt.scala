@@ -2,9 +2,11 @@ package com.gu.ssm.utils.attempt
 
 import java.util.{Timer, TimerTask}
 
+import rx.lang.scala.Observable
+import rx.lang.scala.subjects.AsyncSubject
+
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.Success
 import scala.util.control.NonFatal
 
 
@@ -43,10 +45,7 @@ case class Attempt[A] private (underlying: Future[Either[FailedAttempt, A]]) {
     * Combine this Attempt with another attempt without dependencies (in parallel).
     */
   def map2[B, C](bAttempt: Attempt[B])(f: (A, B) => C)(implicit ec: ExecutionContext): Attempt[C] = {
-    for {
-      a <- this
-      b <- bAttempt
-    } yield f(a, b)
+    Attempt.map2(this, bAttempt)(f)
   }
 
   /**
@@ -68,9 +67,37 @@ case class Attempt[A] private (underlying: Future[Either[FailedAttempt, A]]) {
   def delay(delay: FiniteDuration)(implicit ec: ExecutionContext): Attempt[A] = {
     Attempt.delay(delay).flatMap(_ => this)
   }
+
+  def onComplete[B](callback: Either[FailedAttempt, A] => B)(implicit ec: ExecutionContext): Unit = {
+    this.asFuture.onComplete {
+      case util.Failure(e) =>
+        throw new IllegalStateException("Unexpected error handling was bypassed")
+      case util.Success(either) =>
+        callback(either)
+    }
+  }
+
+  def toObservable(implicit ec: ExecutionContext): Observable[A] = {
+    val s = AsyncSubject[A]()
+    this.onComplete {
+      case Left(fa) =>
+        s.onError(throw new FailedAttemptException(fa))
+      case Right(a) =>
+        s.onNext(a)
+        s.onCompleted()
+    }
+    s
+  }
 }
 
 object Attempt {
+  def map2[A, B, C](aAttempt: Attempt[A], bAttempt: Attempt[B])(f: (A, B) => C)(implicit ec: ExecutionContext): Attempt[C] = {
+    for {
+      a <- aAttempt
+      b <- bAttempt
+    } yield f(a, b)
+  }
+
   /**
     * Changes generated `List[Attempt[A]]` to `Attempt[List[A]]` via provided
     * traversal function (like `Future.traverse`).
@@ -148,7 +175,7 @@ object Attempt {
     val prom = Promise[Unit]()
     val unitTask = new TimerTask {
       def run(): Unit = {
-        ctx.execute(() => prom.complete(Success(())))
+        ctx.execute(() => prom.complete(util.Success(())))
       }
     }
     timer.schedule(unitTask, delay.toMillis)

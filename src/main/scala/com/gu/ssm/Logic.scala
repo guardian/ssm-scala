@@ -1,6 +1,6 @@
 package com.gu.ssm
 
-import com.gu.ssm.utils.attempt.{ArgumentsError, FailedAttempt, Failure}
+import com.gu.ssm.utils.attempt.{ArgumentsError, Attempt, FailedAttempt, Failure}
 
 import scala.io.Source
 
@@ -21,4 +21,6 @@ object Logic {
         Left("You should provide Stack, App and Stage tags in the format \"stack,app,stage\"")
     }
   }
+
+  def waitOrFail[A](attempt: Attempt[A]) = ???
 }

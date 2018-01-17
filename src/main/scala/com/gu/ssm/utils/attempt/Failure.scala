@@ -30,3 +30,8 @@ case object ArgumentsError extends ExitCode(2)
 case object AwsPermissionsError extends ExitCode(3)
 case object AwsError extends ExitCode(4)
 case object UnhandledError extends ExitCode(255)
+
+class FailedAttemptException(fa: FailedAttempt) extends Exception(
+  fa.failures.map(_.message).mkString(", "),
+  fa.failures.flatMap(_.throwable).headOption.orNull
+)

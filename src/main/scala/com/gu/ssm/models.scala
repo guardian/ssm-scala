@@ -11,9 +11,9 @@ case class ExecutionTarget(instances: Option[List[Instance]] = None, ass: Option
 
 case class ToExecute(cmdOpt: Option[String] = None, scriptOpt: Option[File] = None)
 
-case class Arguments(executionTarget: Option[ExecutionTarget], toExecute: Option[ToExecute], profile: Option[String], region: Region)
+case class Arguments(executionTarget: Option[ExecutionTarget], toExecute: Option[ToExecute], profile: Option[String], region: Region, interactive: Boolean)
 object Arguments {
-  def empty(): Arguments = Arguments(None, None, None, Region.getRegion(Regions.EU_WEST_1))
+  def empty(): Arguments = Arguments(None, None, None, Region.getRegion(Regions.EU_WEST_1), interactive = false)
 }
 
 sealed trait CommandStatus
