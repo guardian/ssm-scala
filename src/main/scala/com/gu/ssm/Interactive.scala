@@ -1,9 +1,7 @@
 package com.gu.ssm
 
-import java.util.concurrent.atomic.AtomicBoolean
-
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
-import com.googlecode.lanterna.{TerminalPosition, TerminalSize}
+import com.googlecode.lanterna.TerminalSize
 import com.googlecode.lanterna.gui2.Interactable.Result
 import com.googlecode.lanterna.gui2._
 import com.googlecode.lanterna.gui2.dialogs.{MessageDialog, WaitingDialog}
@@ -13,7 +11,6 @@ import com.gu.ssm.utils.attempt.{Attempt, FailedAttempt}
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.collection.JavaConverters._
 
 
 class InteractiveProgram(client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext) extends LazyLogging {
@@ -50,13 +47,7 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
   val screen = terminalFactory.createScreen()
   private val guiThreadFactory = new SeparateTextGUIThread.Factory()
   val textGUI = new MultiWindowTextGUI(guiThreadFactory, screen)
-
-
   screen.startScreen()
-
-  def loadingWindow(): WaitingDialog = {
-    WaitingDialog.createDialog("Loading...", "Loading instance information")
-  }
 
   def mainWindow(instances: List[Instance], username: String, results: List[(Instance, Either[CommandStatus, CommandResult])]): BasicWindow = {
     val window = new BasicWindow(username)
@@ -77,6 +68,8 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
         keyStroke.getKeyType match {
           case KeyType.Enter =>
             program.executeCommand(this.getText, instances, username)
+            val loading = WaitingDialog.createDialog("Executing...", "Executing command on instances")
+            textGUI.addWindow(loading)
             Result.HANDLED
           case _ =>
             super.handleKeyStroke(keyStroke)
@@ -88,7 +81,8 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
     if (results.nonEmpty) {
       val outputs = results.map {
         case (instance, Right(result)) =>
-          result.stdOut + (if (result.stdErr.isEmpty) "" else "\nStdErr:\n" + result.stdErr)
+          if (result.stdErr.isEmpty) result.stdOut
+          else "\nStdErr:\n" + result.stdErr + "\nStdOut:\n" + result.stdOut
         case (instance, Left(commandStatus)) =>
           commandStatus.toString
       }.zipWithIndex
@@ -125,28 +119,26 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
   def start(): Unit = {
     logger.debug("Starting interactive UI")
     textGUI.getGUIThread.asInstanceOf[AsynchronousTextGUIThread].start()
-    val window = loadingWindow()
+    val window = WaitingDialog.createDialog("Loading...", "Loading instance information")
     textGUI.addWindowAndWait(window)
   }
 
   def ready(instances: List[Instance], username: String): Unit = {
-    logger.debug("ready!")
+    logger.trace("resolved instances and username, UI ready")
     textGUI.removeWindow(textGUI.getActiveWindow)
     textGUI.addWindow(mainWindow(instances, username, Nil))
     textGUI.updateScreen()
   }
 
   def displayResults(instances: List[Instance], username: String, results: List[(Instance, Either[CommandStatus, CommandResult])]): Unit = {
-    logger.debug("displaying results")
+    logger.trace("displaying results")
     textGUI.removeWindow(textGUI.getActiveWindow)
     textGUI.addWindow(mainWindow(instances, username, results))
     textGUI.updateScreen()
   }
 
   def displayError(fa: FailedAttempt): Unit = {
-    logger.debug("displaying error")
+    logger.trace("displaying error")
     MessageDialog.showMessageDialog(textGUI, "Error", fa.failures.map(_.friendlyMessage).mkString(", "))
-//    textGUI.removeWindow(textGUI.getActiveWindow)
-//    textGUI.addWindow(WaitingDialog.createDialog("Error", fa.failures.map(_.friendlyMessage).mkString(", ")))
   }
 }

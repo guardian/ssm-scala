@@ -18,8 +18,7 @@ object Main {
     // TODO attempt to read from stdin to get commands and populate initial arguments thus
 
     argParser.parse(args, Arguments.empty()) match {
-      case Some(Arguments(Some(executionTarget), Some(toExecute), Some(profile), region, interactive)) =>
-        // config
+      case Some(Arguments(Some(executionTarget), _, Some(profile), region, interactive)) if interactive =>
         val stsClient = STS.client(profile, region)
         val ssmClient = SSM.client(profile, region)
         val ec2Client = EC2.client(profile, region)
@@ -29,21 +28,28 @@ object Main {
           IO.resolveInstances(executionTarget, ec2Client),
           STS.getCallerIdentity(stsClient)
         )((_, _))
+        val interactive = new InteractiveProgram(ssmClient)(ec)
+        interactive.main(configAttempt)
 
-        if (interactive) {
-          val interactive = new InteractiveProgram(ssmClient)(ec)
-          interactive.main(configAttempt)
-        } else {
-          val programAttempt = for {
-            config <- configAttempt
-            (instances, username) = config
-            results <- IO.executeOnInstances(instances, username, toExecute, ssmClient)
-          } yield results
-          val programResult = Await.result(programAttempt.asFuture, 25.seconds)
-          // output and exit
-          programResult.fold(UI.outputFailure, UI.output)
-          System.exit(programResult.fold(_.exitCode, _ => 0))
-        }
+      case Some(Arguments(Some(executionTarget), Some(toExecute), Some(profile), region, interactive)) =>
+        // config
+        val stsClient = STS.client(profile, region)
+        val ssmClient = SSM.client(profile, region)
+        val ec2Client = EC2.client(profile, region)
+
+        // execution
+        val fProgramResult = for {
+          // get identity and instances in parallel
+          config <- Attempt.map2(IO.resolveInstances(executionTarget, ec2Client), STS.getCallerIdentity(stsClient))((_, _))
+          (instances, name) = config
+          cmd <- Attempt.fromEither(Logic.generateScript(toExecute))
+          results <- IO.executeOnInstances(instances, name, cmd, ssmClient)
+        } yield results
+        val programResult = Await.result(fProgramResult.asFuture, 25.seconds)
+
+        // output and exit
+        programResult.fold(UI.outputFailure, UI.output)
+        System.exit(programResult.fold(_.exitCode, _ => 0))
 
       case Some(Arguments(instances, toExecuteOpt, profileOpt, region, interactive)) =>
         // the CLI parser's `checkConfig` function means this should be unreachable code
