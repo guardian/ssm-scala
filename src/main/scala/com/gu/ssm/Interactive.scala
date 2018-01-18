@@ -22,8 +22,11 @@ class InteractiveProgram(client: AWSSimpleSystemsManagementAsync)(implicit ec: E
       ui.start()
     }
     // update UI when we're ready to get started
-    setupAttempt.onComplete { case Right((instances, username)) =>
-      ui.ready(instances, username)
+    setupAttempt.onComplete {
+      case Right((instances, username)) =>
+        ui.ready(instances, username)
+      case Left(fa) =>
+        ui.displayError(fa)
     }
   }
 
@@ -115,11 +118,9 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
     // close button
     contentPanel.addComponent(new EmptySpace())
     contentPanel.addComponent(new Separator(Direction.HORIZONTAL))
-    contentPanel.addComponent(new Button("Close", new Runnable() {
-      override def run(): Unit = {
-        window.close()
-        program.exit()
-      }
+    contentPanel.addComponent(new Button("Close", () => {
+      window.close()
+      program.exit()
     }))
 
     window.setComponent(contentPanel)
@@ -156,6 +157,7 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
 
   def displayError(fa: FailedAttempt): Unit = {
     logger.trace("displaying error")
+    textGUI.removeWindow(textGUI.getActiveWindow)
     MessageDialog.showMessageDialog(textGUI, "Error", fa.failures.map(_.friendlyMessage).mkString(", "))
   }
 }
