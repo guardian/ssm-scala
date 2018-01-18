@@ -102,7 +102,7 @@ object Main {
         args.copy(interactive = true)
       } text "run SSM in interactive mode"
     checkConfig { args =>
-      if (args.toExecute.isEmpty) {
+      if (args.toExecute.isEmpty && !args.interactive) {
         Left("You must provide cmd or src-file")
       } else {
         if (args.executionTarget.isEmpty) {

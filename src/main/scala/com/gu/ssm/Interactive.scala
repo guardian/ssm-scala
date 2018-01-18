@@ -13,6 +13,7 @@ import com.gu.ssm.utils.attempt.{Attempt, FailedAttempt}
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.collection.JavaConverters._
 
 
 class InteractiveProgram(client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext) extends LazyLogging {
@@ -47,7 +48,9 @@ class InteractiveProgram(client: AWSSimpleSystemsManagementAsync)(implicit ec: E
 class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
   val terminalFactory = new DefaultTerminalFactory()
   val screen = terminalFactory.createScreen()
-  val textGUI = new MultiWindowTextGUI(screen)
+  private val guiThreadFactory = new SeparateTextGUIThread.Factory()
+  val textGUI = new MultiWindowTextGUI(guiThreadFactory, screen)
+
 
   screen.startScreen()
 
@@ -61,7 +64,7 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
     val initialSize = screen.getTerminal.getTerminalSize
     val contentPanel = new Panel(new LinearLayout()).setPreferredSize(fullscreenPanelSize(initialSize))
     val layoutManager: LinearLayout = contentPanel.getLayoutManager.asInstanceOf[LinearLayout]
-    layoutManager.setSpacing(3)
+    layoutManager.setSpacing(0)
 
     val resizer = new TerminalResizeListener {
       override def onResized(terminal: Terminal, newSize: TerminalSize): Unit =
@@ -70,30 +73,36 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
 
     contentPanel.addComponent(new Label("command to run"))
     val cmdInput = new TextBox(new TerminalSize(40, 1)) {
-//      override def handleKeyStroke(keyStroke: KeyStroke): Result = {
-//        keyStroke.getKeyType match {
-//          case KeyType.Enter =>
-//            program.executeCommand(this.getText, instances, username)
-//            Result.HANDLED
-//          case _ =>
-//            super.handleKeyStroke(keyStroke)
-//        }
-//      }
+      override def handleKeyStroke(keyStroke: KeyStroke): Result = {
+        keyStroke.getKeyType match {
+          case KeyType.Enter =>
+            program.executeCommand(this.getText, instances, username)
+            Result.HANDLED
+          case _ =>
+            super.handleKeyStroke(keyStroke)
+        }
+      }
     }
     contentPanel.addComponent(cmdInput)
 
     if (results.nonEmpty) {
+      val outputs = results.map {
+        case (instance, Right(result)) =>
+          result.stdOut + (if (result.stdErr.isEmpty) "" else "\nStdErr:\n" + result.stdErr)
+        case (instance, Left(commandStatus)) =>
+          commandStatus.toString
+      }.zipWithIndex
+
+      val outputBox = outputs.headOption.map(_._1).fold(new Label("No output for instance"))(output => new Label(output))
+
+      val instancesComboBox = new ComboBox(instances.map(_.id):_*).addListener { (selectedIndex: Int, previousSelection: Int) =>
+        outputBox.setText(outputs.find(_._2 == selectedIndex).map(_._1).getOrElse("No output for instance"))
+      }
+      contentPanel.addComponent(instancesComboBox)
+
       contentPanel.addComponent(new EmptySpace())
       contentPanel.addComponent(new Separator(Direction.HORIZONTAL))
-      results.foreach {
-        case (instance, Right(result)) =>
-          contentPanel.addComponent(new Label(instance.id))
-          contentPanel.addComponent(new Label(result.stdOut))
-          contentPanel.addComponent(new Label(result.stdErr))
-        case (instance, Left(commandStatus)) =>
-          contentPanel.addComponent(new Label(instance.id))
-          contentPanel.addComponent(new Label(commandStatus.toString))
-      }
+      contentPanel.addComponent(outputBox)
     }
 
     contentPanel.addComponent(new EmptySpace())
@@ -114,23 +123,28 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
   }
 
   def start(): Unit = {
+    logger.debug("Starting interactive UI")
+    textGUI.getGUIThread.asInstanceOf[AsynchronousTextGUIThread].start()
     val window = loadingWindow()
     textGUI.addWindowAndWait(window)
   }
 
   def ready(instances: List[Instance], username: String): Unit = {
+    logger.debug("ready!")
     textGUI.removeWindow(textGUI.getActiveWindow)
     textGUI.addWindow(mainWindow(instances, username, Nil))
     textGUI.updateScreen()
   }
 
   def displayResults(instances: List[Instance], username: String, results: List[(Instance, Either[CommandStatus, CommandResult])]): Unit = {
+    logger.debug("displaying results")
     textGUI.removeWindow(textGUI.getActiveWindow)
     textGUI.addWindow(mainWindow(instances, username, results))
     textGUI.updateScreen()
   }
 
   def displayError(fa: FailedAttempt): Unit = {
+    logger.debug("displaying error")
     MessageDialog.showMessageDialog(textGUI, "Error", fa.failures.map(_.friendlyMessage).mkString(", "))
 //    textGUI.removeWindow(textGUI.getActiveWindow)
 //    textGUI.addWindow(WaitingDialog.createDialog("Error", fa.failures.map(_.friendlyMessage).mkString(", ")))
