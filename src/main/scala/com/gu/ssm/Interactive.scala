@@ -1,7 +1,7 @@
 package com.gu.ssm
 
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
-import com.googlecode.lanterna.TerminalSize
+import com.googlecode.lanterna.{TerminalSize, TextColor}
 import com.googlecode.lanterna.gui2.Interactable.Result
 import com.googlecode.lanterna.gui2._
 import com.googlecode.lanterna.gui2.dialogs.{MessageDialog, WaitingDialog}
@@ -79,24 +79,30 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
     contentPanel.addComponent(cmdInput)
 
     if (results.nonEmpty) {
-      val outputs = results.map {
-        case (instance, Right(result)) =>
-          if (result.stdErr.isEmpty) result.stdOut
-          else "\nStdErr:\n" + result.stdErr + "\nStdOut:\n" + result.stdOut
-        case (instance, Left(commandStatus)) =>
-          commandStatus.toString
-      }.zipWithIndex
+      val outputs = results.zipWithIndex.map { case ((_, result), i) =>
+        val outputStreams = result match {
+          case Right(cmdResult) =>
+            cmdResult
+          case Left(status) =>
+            CommandResult("", status.toString)
+        }
+        i -> outputStreams
+      }.toMap
 
-      val outputBox = outputs.headOption.map(_._1).fold(new Label("No output for instance"))(output => new Label(output))
+      val errOutputBox = new Label(outputs(0).stdErr)
+      errOutputBox.setForegroundColor(TextColor.ANSI.RED)
+      val stdOutputBox = new Label(outputs(0).stdOut)
 
       val instancesComboBox = new ComboBox(instances.map(_.id):_*).addListener { (selectedIndex: Int, previousSelection: Int) =>
-        outputBox.setText(outputs.find(_._2 == selectedIndex).map(_._1).getOrElse("No output for instance"))
+        errOutputBox.setText(outputs(selectedIndex).stdErr)
+        stdOutputBox.setText(outputs(selectedIndex).stdOut)
       }
       contentPanel.addComponent(instancesComboBox)
 
       contentPanel.addComponent(new EmptySpace())
       contentPanel.addComponent(new Separator(Direction.HORIZONTAL))
-      contentPanel.addComponent(outputBox)
+      contentPanel.addComponent(errOutputBox)
+      contentPanel.addComponent(stdOutputBox)
     }
 
     contentPanel.addComponent(new EmptySpace())
