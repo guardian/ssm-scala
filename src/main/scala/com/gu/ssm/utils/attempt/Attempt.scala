@@ -2,9 +2,6 @@ package com.gu.ssm.utils.attempt
 
 import java.util.{Timer, TimerTask}
 
-import rx.lang.scala.Observable
-import rx.lang.scala.subjects.AsyncSubject
-
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.control.NonFatal
@@ -75,18 +72,6 @@ case class Attempt[A] private (underlying: Future[Either[FailedAttempt, A]]) {
       case util.Success(either) =>
         callback(either)
     }
-  }
-
-  def toObservable(implicit ec: ExecutionContext): Observable[A] = {
-    val s = AsyncSubject[A]()
-    this.onComplete {
-      case Left(fa) =>
-        s.onError(throw new FailedAttemptException(fa))
-      case Right(a) =>
-        s.onNext(a)
-        s.onCompleted()
-    }
-    s
   }
 }
 

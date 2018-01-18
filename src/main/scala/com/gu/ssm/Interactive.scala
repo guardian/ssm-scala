@@ -17,17 +17,19 @@ class InteractiveProgram(client: AWSSimpleSystemsManagementAsync)(implicit ec: E
   val ui = new InteractiveUI(this)
 
   def main(setupAttempt: Attempt[(List[Instance], String)])(implicit ec: ExecutionContext): Unit = {
+    // start UI on a new thread (it blocks while it listens for keyboard input)
     Future {
-      // start UI on a new thread (it blocks while it listens for keyboard input)
       ui.start()
     }
-
     // update UI when we're ready to get started
     setupAttempt.onComplete { case Right((instances, username)) =>
       ui.ready(instances, username)
     }
   }
 
+  /**
+    * Kick off execution of a new command and update UI when it returns
+    */
   def executeCommand(command: String, instances: List[Instance], username: String): Unit = {
     IO.executeOnInstances(instances, username, command, client).onComplete {
       case Right(results) =>
@@ -49,12 +51,16 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
   val textGUI = new MultiWindowTextGUI(guiThreadFactory, screen)
   screen.startScreen()
 
+  /**
+    * Create window that displays the main UI along with the results of the previous command
+    */
   def mainWindow(instances: List[Instance], username: String, results: List[(Instance, Either[CommandStatus, CommandResult])]): BasicWindow = {
     val window = new BasicWindow(username)
 
     val initialSize = screen.getTerminal.getTerminalSize
-    val contentPanel = new Panel(new LinearLayout()).setPreferredSize(fullscreenPanelSize(initialSize))
-    val layoutManager: LinearLayout = contentPanel.getLayoutManager.asInstanceOf[LinearLayout]
+    val contentPanel = new Panel(new LinearLayout())
+      .setPreferredSize(fullscreenPanelSize(initialSize))
+    val layoutManager = contentPanel.getLayoutManager.asInstanceOf[LinearLayout]
     layoutManager.setSpacing(0)
 
     val resizer = new TerminalResizeListener {
@@ -78,6 +84,7 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
     }
     contentPanel.addComponent(cmdInput)
 
+    // show results, if present
     if (results.nonEmpty) {
       val outputs = results.zipWithIndex.map { case ((_, result), i) =>
         val outputStreams = result match {
@@ -105,6 +112,7 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
       contentPanel.addComponent(stdOutputBox)
     }
 
+    // close button
     contentPanel.addComponent(new EmptySpace())
     contentPanel.addComponent(new Separator(Direction.HORIZONTAL))
     contentPanel.addComponent(new Button("Close", new Runnable() {
@@ -118,6 +126,9 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
     window
   }
 
+  /**
+    * "fullscreen" with space for panel borders
+    */
   def fullscreenPanelSize(newSize: TerminalSize): TerminalSize = {
     new TerminalSize(newSize.getColumns - 4, newSize.getRows - 4)
   }
