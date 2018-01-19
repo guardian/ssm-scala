@@ -6,7 +6,7 @@ import com.amazonaws.services.ec2.model.{DescribeInstancesRequest, DescribeInsta
 import com.amazonaws.services.ec2.{AmazonEC2Async, AmazonEC2AsyncClientBuilder}
 import com.gu.ssm.aws.AwsAsyncHandler.{awsToScala, handleAWSErrs}
 import com.gu.ssm.utils.attempt.Attempt
-import com.gu.ssm.{AppStackStage, Instance}
+import com.gu.ssm.{AppStackStage, Instance, InstanceId}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
@@ -31,10 +31,24 @@ object EC2 {
     handleAWSErrs(awsToScala(client.describeInstancesAsync)(request).map(extractInstances))
   }
 
+  def resolveInstanceIds(ids: List[InstanceId], client: AmazonEC2Async)(implicit ec: ExecutionContext): Attempt[List[Instance]] = {
+    val request = new DescribeInstancesRequest()
+      .withFilters(
+        new Filter("instance-state-name", List("running").asJava),
+        new Filter("instance-id", ids.map(i => i.id).asJava)
+      )
+    handleAWSErrs(awsToScala(client.describeInstancesAsync)(request).map(extractInstances))
+  }
+
   private def extractInstances(describeInstancesResult: DescribeInstancesResult): List[Instance] = {
     (for {
       reservation <- describeInstancesResult.getReservations.asScala
       awsInstance <- reservation.getInstances.asScala
-    } yield Instance(awsInstance.getInstanceId)).toList
+      instanceId = awsInstance.getInstanceId
+      ipAddress = awsInstance.getPublicIpAddress match {
+        case s:String => Some(s)
+        case _ => None
+      }
+    } yield Instance(InstanceId(awsInstance.getInstanceId), ipAddress)).toList
   }
 }

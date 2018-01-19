@@ -10,14 +10,16 @@ import scala.concurrent.ExecutionContext
 
 object IO {
   def resolveInstances(executionTarget: ExecutionTarget, ec2Client: AmazonEC2Async)(implicit ec: ExecutionContext): Attempt[List[Instance]] = {
-    executionTarget.instances.map(Attempt.Right).orElse {
+    executionTarget.instances.map( instances =>
+      EC2.resolveInstanceIds(instances, ec2Client)
+    ).orElse {
       executionTarget.ass.map { ass =>
         EC2.resolveASSInstances(ass, ec2Client)
       }
     }.getOrElse(Attempt.Left(Failure("Unable to resolve execution target", "You must provide an execution target (instance(s) or tags)", ArgumentsError)))
   }
 
-  def executeOnInstances(instances: List[Instance], username: String, toExecute: ToExecute, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[List[(Instance, Either[CommandStatus, CommandResult])]] = {
+  def executeOnInstances(instances: List[InstanceId], username: String, toExecute: ToExecute, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[List[(InstanceId, Either[CommandStatus, CommandResult])]] = {
     for {
       script <- Attempt.fromEither(Logic.generateScript(toExecute))
       cmdId <- SSM.sendCommand(instances, script, username, client)
@@ -25,7 +27,21 @@ object IO {
     } yield results
   }
 
-  def executeOnInstances(instances: List[Instance], username: String, cmd: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[List[(Instance, Either[CommandStatus, CommandResult])]] = {
+  def executeOnInstances(instances: List[InstanceId], username: String, cmd: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[List[(InstanceId, Either[CommandStatus, CommandResult])]] = {
     executeOnInstances(instances, username, ToExecute(cmdOpt = Some(cmd)), client)
   }
+
+  def fireAndForgetOnInstances(instances: List[InstanceId], username: String, toExecute: ToExecute, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[String] = {
+    for {
+      script <- Attempt.fromEither(Logic.generateScript(toExecute))
+      cmdId <- SSM.sendCommand(instances, script, username, client)
+    } yield cmdId
+  }
+
+  def fireAndForgetOnInstances(instances: List[InstanceId], username: String, cmd: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[String] = {
+    fireAndForgetOnInstances(instances, username, ToExecute(cmdOpt = Some(cmd)), client)
+  }
+
+
+
 }

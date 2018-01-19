@@ -4,7 +4,7 @@ import com.gu.ssm.utils.attempt.FailedAttempt
 
 
 object UI {
-  def output(results: List[(Instance, scala.Either[CommandStatus, CommandResult])]): Unit = {
+  def output(results: List[(InstanceId, scala.Either[CommandStatus, CommandResult])]): Unit = {
     results.foreach { case (instance, result) =>
       UI.printMetadata(s"========= ${instance.id} =========")
       if (result.isLeft) {
