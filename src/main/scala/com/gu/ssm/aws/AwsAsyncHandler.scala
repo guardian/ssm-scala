@@ -28,7 +28,9 @@ object AwsAsyncHandler {
       if (e.getMessage.contains("The security token included in the request is expired")) {
         Failure("expired AWS credentials", "Failed to request data from AWS, the temporary credentials have expired", AwsPermissionsError).attempt
       } else if (e.getMessage.contains("Unable to load AWS credentials from any provider in the chain")) {
-        Failure("Invalid AWS profile name", "No credentials found for the specified AWS profile", AwsPermissionsError).attempt
+        Failure("Invalid AWS profile name (no credentials)", "No credentials found for the specified AWS profile", AwsPermissionsError).attempt
+      } else if (e.getMessage.contains("No AWS profile named")) {
+        Failure("Invalid AWS profile name (does not exist)", "The specified AWS profile does not exist", AwsPermissionsError).attempt
       } else if (e.getMessage.contains("is not authorized to perform")) {
         val message = serviceNameOpt.fold("You do not have sufficient AWS privileges")(serviceName => s"You do not have sufficient privileges to perform actions on $serviceName")
         Failure("insuficient permissions", message, AwsPermissionsError).attempt

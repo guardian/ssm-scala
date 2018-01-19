@@ -11,6 +11,7 @@ libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk-sts" % awsSdkVersion,
   "com.amazonaws" % "aws-java-sdk-ec2" % awsSdkVersion,
   "com.github.scopt" %% "scopt" % "3.7.0",
+  "com.googlecode.lanterna" % "lanterna" % "3.0.0",
   "ch.qos.logback" %  "logback-classic" % "1.1.7",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0",
   "org.scalatest" %% "scalatest" % "3.0.4" % Test

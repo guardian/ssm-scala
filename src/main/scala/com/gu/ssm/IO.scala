@@ -17,10 +17,15 @@ object IO {
     }.getOrElse(Attempt.Left(Failure("Unable to resolve execution target", "You must provide an execution target (instance(s) or tags)", ArgumentsError)))
   }
 
-  def executeOnInstances(instances: List[Instance], username: String, script: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[List[(Instance, Either[CommandStatus, CommandResult])]] = {
+  def executeOnInstances(instances: List[Instance], username: String, toExecute: ToExecute, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[List[(Instance, Either[CommandStatus, CommandResult])]] = {
     for {
+      script <- Attempt.fromEither(Logic.generateScript(toExecute))
       cmdId <- SSM.sendCommand(instances, script, username, client)
       results <- SSM.getCmdOutputs(instances, cmdId, client)
     } yield results
+  }
+
+  def executeOnInstances(instances: List[Instance], username: String, cmd: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[List[(Instance, Either[CommandStatus, CommandResult])]] = {
+    executeOnInstances(instances, username, ToExecute(cmdOpt = Some(cmd)), client)
   }
 }
