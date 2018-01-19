@@ -63,14 +63,10 @@ object Main extends ArgumentParser {
           (instances, name) = config
           sshArtifacts <- Attempt.fromEither(SSH.createKey())
           (authFile, authKey) = sshArtifacts
-          addKeyCommand <- SSH.addKeyCommand(authKey)
-          delay = 30
-          removeKeyCommand <- SSH.removeKeyCommand(authKey, delay)
-          addKeyResults <- IO.executeOnInstances(instances.map(i => i.id), name, addKeyCommand, ssmClient)
-          removeKeyResults <- IO.fireAndForgetOnInstances(instances.map(i => i.id), name, removeKeyCommand, ssmClient)
-          sshCommands <- SSH.sshCmds(authFile, instances, delay)
+          addAndRemoveKeyCommand = SSH.addKeyCommand(authKey) + "; " + SSH.removeKeyCommand(authKey)
+          _ <- IO.fireAndForgetOnInstances(instances.map(i => i.id), name, addAndRemoveKeyCommand, ssmClient)
+        } yield SSH.sshCmds(authFile, instances)
 
-        } yield sshCommands
         val programResult = Await.result(fProgramResult.asFuture, 25.seconds)
 
         // output and exit

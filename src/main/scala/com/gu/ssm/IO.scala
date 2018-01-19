@@ -3,7 +3,7 @@ package com.gu.ssm
 import com.amazonaws.services.ec2.AmazonEC2Async
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
 import com.gu.ssm.aws.{EC2, SSM}
-import com.gu.ssm.utils.attempt.{ArgumentsError, Attempt, Failure}
+import com.gu.ssm.utils.attempt.{ArgumentsError, Attempt, FailedAttempt, Failure}
 
 import scala.concurrent.ExecutionContext
 
