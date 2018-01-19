@@ -30,10 +30,10 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
   }
 
   "generateScript" - {
-    import Logic.getCommands
+    import Logic.generateScript
 
     "returns command if it was provided" in {
-      getCommands(ToExecute(cmdOpt = Some(List("ls")))).right.value shouldEqual List("ls")
+      generateScript(ToExecute(cmdOpt = Some("ls"))).right.value shouldEqual "ls"
     }
 
     "returns script contents if it was provided" ignore {
@@ -41,7 +41,7 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
     }
 
     "returns FailedAttempt if no command can be created" in {
-      getCommands(ToExecute(None, None)).left.value.failures.head.message shouldEqual "No execution commands provided"
+      generateScript(ToExecute(None, None)).left.value.failures.head.message shouldEqual "No execution commands provided"
     }
   }
 }
