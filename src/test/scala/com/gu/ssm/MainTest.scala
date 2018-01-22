@@ -1,7 +1,5 @@
 package com.gu.ssm
 
-import java.io.File
-
 import org.scalatest.{EitherValues, FreeSpec, Matchers}
 
 

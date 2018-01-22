@@ -7,7 +7,7 @@ import scopt.OptionParser
 
 object ArgumentParser {
 
-  val argParser = new OptionParser[Arguments]("ssm") {
+  val argParser: OptionParser[Arguments] = new OptionParser[Arguments]("ssm") {
     opt[String]('p', "profile").required()
       .action { (profile, args) =>
         args.copy(profile = Some(profile))
@@ -18,7 +18,7 @@ object ArgumentParser {
           Region.getRegion(Regions.fromName(region))
           success
         } catch {
-          case e: IllegalArgumentException =>
+          case _: IllegalArgumentException =>
             failure(s"Invalid AWS region name, $region")
         }
       } action { (region, args) =>
@@ -56,7 +56,7 @@ object ArgumentParser {
     opt[Unit]('s', "ssh")
       .action { (_, args) =>
         args.copy(ssh = true)
-      } text "run SSM in interactive mode"
+      } text "create and upload a temporary ssh key"
     checkConfig { args =>
       if (args.toExecute.isEmpty && !args.interactive && !args.ssh) Left("You must provide cmd or src-file; or interactive; or ssh")
       else if (args.toExecute.nonEmpty && args.interactive) Left("You cannot specify both cmd or src-file; and interactive")

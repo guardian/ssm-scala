@@ -26,8 +26,7 @@ object KeyMaker {
   private def generateKeyPair(algorithm: String, provider: String) = {
     val generator = KeyPairGenerator.getInstance(algorithm, provider)
     generator.initialize(2048)
-    val keyPair = generator.generateKeyPair
-    keyPair
+    generator.generateKeyPair
   }
 
   private def toAuthorizedKey(key: Key, description: String) = {

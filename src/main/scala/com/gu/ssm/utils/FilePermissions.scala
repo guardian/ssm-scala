@@ -14,7 +14,7 @@ object FilePermissions {
   /**
     * Using java 7 nio API to set the permissions.
     *
-    * @param file
+    * @param file to act on
     * @param perms in octal format
     */
   def apply(file: File, perms: String): Unit = {
@@ -23,7 +23,7 @@ object FilePermissions {
       Files.setPosixFilePermissions(file.toPath, posix)
     } recoverWith {
       // in case of windows
-      case e: UnsupportedOperationException =>
+      case _: UnsupportedOperationException =>
         Try {
           file.setExecutable(perms contains PosixFilePermission.OWNER_EXECUTE)
           file.setWritable(perms contains PosixFilePermission.OWNER_WRITE)
@@ -65,7 +65,7 @@ object FilePermissions {
 
     /** Enriches string with `oct` interpolator, parsing string as base 8 integer. */
     implicit class OctalString(val sc: StringContext) extends AnyVal {
-      def oct(args: Any*) = Integer.parseInt(sc.s(args: _*), 8)
+      def oct(args: Any*): Int = Integer.parseInt(sc.s(args: _*), 8)
     }
 
 }
