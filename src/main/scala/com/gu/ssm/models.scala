@@ -5,15 +5,16 @@ import java.io.File
 import com.amazonaws.regions.{Region, Regions}
 
 
-case class Instance(id: String)
+case class InstanceId(id: String) extends AnyVal
+case class Instance(id: InstanceId, publicIpAddressOpt: Option[String])
 case class AppStackStage(app: String, stack: String, stage: String)
-case class ExecutionTarget(instances: Option[List[Instance]] = None, ass: Option[AppStackStage] = None)
+case class ExecutionTarget(instances: Option[List[InstanceId]] = None, ass: Option[AppStackStage] = None)
 
 case class ToExecute(cmdOpt: Option[String] = None, scriptOpt: Option[File] = None)
 
-case class Arguments(executionTarget: Option[ExecutionTarget], toExecute: Option[ToExecute], profile: Option[String], region: Region, interactive: Boolean)
+case class Arguments(executionTarget: Option[ExecutionTarget], toExecute: Option[ToExecute], profile: Option[String], region: Region, interactive: Boolean, ssh: Boolean)
 object Arguments {
-  def empty(): Arguments = Arguments(None, None, None, Region.getRegion(Regions.EU_WEST_1), interactive = false)
+  def empty(): Arguments = Arguments(None, None, None, Region.getRegion(Regions.EU_WEST_1), false, false)
 }
 
 sealed trait CommandStatus

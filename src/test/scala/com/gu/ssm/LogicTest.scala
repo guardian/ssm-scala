@@ -41,7 +41,7 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
     }
 
     "returns FailedAttempt if no command can be created" in {
-      generateScript(ToExecute(None, None)).left.value.failures.head.message shouldEqual "no execution commands provided"
+      generateScript(ToExecute(None, None)).left.value.failures.head.message shouldEqual "No execution commands provided"
     }
   }
 }
