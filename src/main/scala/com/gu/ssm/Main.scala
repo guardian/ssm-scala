@@ -4,18 +4,19 @@ import com.amazonaws.services.ec2.AmazonEC2Async
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceAsync
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
 import com.gu.ssm.aws.{EC2, SSM, STS}
-import com.gu.ssm.utils.attempt.{ArgumentsError, Attempt, FailedAttempt, UnhandledError}
+import com.gu.ssm.utils.attempt._
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext}
+import com.gu.ssm.ArgumentParser.argParser
+import com.gu.ssm.SSH.sshCmd
 
-
-object Main extends ArgumentParser {
+object Main {
   implicit val ec = ExecutionContext.global
 
   def main(args: Array[String]): Unit = {
     argParser.parse(args, Arguments.empty()) match {
-      case Some(Arguments(Some(executionTarget), toExecute, Some(profile), region, interactive, ssh)) => {
+      case Some(Arguments(Some(executionTarget), toExecute, Some(profile), region, interactive, ssh)) =>
         implicit val stsClient = STS.client(profile, region)
         implicit val ssmClient = SSM.client(profile, region)
         implicit val ec2Client = EC2.client(profile, region)
@@ -29,7 +30,6 @@ object Main extends ArgumentParser {
             setUpSSH(executionTarget)
           case _ => fail
         }
-      }
       case Some(_) => fail
       case None => System.exit(ArgumentsError.code) // parsing cmd line args failed, help message will have been displayed
     }
@@ -47,15 +47,21 @@ object Main extends ArgumentParser {
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
       (authFile, authKey) = sshArtifacts
       addAndRemoveKeyCommand = SSH.addTaintedCommand(name) +SSH.addKeyCommand(authKey) + SSH.removeKeyCommand(authKey)
-      instance <- Attempt.fromEither(SSH.getSingleInstance(instances))
+      instance <- Attempt.fromEither(getSingleInstance(instances))
       _ <- IO.fireAndForgetOnInstances(instance, name, addAndRemoveKeyCommand, ssmClient)
-    } yield SSH.sshCmds(authFile, instances)
+    } yield instances.map(SSH.sshCmd(authFile, _))
 
     val programResult = Await.result(fProgramResult.asFuture, 25.seconds)
 
     programResult.fold(UI.outputFailure, UI.output)
     System.exit(programResult.fold(_.exitCode, _ => 0))
   }
+
+  def getSingleInstance(instances: List[Instance]): Either[FailedAttempt, List[InstanceId]] =
+    if (instances.tail.nonEmpty) Left(FailedAttempt(
+      Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${instances.map(i => i.id.id).mkString(", ")}", UnhandledError, None, None)))
+    else Right(instances.map(i => i.id))
+
 
   private def execute(executionTarget: ExecutionTarget, toExecute: ToExecute)(implicit stsClient: AWSSecurityTokenServiceAsync, ssmClient: AWSSimpleSystemsManagementAsync, ec2Client: AmazonEC2Async) = {
     val fProgramResult = for {

@@ -6,6 +6,7 @@ import org.bouncycastle.util.io.pem.PemWriter
 import java.security.Key
 
 import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPublicKey
+import org.apache.commons.codec.binary.Base64
 
 object KeyMaker {
 
@@ -13,17 +14,17 @@ object KeyMaker {
   import java.security.KeyPairGenerator
   import java.security.Security
 
-  def makeKey (file: File): String = {
+  def makeKey (file: File, algorithm: String, provider: String): String = {
     Security.addProvider(new BouncyCastleProvider)
-    val keyPair = generateRSAKeyPair
+    val keyPair = generateKeyPair(algorithm, provider)
     val priv = keyPair.getPrivate
     val pub = keyPair.getPublic
     writePemFile(priv, "RSA PRIVATE KEY", file)
-    new AuthorizedKey(pub, "security-magic").toString
+    new AuthorizedKey(pub, "security_ssm-scala").toString
   }
 
-  private def generateRSAKeyPair = {
-    val generator = KeyPairGenerator.getInstance("RSA", "BC")
+  private def generateKeyPair(algorithm: String, provider: String) = {
+    val generator = KeyPairGenerator.getInstance(algorithm, provider)
     generator.initialize(2048)
     val keyPair = generator.generateKeyPair
     keyPair
@@ -39,14 +40,12 @@ class PemFile(val key: Key, val description: String, val file: File) {
 
   def write(): Unit = {
     val pemWriter = new PemWriter(new OutputStreamWriter(new FileOutputStream(file)))
-    try
-      pemWriter.writeObject(this.pemObject)
-    finally pemWriter.close()
-    println("Wrote key to file (" + file.getCanonicalFile.toString) + ")"
+    pemWriter.writeObject(this.pemObject)
+    pemWriter.close()
   }
 }
 
-import org.apache.commons.codec.binary.Base64
+
 
 
 class AuthorizedKey(val key: Key, val description: String) {
@@ -64,18 +63,3 @@ class AuthorizedKey(val key: Key, val description: String) {
       "ssh-rsa " + publicKeyEncoded + " " + description
   }
 }
-
-  import org.apache.commons.codec.binary.Base64
-  import java.io.ByteArrayOutputStream
-
-//  val rsaPublicKey = key.asInstanceOf[RSAPublicKey]
-//  val byteOs: ByteArrayOutputStream = new ByteArrayOutputStream
-//  val dos: Nothing = new Nothing (byteOs)
-//  dos.writeInt ("ssh-rsa".getBytes.length)
-//  dos.write ("ssh-rsa".getBytes)
-//  dos.writeInt (rsaPublicKey.getPublicExponent.toByteArray.length)
-//  dos.write (rsaPublicKey.getPublicExponent.toByteArray)
-//  dos.writeInt (rsaPublicKey.getModulus.toByteArray.length)
-//  dos.write (rsaPublicKey.getModulus.toByteArray)
-//  publicKeyEncoded = new String (Base64.encodeBase64 (byteOs.toByteArray) )
-//  "ssh-rsa " + publicKeyEncoded + " " + user

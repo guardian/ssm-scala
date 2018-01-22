@@ -45,10 +45,6 @@ object EC2 {
       reservation <- describeInstancesResult.getReservations.asScala
       awsInstance <- reservation.getInstances.asScala
       instanceId = awsInstance.getInstanceId
-      ipAddress = awsInstance.getPublicIpAddress match {
-        case s:String => Some(s)
-        case _ => None
-      }
-    } yield Instance(InstanceId(awsInstance.getInstanceId), ipAddress)).toList
+    } yield Instance(InstanceId(awsInstance.getInstanceId), Option(awsInstance.getPublicIpAddress))).toList
   }
 }

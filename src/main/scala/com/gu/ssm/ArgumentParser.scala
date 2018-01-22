@@ -5,7 +5,7 @@ import java.io.File
 import com.amazonaws.regions.{Region, Regions}
 import scopt.OptionParser
 
-trait ArgumentParser {
+object ArgumentParser {
 
   val argParser = new OptionParser[Arguments]("ssm") {
     opt[String]('p', "profile").required()
