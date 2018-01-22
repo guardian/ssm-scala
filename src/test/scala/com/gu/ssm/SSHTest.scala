@@ -1,0 +1,61 @@
+package com.gu.ssm
+
+import org.scalatest.{EitherValues, FreeSpec, Matchers}
+import java.io.File
+import scala.concurrent.ExecutionContext.Implicits.global
+
+
+class SSHTest extends FreeSpec with Matchers with EitherValues {
+  "create add key command" - {
+    import SSH.addKeyCommand
+
+    "make ssh directory" in {
+      addKeyCommand("XXX") should include ("/bin/mkdir -p /home/ubuntu/.ssh;")
+    }
+
+    "make authorised keys" in {
+      addKeyCommand("XXX") should include ("/bin/echo 'XXX' >> /home/ubuntu/.ssh/authorized_keys;")
+    }
+
+    "ensure authorised key file permissions are correct" in {
+      addKeyCommand("XXX") should include ("/bin/chmod 0600 /home/ubuntu/.ssh/authorized_keys;")
+    }
+
+  }
+
+  "create taintedcommand" - {
+
+    "ensure motd command file is present" in {
+      import SSH.addTaintedCommand
+      addTaintedCommand("XXX") should include ("[[ -f /etc/update-motd.d/99-tainted ]] || /bin/echo -e '#!/bin/bash' | /usr/bin/sudo /usr/bin/tee -a /etc/update-motd.d/99-tainted >> /dev/null;")
+    }
+    "ensure motd command file contains tainted message" in {
+      import SSH.addTaintedCommand
+      addTaintedCommand("XXX") should include ("This instance should be considered tainted.") // much text removed from this because of color codes
+    }
+    "ensure motd command file contains accessed message" in {
+      import SSH.addTaintedCommand
+      addTaintedCommand("XXX") should include ("It was accessed by XXX at") // much text removed from this because of color codes
+    }
+    "ensure motd command file has correct permissions" in {
+      import SSH.addTaintedCommand
+      addTaintedCommand("XXX") should include ("/bin/chmod 0755 /etc/update-motd.d/99-tainted;")
+    }
+    "ensure motd update is executed" in {
+      import SSH.addTaintedCommand
+      addTaintedCommand("XXX") should include ("/usr/bin/sudo /bin/run-parts /etc/update-motd.d/ | /usr/bin/sudo /usr/bin/tee /run/motd.dynamic >> /dev/null;")
+    }
+  }
+
+  "create ssh command" - {
+    import SSH.sshCmd
+
+    "create ssh command" in {
+      val file:File = new File("/banana")
+      val instance:Instance = Instance(InstanceId("X"), Some("Y"))
+      val cmd = sshCmd(file, instance)
+      cmd._1.id shouldEqual "X"
+      cmd._2.isRight shouldBe true
+    }
+  }
+}

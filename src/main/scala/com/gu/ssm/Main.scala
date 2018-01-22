@@ -1,122 +1,85 @@
 package com.gu.ssm
 
-import java.io.File
-
-import com.amazonaws.regions.{Region, Regions}
+import com.amazonaws.services.ec2.AmazonEC2Async
+import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceAsync
+import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
 import com.gu.ssm.aws.{EC2, SSM, STS}
-import com.gu.ssm.utils.attempt.{ArgumentsError, Attempt, UnhandledError}
-import scopt.OptionParser
+import com.gu.ssm.utils.attempt._
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext}
-
+import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
+import com.gu.ssm.ArgumentParser.argParser
 
 object Main {
-  implicit val ec = ExecutionContext.global
+  implicit val ec: ExecutionContextExecutor = ExecutionContext.global
 
   def main(args: Array[String]): Unit = {
-    // TODO attempt to read from stdin to get commands and populate initial arguments thus
-
     argParser.parse(args, Arguments.empty()) match {
-      case Some(Arguments(Some(executionTarget), _, Some(profile), region, interactive)) if interactive =>
-        val stsClient = STS.client(profile, region)
-        val ssmClient = SSM.client(profile, region)
-        val ec2Client = EC2.client(profile, region)
+      case Some(Arguments(Some(executionTarget), toExecuteOpt, Some(profile), region, interactive, ssh)) =>
+        implicit val stsClient: AWSSecurityTokenServiceAsync = STS.client(profile, region)
+        implicit val ssmClient: AWSSimpleSystemsManagementAsync = SSM.client(profile, region)
+        implicit val ec2Client: AmazonEC2Async = EC2.client(profile, region)
 
-        // resolve user and instances in parallel
-        val configAttempt = Attempt.map2(
-          IO.resolveInstances(executionTarget, ec2Client),
-          STS.getCallerIdentity(stsClient)
-        )((_, _))
-        val interactive = new InteractiveProgram(ssmClient)(ec)
-        interactive.main(configAttempt)
-
-      case Some(Arguments(Some(executionTarget), Some(toExecute), Some(profile), region, interactive)) =>
-        // config
-        val stsClient = STS.client(profile, region)
-        val ssmClient = SSM.client(profile, region)
-        val ec2Client = EC2.client(profile, region)
-
-        // execution
-        val fProgramResult = for {
-          // get identity and instances in parallel
-          config <- Attempt.map2(IO.resolveInstances(executionTarget, ec2Client), STS.getCallerIdentity(stsClient))((_, _))
-          (instances, name) = config
-          cmd <- Attempt.fromEither(Logic.generateScript(toExecute))
-          results <- IO.executeOnInstances(instances, name, cmd, ssmClient)
-        } yield results
-        val programResult = Await.result(fProgramResult.asFuture, 25.seconds)
-
-        // output and exit
-        programResult.fold(UI.outputFailure, UI.output)
-        System.exit(programResult.fold(_.exitCode, _ => 0))
-
-      case Some(Arguments(instances, toExecuteOpt, profileOpt, region, interactive)) =>
-        // the CLI parser's `checkConfig` function means this should be unreachable code
-        UI.printErr("Impossible application state! This should be enforced by the CLI parser")
-        System.exit(UnhandledError.code)
-      case None =>
-        // parsing cmd line args failed, help message will have been displayed
-        System.exit(ArgumentsError.code)
+        (toExecuteOpt, interactive, ssh) match {
+          case (None, true, false) =>
+            interactiveLoop(executionTarget)
+          case (Some(toExecute), false, false) =>
+            execute(executionTarget, toExecute)
+          case (None, false, true) =>
+            setUpSSH(executionTarget)
+          case _ => fail()
+        }
+      case Some(_) => fail()
+      case None => System.exit(ArgumentsError.code) // parsing cmd line args failed, help message will have been displayed
     }
   }
 
-  private val argParser = new OptionParser[Arguments]("ssm") {
-    opt[String]("profile").required()
-      .action { (profile, args) =>
-        args.copy(profile = Some(profile))
-      } text "the AWS profile name to use for authenticating this execution"
-    opt[String]("region").optional()
-      .validate { region =>
-        try {
-          Region.getRegion(Regions.fromName(region))
-          success
-        } catch {
-          case e: IllegalArgumentException =>
-            failure(s"Invalid AWS region name, $region")
-        }
-      } action { (region, args) =>
-      args.copy(region = Region.getRegion(Regions.fromName(region)))
-    } text "AWS region name (defaults to eu-west-1)"
-    // TODO: make these args instead of opts
-    opt[Seq[String]]('i', "instances")
-      .action { (instanceIds, args) =>
-        val instances = instanceIds.map(Instance).toList
-        args.copy(executionTarget = Some(ExecutionTarget(instances = Some(instances))))
-      } text "specify the instance ID(s) on which the specified command(s) should execute"
-    opt[String]('t', "ass-tags")
-      .validate { tagsStr =>
-        Logic.extractSASTags(tagsStr).map(_ => ())
-      }
-      .action { (tagsStr, args) =>
-        Logic.extractSASTags(tagsStr)
-          .fold(
-            _ => args,
-            ass => args.copy(executionTarget = Some(ExecutionTarget(ass = Some(ass))))
-          )
-      } text "search for instances by tag e.g. --ssa-tags app,stack,stage"
-    opt[String]('c', "cmd")
-      .action { (command, args) =>
-        args.copy(toExecute = Some(ToExecute(cmdOpt = Some(command))))
-      } text "a (bash) command to execute"
-    opt[File]('f', "src-file")
-      .action { (file, args) =>
-        args.copy(toExecute = Some(ToExecute(scriptOpt = Some(file))))
-      } text "a file containing bash commands to execute"
-    opt[Unit]('I', "interactive")
-      .action { (_, args) =>
-        args.copy(interactive = true)
-      } text "run SSM in interactive mode"
-    checkConfig { args =>
-      if (args.toExecute.isEmpty && !args.interactive) {
-        Left("You must provide cmd or src-file")
-      } else {
-        if (args.executionTarget.isEmpty) {
-          Left("You must provide a list of target instances, Stack, Stage, App tags")
-        } else {
-          Right(())
-        }
-      }
-    }
+  private def fail(): Unit = {
+    UI.printErr("Impossible application state! This should be enforced by the CLI parser.  Did not receive valid instructions")
+    System.exit(UnhandledError.code)
+  }
+
+  private def setUpSSH(executionTarget: ExecutionTarget)(implicit stsClient: AWSSecurityTokenServiceAsync, ssmClient: AWSSimpleSystemsManagementAsync, ec2Client: AmazonEC2Async): Unit = {
+    val fProgramResult = for {
+      config <- Attempt.map2(IO.resolveInstances(executionTarget, ec2Client), STS.getCallerIdentity(stsClient))((_, _))
+      (instances, name) = config
+      sshArtifacts <- Attempt.fromEither(SSH.createKey())
+      (authFile, authKey) = sshArtifacts
+      addAndRemoveKeyCommand = SSH.addTaintedCommand(name) +SSH.addKeyCommand(authKey) + SSH.removeKeyCommand(authKey)
+      instance <- Attempt.fromEither(getSingleInstance(instances))
+      _ <- IO.fireAndForgetOnInstances(instance, name, addAndRemoveKeyCommand, ssmClient)
+    } yield instances.map(SSH.sshCmd(authFile, _))
+
+    val programResult = Await.result(fProgramResult.asFuture, 25.seconds)
+
+    programResult.fold(UI.outputFailure, UI.output)
+    System.exit(programResult.fold(_.exitCode, _ => 0))
+  }
+
+  def getSingleInstance(instances: List[Instance]): Either[FailedAttempt, List[InstanceId]] =
+    if (instances.length != 1) Left(FailedAttempt(
+      Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${instances.map(i => i.id.id).mkString(", ")}", UnhandledError, None, None)))
+    else Right(instances.map(i => i.id))
+
+  private def execute(executionTarget: ExecutionTarget, toExecute: ToExecute)(implicit stsClient: AWSSecurityTokenServiceAsync, ssmClient: AWSSimpleSystemsManagementAsync, ec2Client: AmazonEC2Async): Unit = {
+    val fProgramResult = for {
+      config <- Attempt.map2(IO.resolveInstances(executionTarget, ec2Client), STS.getCallerIdentity(stsClient))((_, _))
+      (instances, name) = config
+      cmd <- Attempt.fromEither(Logic.generateScript(toExecute))
+      results <- IO.executeOnInstances(instances.map(i => i.id), name, cmd, ssmClient)
+    } yield results
+    val programResult = Await.result(fProgramResult.asFuture, 25.seconds)
+
+    programResult.fold(UI.outputFailure, UI.output)
+    System.exit(programResult.fold(_.exitCode, _ => 0))
+  }
+
+  private def interactiveLoop(executionTarget: ExecutionTarget)(implicit stsClient: AWSSecurityTokenServiceAsync, ssmClient: AWSSimpleSystemsManagementAsync, ec2Client: AmazonEC2Async): Unit = {
+    val configAttempt = Attempt.map2(
+      IO.resolveInstances(executionTarget, ec2Client),
+      STS.getCallerIdentity(stsClient)
+    )((_, _))
+    val interactive = new InteractiveProgram(ssmClient)(ec)
+    interactive.main(configAttempt)
   }
 }

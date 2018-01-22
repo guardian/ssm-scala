@@ -24,7 +24,7 @@ class InteractiveProgram(client: AWSSimpleSystemsManagementAsync)(implicit ec: E
     // update UI when we're ready to get started
     setupAttempt.onComplete {
       case Right((instances, username)) =>
-        ui.ready(instances, username)
+        ui.ready(instances.map(i => i.id), username)
       case Left(fa) =>
         ui.displayError(fa)
     }
@@ -33,7 +33,7 @@ class InteractiveProgram(client: AWSSimpleSystemsManagementAsync)(implicit ec: E
   /**
     * Kick off execution of a new command and update UI when it returns
     */
-  def executeCommand(command: String, instances: List[Instance], username: String): Unit = {
+  def executeCommand(command: String, instances: List[InstanceId], username: String): Unit = {
     IO.executeOnInstances(instances, username, command, client).onComplete {
       case Right(results) =>
         ui.displayResults(instances, username, results)
@@ -57,7 +57,7 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
   /**
     * Create window that displays the main UI along with the results of the previous command
     */
-  def mainWindow(instances: List[Instance], username: String, results: List[(Instance, Either[CommandStatus, CommandResult])]): BasicWindow = {
+  def mainWindow(instances: List[InstanceId], username: String, results: List[(InstanceId, Either[CommandStatus, CommandResult])]): BasicWindow = {
     val window = new BasicWindow(username)
 
     val initialSize = screen.getTerminal.getTerminalSize
@@ -141,14 +141,14 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
     textGUI.addWindowAndWait(window)
   }
 
-  def ready(instances: List[Instance], username: String): Unit = {
+  def ready(instances: List[InstanceId], username: String): Unit = {
     logger.trace("resolved instances and username, UI ready")
     textGUI.removeWindow(textGUI.getActiveWindow)
     textGUI.addWindow(mainWindow(instances, username, Nil))
     textGUI.updateScreen()
   }
 
-  def displayResults(instances: List[Instance], username: String, results: List[(Instance, Either[CommandStatus, CommandResult])]): Unit = {
+  def displayResults(instances: List[InstanceId], username: String, results: List[(InstanceId, Either[CommandStatus, CommandResult])]): Unit = {
     logger.trace("displaying results")
     textGUI.removeWindow(textGUI.getActiveWindow)
     textGUI.addWindow(mainWindow(instances, username, results))
