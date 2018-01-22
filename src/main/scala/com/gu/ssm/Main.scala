@@ -57,10 +57,9 @@ object Main {
   }
 
   def getSingleInstance(instances: List[Instance]): Either[FailedAttempt, List[InstanceId]] =
-    if (instances.tail.nonEmpty) Left(FailedAttempt(
+    if (instances.length != 1) Left(FailedAttempt(
       Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${instances.map(i => i.id.id).mkString(", ")}", UnhandledError, None, None)))
     else Right(instances.map(i => i.id))
-
 
   private def execute(executionTarget: ExecutionTarget, toExecute: ToExecute)(implicit stsClient: AWSSecurityTokenServiceAsync, ssmClient: AWSSimpleSystemsManagementAsync, ec2Client: AmazonEC2Async): Unit = {
     val fProgramResult = for {
