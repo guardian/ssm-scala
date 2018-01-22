@@ -1,10 +1,8 @@
 package com.gu.ssm
 
 import org.scalatest.{EitherValues, FreeSpec, Matchers}
-import java.io.{File, IOException}
-
-import com.gu.ssm.utils.attempt.FailedAttempt
-import org.scalatest.matchers.BeMatcher
+import java.io.File
+import scala.concurrent.ExecutionContext.Implicits.global
 
 
 class SSHTest extends FreeSpec with Matchers with EitherValues {
@@ -51,7 +49,6 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
 
   "create ssh command" - {
     import SSH.sshCmd
-    import scala.concurrent.ExecutionContext.Implicits.global
 
     "create ssh command" in {
       val file:File = new File("/banana")
