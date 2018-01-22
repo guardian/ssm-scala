@@ -8,11 +8,11 @@ import scopt.OptionParser
 trait ArgumentParser {
 
   val argParser = new OptionParser[Arguments]("ssm") {
-    opt[String]("profile").required()
+    opt[String]('p', "profile").required()
       .action { (profile, args) =>
         args.copy(profile = Some(profile))
       } text "the AWS profile name to use for authenticating this execution"
-    opt[String]("region").optional()
+    opt[String]('r', "region").optional()
       .validate { region =>
         try {
           Region.getRegion(Regions.fromName(region))
@@ -30,7 +30,7 @@ trait ArgumentParser {
         val instances = instanceIds.map(i => InstanceId(i)).toList
         args.copy(executionTarget = Some(ExecutionTarget(instances = Some(instances))))
       } text "specify the instance ID(s) on which the specified command(s) should execute"
-    opt[String]('t', "ass-tags")
+    opt[String]('t', "asset-tags")
       .validate { tagsStr =>
         Logic.extractSASTags(tagsStr).map(_ => ())
       }
@@ -40,7 +40,7 @@ trait ArgumentParser {
             _ => args,
             ass => args.copy(executionTarget = Some(ExecutionTarget(ass = Some(ass))))
           )
-      } text "search for instances by tag e.g. --ssa-tags app,stack,stage"
+      } text "search for instances by tag e.g. --asset-tags app,stack,stage"
     opt[String]('c', "cmd")
       .action { (command, args) =>
         args.copy(toExecute = Some(ToExecute(cmdOpt = Some(command))))
@@ -58,15 +58,13 @@ trait ArgumentParser {
         args.copy(ssh = true)
       } text "run SSM in interactive mode"
     checkConfig { args =>
-      if (args.toExecute.isEmpty && !args.interactive && !args.ssh) {
-        Left("You must provide cmd or src-file; or interactive; or ssh")
-      } else {
-        if (args.executionTarget.isEmpty) {
-          Left("You must provide a list of target instances, Stack, Stage, App tags")
-        } else {
-          Right(())
-        }
-      }
+      if (args.toExecute.isEmpty && !args.interactive && !args.ssh) Left("You must provide cmd or src-file; or interactive; or ssh")
+      else if (args.toExecute.nonEmpty && args.interactive) Left("You cannot specify both cmd or src-file; and interactive")
+      else if (args.toExecute.nonEmpty && args.ssh) Left("You cannot specify both cmd or src-file; and ssh")
+      else if (args.interactive && args.ssh) Left("You cannot specify both interactive and ssh")
+      else if (args.executionTarget.isEmpty) Left("You must provide a list of target instances; or Stack, Stage, App tags")
+      else if (args.profile.isEmpty) Left("You must provide a profile")
+      else Right(())
     }
   }
 }

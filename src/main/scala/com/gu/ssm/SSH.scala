@@ -2,6 +2,7 @@ package com.gu.ssm
 
 import java.io.{File, IOException}
 import java.security.{NoSuchAlgorithmException, NoSuchProviderException}
+import java.util.Calendar
 
 import scala.concurrent.ExecutionContext
 import com.gu.ssm.utils.attempt._
@@ -34,11 +35,20 @@ object SSH {
     }
   }
 
+  def addTaintedCommand(name: String): String = {
+    s"""
+       | [[ -f /etc/update-motd.d/99-tainted ]] || /bin/echo -e '#!/bin/bash' | /usr/bin/sudo /usr/bin/tee -a /etc/update-motd.d/99-tainted >> /dev/null;
+       | /bin/echo -e 'echo -e "\033[0;31mThis instance was tainted by ${name} at ${Calendar.getInstance().getTime()}\033[0;30m"' | /usr/bin/sudo /usr/bin/tee -a /etc/update-motd.d/99-tainted >> /dev/null;
+       | /usr/bin/sudo /bin/chmod 0755 /etc/update-motd.d/99-tainted;
+       | /usr/bin/sudo /bin/run-parts /etc/update-motd.d/ | /usr/bin/sudo /usr/bin/tee /run/motd.dynamic >> /dev/null;
+       | """.stripMargin
+  }
+
   def addKeyCommand(authKey: String): String =
     s"""
       | /bin/mkdir -p /home/ubuntu/.ssh;
       | /bin/echo '$authKey' >> /home/ubuntu/.ssh/authorized_keys;
-      | /bin/chmod 0600 /home/ubuntu/.ssh/authorized_keys
+      | /bin/chmod 0600 /home/ubuntu/.ssh/authorized_keys;
       |""".stripMargin
 
   def removeKeyCommand(authKey: String): String =
@@ -50,7 +60,7 @@ object SSH {
   def sshCmd(tempFile: File, instance: Instance)(implicit ec: ExecutionContext): (InstanceId, Either[CommandStatus, CommandResult]) = {
     val cmd = s"""
       | # Execute the following command within the next $delay seconds:
-      | ssh -i ${tempFile.getCanonicalFile.toString} ubuntu@${instance.publicIpAddressOpt.get}
+      | ssh -i ${tempFile.getCanonicalFile.toString} ubuntu@${instance.publicIpAddressOpt.get};
       |""".stripMargin
     instance.id -> Right(CommandResult(cmd, ""))
   }
@@ -59,4 +69,8 @@ object SSH {
     instances.map(i => sshCmd(tempFile, i))
   }
 
+  def getSingleInstance(instances: List[Instance]): Either[FailedAttempt, List[InstanceId]] =
+    if (instances.length != 1) Left(FailedAttempt(
+      Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${instances.map(i => i.id.id).mkString(", ")}", UnhandledError, None, None)))
+    else Right(instances.map(i => i.id))
 }

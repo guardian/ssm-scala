@@ -3,28 +3,32 @@ package com.gu.ssm
 import org.scalatest.{EitherValues, FreeSpec, Matchers}
 import java.io.{File, IOException}
 
+import com.gu.ssm.utils.attempt.FailedAttempt
+import org.scalatest.matchers.BeMatcher
+
 
 class SSHTest extends FreeSpec with Matchers with EitherValues {
   "create add key command" - {
     import SSH.addKeyCommand
 
     "correct content" in {
-      addKeyCommand("XXX") shouldEqual "\n /bin/mkdir -p /home/ubuntu/.ssh;\n /bin/echo 'XXX' >> /home/ubuntu/.ssh/authorized_keys;\n /bin/chmod 0600 /home/ubuntu/.ssh/authorized_keys\n"
+      addKeyCommand("XXX") should include ("/bin/mkdir -p /home/ubuntu/.ssh;")
+        addKeyCommand("XXX") should include ("/bin/echo 'XXX' >> /home/ubuntu/.ssh/authorized_keys;")
+        addKeyCommand("XXX") should include ("/bin/chmod 0600 /home/ubuntu/.ssh/authorized_keys;")
     }
 
   }
 
-  "create remove key command" - {
-    import SSH.removeKeyCommand
+  "create taintedcommand" - {
 
-    "create with no stupid characters" in {
-      removeKeyCommand("XXX") shouldEqual "\n /bin/sleep 30;\n /bin/sed -i '/XXX/d' /home/ubuntu/.ssh/authorized_keys;\n"
+    "create tainted command" in {
+      import SSH.addTaintedCommand
+      val cmd = addTaintedCommand("XXX")
+      cmd should include ("[[ -f /etc/update-motd.d/99-tainted ]] || /bin/echo -e '#!/bin/bash' | /usr/bin/sudo /usr/bin/tee -a /etc/update-motd.d/99-tainted >> /dev/null;")
+      cmd should include ("This instance was tainted by XXX at") // much text removed from this because of color codes
+      cmd should include ("/bin/chmod 0755 /etc/update-motd.d/99-tainted;")
+      cmd should include ("/usr/bin/sudo /bin/run-parts /etc/update-motd.d/ | /usr/bin/sudo /usr/bin/tee /run/motd.dynamic >> /dev/null;")
     }
-
-    "create with stupid characters" in {
-      removeKeyCommand("X/Y/Z") shouldEqual "\n /bin/sleep 30;\n /bin/sed -i '/X\\/Y\\/Z/d' /home/ubuntu/.ssh/authorized_keys;\n"
-    }
-
   }
 
   "create ssh command" - {
@@ -34,31 +38,22 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
     "create ssh command" in {
       val file:File = new File("/banana")
       val instance:Instance = Instance(InstanceId("X"), Some("Y"))
-      sshCmd(file, instance)._1.id shouldEqual "X"
-      sshCmd(file, instance)._2.isRight shouldBe true
-//      shouldEqual "\n # Execute the following command within the next 30 seconds:\n ssh -i /banana ubuntu@Y\n"
+        val cmd = sshCmd(file, instance)
+      cmd._1.id shouldEqual "X"
+      cmd._2.isRight shouldBe true
     }
   }
 
-//  "create ssh commands" - {
-//    import SSH.sshCmd
-//
-//    "returns command if it was provided" in {
-//      sshCmd(ToExecute(cmdOpt = Some("ls"))).right.value shouldEqual "ls"
-//    }
-//  }
-}
+  "get Single Instance" - {
+    import SSH.getSingleInstance
 
-//  def sshCmd(tempFile: File, instance: Instance)(implicit ec: ExecutionContext): (InstanceId, Either[CommandStatus, CommandResult]) = {
-//    val cmd = s"""
-//                 | # Execute the following command within the next $delay seconds:
-//                 | ssh -i ${tempFile.getCanonicalFile.toString} ubuntu@${instance.publicIpAddressOpt.get}
-//    """.stripMargin
-//    instance.id -> Right(CommandResult(cmd, ""))
-//  }
-//
-//  def sshCmds(tempFile: File, instances: List[Instance])(implicit ec: ExecutionContext): List[(InstanceId, Either[CommandStatus, CommandResult])] = {
-//    instances.map(i => sshCmd(tempFile, i))
-//  }
-//
-//}
+    "More than one instance" in {
+      SSH.getSingleInstance(List(Instance(InstanceId("X"), None), Instance(InstanceId("Y"), None))).isLeft shouldBe true
+    }
+
+    "Exactly one instance" in {
+      SSH.getSingleInstance(List(Instance(InstanceId("X"), None))).isRight shouldBe true
+    }
+  }
+
+}
