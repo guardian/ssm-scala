@@ -51,7 +51,7 @@ object EC2 {
   def tagInstances(ids:List[InstanceId], key: String, value: String, client: AmazonEC2Async)(implicit ec: ExecutionContext): Attempt[Unit] = {
     val request = new CreateTagsRequest()
       .withTags(new Tag(key, value))
-      .withResources(ids.map(i => i.id).asJava)
+      .withResources(ids.map(_.id).asJava)
     handleAWSErrs(awsToScala(client.createTagsAsync)(request)).map(_ => Unit)
   }
 

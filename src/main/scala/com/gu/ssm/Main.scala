@@ -47,7 +47,8 @@ object Main {
       (authFile, authKey) = sshArtifacts
       addAndRemoveKeyCommand = SSH.addTaintedCommand(name) + SSH.addKeyCommand(authKey) + SSH.removeKeyCommand(authKey)
       instance <- Attempt.fromEither(getSingleInstance(instances))
-      _ <- IO.tagAndInstallSshKey(instance, name, addAndRemoveKeyCommand, ssmClient, ec2Client)
+      _ <- IO.tagAsTainted(instance, name, ec2Client)
+      _ <- IO.installSshKey(instance, name, addAndRemoveKeyCommand, ssmClient)
     } yield instances.map(SSH.sshCmd(authFile, _))
 
     val programResult = Await.result(fProgramResult.asFuture, 25.seconds)

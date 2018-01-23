@@ -15,7 +15,7 @@ Github releases page
 
 You can then write a simple wrapper script and put it on your path:
 
-    java -jar <path-to-jar>/ssm.jar "@$"
+    java -jar <path-to-jar>/ssm.jar "$@"
 
 Call it `ssm` and make sure it is executable (`chmod +x ssm`).
 
