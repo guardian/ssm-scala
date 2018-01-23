@@ -41,5 +41,4 @@ object IO {
 
   def tagAsTainted(instances: List[InstanceId], username: String,ec2Client: AmazonEC2Async)(implicit ec: ExecutionContext): Attempt[Unit] =
     EC2.tagInstances(instances, "taintedBy", username, ec2Client)
-
 }
