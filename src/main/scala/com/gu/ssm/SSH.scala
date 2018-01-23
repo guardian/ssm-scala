@@ -63,12 +63,12 @@ object SSH {
       | /bin/sed -i '/${authKey.replaceAll("/", "\\\\/")}/d' /home/ubuntu/.ssh/authorized_keys;
       |""".stripMargin
 
-  def sshCmd(tempFile: File, instance: Instance)(implicit ec: ExecutionContext): (InstanceId, Either[CommandStatus, CommandResult]) = {
+  def sshCmd(tempFile: File, instance: Instance)(implicit ec: ExecutionContext): (InstanceId, String) = {
     val cmd = s"""
       | # Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:
       | ssh -i ${tempFile.getCanonicalFile.toString} ubuntu@${instance.publicIpAddressOpt.get};
       |""".stripMargin
-    instance.id -> Right(CommandResult(cmd, ""))
+    instance.id -> cmd
   }
 
 }

@@ -53,21 +53,21 @@ object Main {
 
     val programResult = Await.result(fProgramResult.asFuture, 25.seconds)
 
-    programResult.fold(UI.outputFailure, UI.output)
+    programResult.fold(UI.outputFailure, UI.sshOutput)
     System.exit(programResult.fold(_.exitCode, _ => 0))
   }
 
-  def getSingleInstance(instances: List[Instance]): Either[FailedAttempt, List[InstanceId]] =
-    if (instances.length != 1) Left(FailedAttempt(
+  def getSingleInstance(instances: List[Instance]): Either[FailedAttempt, List[InstanceId]] = {
+    if (instances.lengthCompare(1) != 0) Left(FailedAttempt(
       Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${instances.map(i => i.id.id).mkString(", ")}", UnhandledError, None, None)))
     else Right(instances.map(i => i.id))
+  }
 
   private def execute(executionTarget: ExecutionTarget, toExecute: ToExecute)(implicit stsClient: AWSSecurityTokenServiceAsync, ssmClient: AWSSimpleSystemsManagementAsync, ec2Client: AmazonEC2Async): Unit = {
     val fProgramResult = for {
       config <- Attempt.map2(IO.resolveInstances(executionTarget, ec2Client), STS.getCallerIdentity(stsClient))((_, _))
       (instances, name) = config
-      cmd <- Attempt.fromEither(Logic.generateScript(toExecute))
-      results <- IO.executeOnInstances(instances.map(i => i.id), name, cmd, ssmClient)
+      results <- IO.executeOnInstances(instances.map(i => i.id), name, toExecute, ssmClient)
     } yield results
     val programResult = Await.result(fProgramResult.asFuture, 25.seconds)
 
