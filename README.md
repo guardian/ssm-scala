@@ -15,7 +15,7 @@ Github releases page
 
 You can then write a simple wrapper script and put it on your path:
 
-    java -jar <path-to-jar>/ssm.jar "@$"
+    java -jar <path-to-jar>/ssm.jar "$@"
 
 Call it `ssm` and make sure it is executable (`chmod +x ssm`).
 
@@ -74,7 +74,7 @@ specifying App, Stack, and Stage tags.
     ... -i i-0123456,i-9876543
 	
 	# by tag
-	... --ass-tags app,stack,stage
+	... --asset-tags app,stack,stage
 	... -t app,stack,stage
 
 If you provide tags, `ssm` will search for running instances that are
@@ -133,3 +133,6 @@ created jar file, but it's likely to be in `target/scala-2.12/ssm.jar`
 
 The jar can then be invoked as follows (it may be useful to create a
 wrapper script, as described above in 'Installation').
+
+    java -jar <path-to-jar>/ssm.jar "@$"
+

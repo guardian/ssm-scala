@@ -31,17 +31,15 @@ object IO {
     executeOnInstances(instances, username, ToExecute(cmdOpt = Some(cmd)), client)
   }
 
-  def fireAndForgetOnInstances(instances: List[InstanceId], username: String, toExecute: ToExecute, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[String] = {
+  def installSshKey(instances: List[InstanceId], username: String, cmd: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[String] = {
     for {
-      script <- Attempt.fromEither(Logic.generateScript(toExecute))
+      // Get the script first, so that we only tag if we are ready to go
+      script <- Attempt.fromEither(Logic.generateScript(ToExecute(cmdOpt = Some(cmd))))
       cmdId <- SSM.sendCommand(instances, script, username, client)
     } yield cmdId
   }
 
-  def fireAndForgetOnInstances(instances: List[InstanceId], username: String, cmd: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[String] = {
-    fireAndForgetOnInstances(instances, username, ToExecute(cmdOpt = Some(cmd)), client)
-  }
-
-
+  def tagAsTainted(instances: List[InstanceId], username: String,ec2Client: AmazonEC2Async)(implicit ec: ExecutionContext): Attempt[Unit] =
+    EC2.tagInstances(instances, "taintedBy", username, ec2Client)
 
 }
