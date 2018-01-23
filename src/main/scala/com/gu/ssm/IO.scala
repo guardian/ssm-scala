@@ -39,11 +39,7 @@ object IO {
     } yield cmdId
   }
 
-  def tagAsTainted(instances: List[InstanceId], username: String,ec2Client: AmazonEC2Async)(implicit ec: ExecutionContext): Attempt[String] = {
-    for {
-      // Get the script first, so that we only tag if we are ready to go
-      _ <- EC2.tagInstances(instances, "taintedBy", username, ec2Client)
-    } yield Unit
-  }
+  def tagAsTainted(instances: List[InstanceId], username: String,ec2Client: AmazonEC2Async)(implicit ec: ExecutionContext): Attempt[Unit] =
+    EC2.tagInstances(instances, "taintedBy", username, ec2Client)
 
 }
