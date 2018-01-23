@@ -2,7 +2,7 @@ package com.gu.ssm.aws
 
 import com.amazonaws.auth.profile.ProfileCredentialsProvider
 import com.amazonaws.regions.Region
-import com.amazonaws.services.ec2.model.{DescribeInstancesRequest, DescribeInstancesResult, Filter}
+import com.amazonaws.services.ec2.model._
 import com.amazonaws.services.ec2.{AmazonEC2Async, AmazonEC2AsyncClientBuilder}
 import com.gu.ssm.aws.AwsAsyncHandler.{awsToScala, handleAWSErrs}
 import com.gu.ssm.utils.attempt.Attempt
@@ -47,4 +47,14 @@ object EC2 {
       instanceId = awsInstance.getInstanceId
     } yield Instance(InstanceId(awsInstance.getInstanceId), Option(awsInstance.getPublicIpAddress))).toList
   }
+
+  def tagInstances(ids:List[InstanceId], key: String, value: String, client: AmazonEC2Async)(implicit ec: ExecutionContext): Attempt[Unit] = {
+    val request = new CreateTagsRequest()
+      .withTags(new Tag(key, value))
+      .withResources(ids.map(i => i.id).asJava)
+    handleAWSErrs(awsToScala(client.createTagsAsync)(request)).map(_ => Unit)
+  }
+
 }
+
+

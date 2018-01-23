@@ -45,7 +45,7 @@ specifying App, Stack, and Stage tags.
     ... -i i-0123456,i-9876543
 	
 	# by tag
-	... --ass-tags app,stack,stage
+	... --asset-tags app,stack,stage
 	... -t app,stack,stage
 
 If you provide tags, `ssm` will search for running instances that are
