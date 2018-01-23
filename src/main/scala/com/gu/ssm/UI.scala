@@ -8,7 +8,7 @@ object UI {
     results.foreach { case (instance, result) =>
       UI.printMetadata(s"========= ${instance.id} =========")
       if (result.isLeft) {
-        UI.printMetadata(result.left.get.toString)
+        UI.printErr(result.left.get.toString)
       } else {
         val output = result.right.get
         UI.printMetadata(s"STDOUT:")
@@ -16,6 +16,14 @@ object UI {
         UI.printMetadata(s"STDERR:")
         UI.printErr(output.stdErr)
       }
+    }
+  }
+
+  def sshOutput(results: List[(InstanceId, String)]): Unit = {
+    results.foreach { case (instance, cmd) =>
+      UI.printMetadata(s"========= ${instance.id} =========")
+      UI.printMetadata(s"STDOUT:")
+      println(cmd)
     }
   }
 
