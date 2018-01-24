@@ -28,21 +28,21 @@ as follows:
 
 ### Usage examples
 
-Likely example using short form of arguments:
+Likely example using short form of arguments (here the command is set to `ls`):
 
-    ssm -t app,stack,stage --profile <aws-profile> -c ls
+    ssm -t <app>,<stack>,<stage> --profile <aws-profile> -c ls
 
 REPL (interactive) mode:
 
-    ssm -t app,stack,stage --profile <aws-profile> -I
+    ssm -t <app>,<stack>,<stage> --profile <aws-profile> -I
 
 Execute a command on all matching instances:
 
-    ssm --ass-tags app,stack,stage --profile <aws-profile> --cmd ls
+    ssm --ass-tags <app>,<stack>,<stage> --profile <aws-profile> --cmd ls
 
 Execute the contents of a script file on matching instances:
 
-    ssm --ass-tags app,stack,stage --profile <aws-profile> --src-file <script>
+    ssm --ass-tags <app>,<stack>,<stage> --profile <aws-profile> --src-file <script>
 
 Execute `ls` on the specified instance:
 
@@ -51,7 +51,7 @@ Execute `ls` on the specified instance:
 Execute `ls` on multiple specified instances (using the short form of
 the arguments):
 
-    ssm -i i-01234567,i98765432 --profile <aws-profile> -c ls
+    ssm -i i-01234567,i-98765432 --profile <aws-profile> -c ls
 
 ## Arguments
 
@@ -74,8 +74,8 @@ specifying App, Stack, and Stage tags.
     ... -i i-0123456,i-9876543
 	
 	# by tag
-	... --asset-tags app,stack,stage
-	... -t app,stack,stage
+	... --asset-tags <app>,<stack>,<stage>
+	... -t <app>,<stack>,<stage>
 
 If you provide tags, `ssm` will search for running instances that are
 have those tags.
