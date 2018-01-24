@@ -1,7 +1,5 @@
 package com.gu.ssm
 
-import java.io.File
-
 import com.amazonaws.regions.{Region, Regions}
 
 
@@ -10,11 +8,9 @@ case class Instance(id: InstanceId, publicIpAddressOpt: Option[String])
 case class AppStackStage(app: String, stack: String, stage: String)
 case class ExecutionTarget(instances: Option[List[InstanceId]] = None, ass: Option[AppStackStage] = None)
 
-case class ToExecute(cmdOpt: Option[String] = None, scriptOpt: Option[File] = None)
-
-case class Arguments(executionTarget: Option[ExecutionTarget], toExecute: Option[ToExecute], profile: Option[String], region: Region, interactive: Boolean, ssh: Boolean)
+case class Arguments(executionTarget: Option[ExecutionTarget], toExecute: Option[String], profile: Option[String], region: Region, mode: Option[SsmMode])
 object Arguments {
-  def empty(): Arguments = Arguments(None, None, None, Region.getRegion(Regions.EU_WEST_1), false, false)
+  def empty(): Arguments = Arguments(None, None, None, Region.getRegion(Regions.EU_WEST_1), None)
 }
 
 sealed trait CommandStatus
@@ -28,5 +24,10 @@ case object Failed extends CommandStatus
 case object Canceled extends CommandStatus
 case object Undeliverable extends CommandStatus
 case object Terminated extends CommandStatus
+
+sealed trait SsmMode
+case object SsmCmd extends SsmMode
+case object SsmRepl extends SsmMode
+case object SsmSsh extends SsmMode
 
 case class CommandResult(stdOut: String, stdErr: String)
