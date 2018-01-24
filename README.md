@@ -39,6 +39,7 @@ Command: repl
 run SSM in interactive/repl mode
 
 Command: ssh
+create and upload a temporary ssh key
 ```
 
 The general syntax is 
