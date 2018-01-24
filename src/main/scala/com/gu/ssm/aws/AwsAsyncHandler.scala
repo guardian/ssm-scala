@@ -33,7 +33,7 @@ object AwsAsyncHandler {
         Failure("Invalid AWS profile name (does not exist)", "The specified AWS profile does not exist", AwsPermissionsError).attempt
       } else if (e.getMessage.contains("is not authorized to perform")) {
         val message = serviceNameOpt.fold("You do not have sufficient AWS privileges")(serviceName => s"You do not have sufficient privileges to perform actions on $serviceName")
-        Failure("insuficient permissions", message, AwsPermissionsError).attempt
+        Failure("insufficient permissions", message, AwsPermissionsError).attempt
       } else if (e.getMessage.contains("InvalidInstanceId")) {
         Failure("InvalidInstanceId from AWS", "The specified instance(s) are not eligible targets (AWS said InvalidInstanceId)", AwsError).attempt
       } else {

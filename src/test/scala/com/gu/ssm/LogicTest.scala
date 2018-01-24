@@ -33,15 +33,11 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
     import Logic.generateScript
 
     "returns command if it was provided" in {
-      generateScript(ToExecute(cmdOpt = Some("ls"))).right.value shouldEqual "ls"
+      generateScript(Left("ls")) shouldEqual "ls"
     }
 
     "returns script contents if it was provided" ignore {
       // TODO: testing IO is hard, should extract file's content separately
-    }
-
-    "returns FailedAttempt if no command can be created" in {
-      generateScript(ToExecute(None, None)).left.value.failures.head.message shouldEqual "No execution commands provided"
     }
   }
 }

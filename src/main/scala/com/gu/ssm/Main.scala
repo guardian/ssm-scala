@@ -1,5 +1,7 @@
 package com.gu.ssm
 
+import java.io.File
+
 import com.amazonaws.services.ec2.AmazonEC2Async
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceAsync
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
@@ -15,17 +17,18 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     argParser.parse(args, Arguments.empty()) match {
-      case Some(Arguments(Some(executionTarget), toExecuteOpt, Some(profile), region, interactive, ssh)) =>
+      case Some(Arguments(Some(executionTarget), toExecuteOpt, Some(profile), region, mode)) =>
         implicit val stsClient: AWSSecurityTokenServiceAsync = STS.client(profile, region)
         implicit val ssmClient: AWSSimpleSystemsManagementAsync = SSM.client(profile, region)
         implicit val ec2Client: AmazonEC2Async = EC2.client(profile, region)
 
-        (toExecuteOpt, interactive, ssh) match {
-          case (None, true, false) =>
+        mode match {
+          case Some(SsmRepl) =>
             interactiveLoop(executionTarget)
-          case (Some(toExecute), false, false) =>
+          case Some(SsmCmd) if toExecuteOpt.nonEmpty =>
+            val toExecute = toExecuteOpt.get
             execute(executionTarget, toExecute)
-          case (None, false, true) =>
+          case Some(SsmSsh) =>
             setUpSSH(executionTarget)
           case _ => fail()
         }
@@ -63,7 +66,7 @@ object Main {
     else Right(instances.map(i => i.id))
   }
 
-  private def execute(executionTarget: ExecutionTarget, toExecute: ToExecute)(implicit stsClient: AWSSecurityTokenServiceAsync, ssmClient: AWSSimpleSystemsManagementAsync, ec2Client: AmazonEC2Async): Unit = {
+  private def execute(executionTarget: ExecutionTarget, toExecute: String)(implicit stsClient: AWSSecurityTokenServiceAsync, ssmClient: AWSSimpleSystemsManagementAsync, ec2Client: AmazonEC2Async): Unit = {
     val fProgramResult = for {
       config <- Attempt.map2(IO.resolveInstances(executionTarget, ec2Client), STS.getCallerIdentity(stsClient))((_, _))
       (instances, name) = config

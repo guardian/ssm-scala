@@ -1,15 +1,15 @@
 package com.gu.ssm
 
-import com.gu.ssm.utils.attempt.{ArgumentsError, FailedAttempt, Failure}
+import java.io.File
 
 import scala.io.Source
 
 
 object Logic {
-  def generateScript(toExecute: ToExecute): Either[FailedAttempt, String] = {
-    val scriptSourceOpt = toExecute.scriptOpt.map(Source.fromFile(_, "UTF-8").mkString)
-    toExecute.cmdOpt.orElse(scriptSourceOpt).toRight {
-      Failure("No execution commands provided", "You must provide commands to execute (src-file or cmd)", ArgumentsError).attempt
+  def generateScript(toExecute: Either[String, File]): String = {
+    toExecute match {
+      case Right(script) => Source.fromFile(script, "UTF-8").mkString
+      case Left(cmd) => cmd
     }
   }
 
