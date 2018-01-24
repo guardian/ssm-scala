@@ -21,96 +21,120 @@ Call it `ssm` and make sure it is executable (`chmod +x ssm`).
 
 ## Usage
 
-Assuming you have followed the above instructions you run the program
-as follows:
+The automatically generated help section for `ssm` is
 
-    ssm <args>
+```
+Usage: ssm [cmd|repl|ssh] [options]
+  -p, --profile <value>    the AWS profile name to use for authenticating this execution
+  -i, --instances <value>  specify the instance ID(s) on which the specified command(s) should execute
+  -t, --tags <value>       search for instances by tag e.g. '--tags app,stack,stage'
+  -r, --region <value>     AWS region name (defaults to eu-west-1)
 
-### Usage examples
+Command: cmd [options]
+execute a single (bash) command, or a file containing bash commands
+  -c, --cmd <value>        a bash command to execute
+  -f, --file <value>       a file containing bash commands to execute
 
-Likely example using short form of arguments (here the command is set to `ls`):
+Command: repl
+run SSM in interactive/repl mode
 
-    ssm -t <app>,<stack>,<stage> --profile <aws-profile> -c ls
+Command: ssh
+```
 
-REPL (interactive) mode:
+The general syntax is 
 
-    ssm -t <app>,<stack>,<stage> --profile <aws-profile> -I
+```
+ssm [cmd|repl|ssh] [options]
+```
 
-Execute a command on all matching instances:
+An example of `cmd` (from the same folder where `ssm.jar` is located) is 
 
-    ssm --ass-tags <app>,<stack>,<stage> --profile <aws-profile> --cmd ls
+```
+java -jar ./ssm.jar cmd -c ls --profile security -t security-hq,security,PROD
+```
 
-Execute the contents of a script file on matching instances:
+... but, as per advised in the **Installation** section, if you have the `ssm` wrapper set up this can be rewritten 
 
-    ssm --ass-tags <app>,<stack>,<stage> --profile <aws-profile> --src-file <script>
+```
+ssm cmd -c ls --profile security -t security-hq,security,PROD
+```
 
-Execute `ls` on the specified instance:
+For more information about `--profile` see [AWS profiles](https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html).
 
-    ssm --instances i-01234567 --profile <aws-profile> --cmd ls
+The general syntax for the `-t` switch is `-t <app>,<stack>,<stage>`. 
 
-Execute `ls` on multiple specified instances (using the short form of
-the arguments):
+For convenience, all subsequent examples will use the wrapper syntax.
 
-    ssm -i i-01234567,i-98765432 --profile <aws-profile> -c ls
+The syntax for using the `repl` command is:
 
-## Arguments
+```
+ssm repl --profile <aws-profile> -t <app>,<stack>,<stage>
+```
 
-Refer to the program's help to see the required arguments, but here is
-some info about some of them.
-
-Note that the AWS profile to use is required, while region will
-default to `eu-west-1` (Ireland). You are also required to provide
-the name of [an AWS profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html)
-that is used to authenticate AWS API calls.
-
-### Execution targets
-
-`ssm` needs to be told which instances should execute the provided
-command(s). You can do this by specifying instance IDs, or by
-specifying App, Stack, and Stage tags.
-
-    # by ID
-	... --instances i-0123456,i-9876543
-    ... -i i-0123456,i-9876543
-	
-	# by tag
-	... --asset-tags <app>,<stack>,<stage>
-	... -t <app>,<stack>,<stage>
-
-If you provide tags, `ssm` will search for running instances that are
-have those tags.
-
-## Actions
-
-### One-Off Commands
-
-You can tell `ssm` the commands to execute with an argument that
-specifies the command or by providing a file that contains the
-commands to be run.
-
-    # specify command
-	--cmd ls
-	-c ls
-	
-	# provide script file
-	--src-file script
-	-f script
-
-### Command Loop (REPL)
-
-With the `-I` interactive flag, `ssm` will initialise a list of
+This causes `ssm` to generate a list of
 instances and then wait for commands to be specified.  Each command
 will be executed on all instances and the user can select the instance
 to display.
 
-### SSH
+The syntax for using the `ssh` command is:
 
-Specifying the `-s` flag will cause `ssm` to generate a temporary ssh
+```
+ssm ssh --profile <aws-profile> -t <app>,<stack>,<stage> 
+```
+
+This causes `ssm` to generate a temporary ssh
 key, and install the public key on a specific instance.  It will then
-output the command to `ssh` directly to that instance.
-
+output the command to `ssh` directly to that instance. 
 The instance must already have both a public IP address _and_
 appropriate security groups.
+
+### More usage examples
+
+Execute a command on all matching instances:
+
+```
+ssm cmd -c <command> --profile <aws-profile> --ass-tags <app>,<stack>,<stage>
+```
+
+Execute the contents of a script file on matching instances:
+
+```
+ssm --file <path-to-script> --profile <aws-profile> --ass-tags <app>,<stack>,<stage>
+```
+
+Execute `ls` on the specified instance:
+
+```
+ssm cmd -c ls --profile <aws-profile> --instances i-01234567
+```
+
+Execute `ls` on multiple specified instances (using the short form of
+the arguments):
+
+```
+ssm cmd -f <path-to-script> --profile <aws-profile> -i i-01234567,i-98765432
+```
+
+### Execution targets
+
+As seen in the previous section, `ssm` needs to be told which 
+instances should execute the provided
+command(s). You can do this by specifying instance IDs, or by
+specifying App, Stack, and Stage tags.
+
+```
+# by ID
+... --instances i-0123456,i-9876543
+... -i i-0123456,i-9876543
+
+# by tag
+... --asset-tags <app>,<stack>,<stage>
+... -t <app>,<stack>,<stage>
+```
+
+If you provide tags, `ssm` will search for running instances that are
+have those tags.
+
 
 ## Development
 
