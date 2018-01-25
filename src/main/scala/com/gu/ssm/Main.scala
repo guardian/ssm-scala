@@ -17,18 +17,18 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     argParser.parse(args, Arguments.empty()) match {
-      case Some(Arguments(Some(executionTarget), toExecuteOpt, Some(profile), region, mode)) =>
+      case Some(Arguments(Some(executionTarget), toExecuteOpt, Some(profile), region, Some(mode))) =>
         implicit val stsClient: AWSSecurityTokenServiceAsync = STS.client(profile, region)
         implicit val ssmClient: AWSSimpleSystemsManagementAsync = SSM.client(profile, region)
         implicit val ec2Client: AmazonEC2Async = EC2.client(profile, region)
 
         mode match {
-          case Some(SsmRepl) =>
+          case SsmRepl =>
             interactiveLoop(executionTarget)
-          case Some(SsmCmd) if toExecuteOpt.nonEmpty =>
+          case SsmCmd if toExecuteOpt.nonEmpty =>
             val toExecute = toExecuteOpt.get
             execute(executionTarget, toExecute)
-          case Some(SsmSsh) =>
+          case SsmSsh =>
             setUpSSH(executionTarget)
           case _ => fail()
         }
@@ -61,7 +61,7 @@ object Main {
   }
 
   def getSingleInstance(instances: List[Instance]): Either[FailedAttempt, List[InstanceId]] = {
-    if (instances.lengthCompare(1) != 0) Left(FailedAttempt(
+    if (instances.length != 1) Left(FailedAttempt(
       Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${instances.map(i => i.id.id).mkString(", ")}", UnhandledError, None, None)))
     else Right(instances.map(i => i.id))
   }
