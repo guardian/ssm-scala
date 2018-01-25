@@ -65,8 +65,8 @@ object SSH {
 
   def sshCmd(tempFile: File, instance: Instance)(implicit ec: ExecutionContext): (InstanceId, String) = {
     val cmd = s"""
-      | # Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:
-      | ssh -i ${tempFile.getCanonicalFile.toString} ubuntu@${instance.publicIpAddressOpt.get};
+      |# Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:
+      |ssh -i ${tempFile.getCanonicalFile.toString} ubuntu@${instance.publicIpAddressOpt.get};
       |""".stripMargin
     instance.id -> cmd
   }
