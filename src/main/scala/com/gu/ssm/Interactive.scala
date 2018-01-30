@@ -1,40 +1,33 @@
 package com.gu.ssm
 
-import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
 import com.googlecode.lanterna.{TerminalSize, TextColor}
 import com.googlecode.lanterna.gui2.Interactable.Result
 import com.googlecode.lanterna.gui2._
 import com.googlecode.lanterna.gui2.dialogs.{MessageDialog, WaitingDialog}
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 import com.googlecode.lanterna.terminal.{DefaultTerminalFactory, Terminal, TerminalResizeListener}
-import com.gu.ssm.utils.attempt.{Attempt, FailedAttempt}
+import com.gu.ssm.Main.SSMConfig
+import com.gu.ssm.utils.attempt.FailedAttempt
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ExecutionContext, Future}
 
 
-class InteractiveProgram(client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext) extends LazyLogging {
+class InteractiveProgram(ssmConfig: SSMConfig)(implicit ec: ExecutionContext) extends LazyLogging {
   val ui = new InteractiveUI(this)
 
-  def main(setupAttempt: Attempt[(List[Instance], String)])(implicit ec: ExecutionContext): Unit = {
-    // start UI on a new thread (it blocks while it listens for keyboard input)
-    Future {
-      ui.start()
-    }
-    // update UI when we're ready to get started
-    setupAttempt.onComplete {
-      case Right((instances, username)) =>
-        ui.ready(instances.map(i => i.id), username)
-      case Left(fa) =>
-        ui.displayError(fa)
-    }
+  // start UI on a new thread (it blocks while it listens for keyboard input)
+  Future {
+    ui.start()
   }
+  // update UI when we're ready to get started
+  ui.ready(ssmConfig.targets.map(i => i.id), ssmConfig.name)
 
   /**
     * Kick off execution of a new command and update UI when it returns
     */
   def executeCommand(command: String, instances: List[InstanceId], username: String): Unit = {
-    IO.executeOnInstances(instances, username, command, client).onComplete {
+    IO.executeOnInstances(instances, username, command, ssmConfig.ssmClient).onComplete {
       case Right(results) =>
         ui.displayResults(instances, username, results)
       case Left(fa) =>
@@ -49,7 +42,7 @@ class InteractiveProgram(client: AWSSimpleSystemsManagementAsync)(implicit ec: E
 
 class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
   val terminalFactory = new DefaultTerminalFactory()
-  val screen = terminalFactory.createScreen()
+  private val screen = terminalFactory.createScreen()
   private val guiThreadFactory = new SeparateTextGUIThread.Factory()
   val textGUI = new MultiWindowTextGUI(guiThreadFactory, screen)
   screen.startScreen()
@@ -103,7 +96,7 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
       errOutputBox.setForegroundColor(TextColor.ANSI.RED)
       val stdOutputBox = new Label(outputs(0).stdOut)
 
-      val instancesComboBox = new ComboBox(instances.map(_.id):_*).addListener { (selectedIndex: Int, previousSelection: Int) =>
+      val instancesComboBox = new ComboBox(instances.map(_.id):_*).addListener { (selectedIndex: Int, _: Int) =>
         errOutputBox.setText(outputs(selectedIndex).stdErr)
         stdOutputBox.setText(outputs(selectedIndex).stdOut)
       }
