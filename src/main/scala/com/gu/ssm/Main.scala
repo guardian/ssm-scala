@@ -84,6 +84,6 @@ object Main {
       STS.getCallerIdentity(stsClient)
     )((_, _))
     val interactive = new InteractiveProgram(ssmClient)(ec)
-    interactive.main(configAttempt)
+    interactive.main(executionTarget,configAttempt)
   }
 }
