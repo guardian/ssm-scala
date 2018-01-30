@@ -84,6 +84,7 @@ object Main {
       STS.getCallerIdentity(stsClient)
     )((_, _))
     val interactive = new InteractiveProgram(ssmClient)(ec)
-    interactive.main(executionTarget,configAttempt)
+    val userSubmittedInstanceIds = executionTarget.instances.getOrElse(Nil)
+    interactive.main(configAttempt,userSubmittedInstanceIds)
   }
 }

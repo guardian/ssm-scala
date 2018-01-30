@@ -16,7 +16,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class InteractiveProgram(client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext) extends LazyLogging {
   val ui = new InteractiveUI(this)
 
-  def main(executionTarget: ExecutionTarget, setupAttempt: Attempt[(List[Instance], String)])(implicit ec: ExecutionContext): Unit = {
+  def main(setupAttempt: Attempt[(List[Instance], String)], userSubmittedInstanceIds: List[InstanceId])(implicit ec: ExecutionContext): Unit = {
 
     // start UI on a new thread (it blocks while it listens for keyboard input)
     Future {
@@ -25,7 +25,7 @@ class InteractiveProgram(client: AWSSimpleSystemsManagementAsync)(implicit ec: E
     // update UI when we're ready to get started
     setupAttempt.onComplete {
       case Right((instances, username)) =>
-        ui.ready(executionTarget, instances.map(i => i.id), username)
+        ui.ready(instances.map(i => i.id), username, userSubmittedInstanceIds)
       case Left(fa) =>
         ui.displayError(fa)
     }
@@ -34,10 +34,10 @@ class InteractiveProgram(client: AWSSimpleSystemsManagementAsync)(implicit ec: E
   /**
     * Kick off execution of a new command and update UI when it returns
     */
-  def executeCommand(executionTarget: ExecutionTarget, command: String, instances: List[InstanceId], username: String): Unit = {
+  def executeCommand(command: String, instances: List[InstanceId], username: String, userSubmittedInstanceIds: List[InstanceId]): Unit = {
     IO.executeOnInstances(instances, username, command, client).onComplete {
       case Right(results) =>
-        ui.displayResults(executionTarget, instances, username, results)
+        ui.displayResults(instances, username, results, userSubmittedInstanceIds)
       case Left(fa) =>
         ui.displayError(fa)
     }
@@ -58,7 +58,7 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
   /**
     * Create window that displays the main UI along with the results of the previous command
     */
-  def mainWindow(executionTarget: ExecutionTarget, instances: List[InstanceId], username: String, results: List[(InstanceId, Either[CommandStatus, CommandResult])]): BasicWindow = {
+  def mainWindow(instances: List[InstanceId], username: String, results: List[(InstanceId, Either[CommandStatus, CommandResult])], userSubmittedInstanceIds: List[InstanceId]): BasicWindow = {
     val window = new BasicWindow(username)
 
     val initialSize = screen.getTerminal.getTerminalSize
@@ -77,7 +77,7 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
       override def handleKeyStroke(keyStroke: KeyStroke): Result = {
         keyStroke.getKeyType match {
           case KeyType.Enter =>
-            program.executeCommand(executionTarget, this.getText, instances, username)
+            program.executeCommand(this.getText, instances, username, userSubmittedInstanceIds)
             val loading = WaitingDialog.createDialog("Executing...", "Executing command on instances")
             textGUI.addWindow(loading)
             Result.HANDLED
@@ -88,7 +88,7 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
     }
     contentPanel.addComponent(cmdInput)
 
-    val leftOverInstances = executionTarget.instances.getOrElse(List()).filterNot(instances.toSet)
+    val leftOverInstances = userSubmittedInstanceIds.filterNot(instances.toSet)
     if (leftOverInstances.nonEmpty) {
       contentPanel.addComponent(new EmptySpace())
       contentPanel.addComponent((new Label(s"The following instance(s) could not be found: ${leftOverInstances.map(_.id).mkString(", ")}")).setForegroundColor(TextColor.ANSI.RED))
@@ -149,17 +149,17 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
     textGUI.addWindowAndWait(window)
   }
 
-  def ready(executionTarget: ExecutionTarget, instances: List[InstanceId], username: String): Unit = {
+  def ready(instances: List[InstanceId], username: String, userSubmittedInstanceIds: List[InstanceId]): Unit = {
     logger.trace("resolved instances and username, UI ready")
     textGUI.removeWindow(textGUI.getActiveWindow)
-    textGUI.addWindow(mainWindow(executionTarget, instances, username, Nil))
+    textGUI.addWindow(mainWindow(instances, username, Nil, userSubmittedInstanceIds))
     textGUI.updateScreen()
   }
 
-  def displayResults(executionTarget: ExecutionTarget, instances: List[InstanceId], username: String, results: List[(InstanceId, Either[CommandStatus, CommandResult])]): Unit = {
+  def displayResults(instances: List[InstanceId], username: String, results: List[(InstanceId, Either[CommandStatus, CommandResult])], userSubmittedInstanceIds: List[InstanceId]): Unit = {
     logger.trace("displaying results")
     textGUI.removeWindow(textGUI.getActiveWindow)
-    textGUI.addWindow(mainWindow(executionTarget, instances, username, results))
+    textGUI.addWindow(mainWindow(instances, username, results, userSubmittedInstanceIds))
     textGUI.updateScreen()
   }
 
