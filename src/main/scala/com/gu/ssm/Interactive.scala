@@ -78,21 +78,23 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
         contentPanel.setPreferredSize(fullscreenPanelSize(newSize))
     }
 
-    contentPanel.addComponent(new Label("command to run"))
-    val cmdInput = new TextBox(new TerminalSize(40, 1)) {
-      override def handleKeyStroke(keyStroke: KeyStroke): Result = {
-        keyStroke.getKeyType match {
-          case KeyType.Enter =>
-            program.executeCommand(this.getText, instances, username)
-            val loading = WaitingDialog.createDialog("Executing...", "Executing command on instances")
-            textGUI.addWindow(loading)
-            Result.HANDLED
-          case _ =>
-            super.handleKeyStroke(keyStroke)
+    if (instances.nonEmpty) {
+      contentPanel.addComponent(new Label("Command to run"))
+      val cmdInput = new TextBox(new TerminalSize(40, 1)) {
+        override def handleKeyStroke(keyStroke: KeyStroke): Result = {
+          keyStroke.getKeyType match {
+            case KeyType.Enter =>
+              program.executeCommand(this.getText, instances, username)
+              val loading = WaitingDialog.createDialog("Executing...", "Executing command on instances")
+              textGUI.addWindow(loading)
+              Result.HANDLED
+            case _ =>
+              super.handleKeyStroke(keyStroke)
+          }
         }
       }
+      contentPanel.addComponent(cmdInput)
     }
-    contentPanel.addComponent(cmdInput)
 
     // show results, if present
     if (results.nonEmpty) {
