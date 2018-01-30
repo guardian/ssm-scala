@@ -88,6 +88,13 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
     }
     contentPanel.addComponent(cmdInput)
 
+    val leftOverInstances = executionTarget.instances.getOrElse(List()).filterNot(instances.toSet)
+    if (leftOverInstances.nonEmpty) {
+      contentPanel.addComponent(new EmptySpace())
+      contentPanel.addComponent((new Label(s"The following instance(s) could not be found: ${leftOverInstances.map(_.id).mkString(", ")}")).setForegroundColor(TextColor.ANSI.RED))
+      contentPanel.addComponent(new EmptySpace())
+    }
+
     // show results, if present
     if (results.nonEmpty) {
       val outputs = results.zipWithIndex.map { case ((_, result), i) =>
@@ -114,12 +121,6 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
       contentPanel.addComponent(new Separator(Direction.HORIZONTAL))
       contentPanel.addComponent(errOutputBox)
       contentPanel.addComponent(stdOutputBox)
-    }
-
-    val leftOverInstances = executionTarget.instances.getOrElse(List()).filterNot(instances.toSet)
-    if (leftOverInstances.nonEmpty) {
-      contentPanel.addComponent(new EmptySpace())
-      contentPanel.addComponent((new Label(s"The following instance(s) could not be found: ${leftOverInstances.map(_.id).mkString(", ")}")).setForegroundColor(TextColor.ANSI.RED))
     }
 
     // close button
