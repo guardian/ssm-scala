@@ -6,28 +6,42 @@ import com.googlecode.lanterna.gui2._
 import com.googlecode.lanterna.gui2.dialogs.{MessageDialog, WaitingDialog}
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 import com.googlecode.lanterna.terminal.{DefaultTerminalFactory, Terminal, TerminalResizeListener}
-import com.gu.ssm.Main.SSMConfig
-import com.gu.ssm.utils.attempt.FailedAttempt
+import com.gu.ssm.utils.attempt.{Attempt, ErrorCode, FailedAttempt, Failure}
 import com.typesafe.scalalogging.LazyLogging
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.duration._
 
-
-class InteractiveProgram(ssmConfig: SSMConfig)(implicit ec: ExecutionContext) extends LazyLogging {
+class InteractiveProgram(ssmConfig: Attempt[SSMConfig])(implicit ec: ExecutionContext) extends LazyLogging {
   val ui = new InteractiveUI(this)
 
   // start UI on a new thread (it blocks while it listens for keyboard input)
   Future {
     ui.start()
   }
-  // update UI when we're ready to get started
-  ui.ready(ssmConfig.targets.map(i => i.id), ssmConfig.name)
+
+  val config: SSMConfig = Await.result(ssmConfig.asFuture, 25.seconds) match {
+    case Right(config) => {
+      config match {
+        case SSMConfig(_, _, _, List(), _) =>
+          val failedAttempt = FailedAttempt(List(Failure("No instances found", "No instances found", ErrorCode, None, None)))
+          ui.displayError(failedAttempt)
+        case _ => {}
+      }
+      config
+    }
+    case Left(failedAttempt) =>
+      UI.outputFailure(failedAttempt)
+      System.exit(failedAttempt.exitCode)
+      null
+  }
+  ui.ready(config.targets.map(i => i.id), config.name)
 
   /**
     * Kick off execution of a new command and update UI when it returns
     */
   def executeCommand(command: String, instances: List[InstanceId], username: String): Unit = {
-    IO.executeOnInstances(instances, username, command, ssmConfig.ssmClient).onComplete {
+    IO.executeOnInstances(instances, username, command, config.ssmClient).onComplete {
       case Right(results) =>
         ui.displayResults(instances, username, results)
       case Left(fa) =>

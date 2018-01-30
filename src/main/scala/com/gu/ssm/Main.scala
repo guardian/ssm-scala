@@ -1,7 +1,5 @@
 package com.gu.ssm
 
-import java.io.File
-
 import com.amazonaws.regions.Region
 import com.amazonaws.services.ec2.AmazonEC2Async
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceAsync
@@ -50,8 +48,6 @@ object Main {
     } yield SSMConfig(stsClient, ssmClient, ec2Client, instances, name)
   }
 
-
-
   private def setUpSSH(ssmConfig: Attempt[SSMConfig]): Unit = {
     val fProgramResult = for {
       config <- ssmConfig
@@ -87,21 +83,7 @@ object Main {
   }
 
   private def readEvaluatePrintLoop(ssmConfig: Attempt[SSMConfig]): Unit = {
-    Await.result(ssmConfig.asFuture, 25.seconds) match {
-      case Right(config) =>
-        new InteractiveProgram(config)(ec)
-      case Left(failedAttempt) =>
-        UI.outputFailure(failedAttempt)
-        System.exit(failedAttempt.exitCode)
-    }
+    new InteractiveProgram(ssmConfig)(ec)
   }
-
-  case class SSMConfig (
-                         stsClient: AWSSecurityTokenServiceAsync,
-                         ssmClient: AWSSimpleSystemsManagementAsync,
-                         ec2Client: AmazonEC2Async,
-                         targets: List[Instance],
-                         name: String
-                       )
 
 }
