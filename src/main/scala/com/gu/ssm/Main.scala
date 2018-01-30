@@ -75,6 +75,12 @@ object Main {
     val programResult = Await.result(fProgramResult.asFuture, 25.seconds)
 
     programResult.fold(UI.outputFailure, UI.output)
+
+    val leftOverInstances = executionTarget.instances.getOrElse(List()).filterNot(programResult.right.get.map(x => x._1).toSet)
+    if (leftOverInstances.nonEmpty) {
+      UI.printErr(s"The following instance(s) could not be found: ${leftOverInstances.map( x => x.id ).mkString(", ")}")
+    }
+
     System.exit(programResult.fold(_.exitCode, _ => 0))
   }
 
