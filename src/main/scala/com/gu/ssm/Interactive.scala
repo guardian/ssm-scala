@@ -6,36 +6,30 @@ import com.googlecode.lanterna.gui2._
 import com.googlecode.lanterna.gui2.dialogs.{MessageDialog, WaitingDialog}
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 import com.googlecode.lanterna.terminal.{DefaultTerminalFactory, Terminal, TerminalResizeListener}
-import com.gu.ssm.utils.attempt.{Attempt, ErrorCode, FailedAttempt, Failure}
+import com.gu.ssm.utils.attempt.FailedAttempt
 import com.typesafe.scalalogging.LazyLogging
 
-import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 
-class InteractiveProgram(ssmConfig: Attempt[SSMConfig])(implicit ec: ExecutionContext) extends LazyLogging {
+class InteractiveProgram()(implicit ec: ExecutionContext) extends LazyLogging {
+  private var config: SSMConfig = _
   val ui = new InteractiveUI(this)
 
   // start UI on a new thread (it blocks while it listens for keyboard input)
   Future {
     ui.start()
   }
+  ui.searching
 
-  val config: SSMConfig = Await.result(ssmConfig.asFuture, 25.seconds) match {
-    case Right(config) => {
-      config match {
-        case SSMConfig(_, _, _, List(), _) =>
-          val failedAttempt = FailedAttempt(List(Failure("No instances found", "No instances found", ErrorCode, None, None)))
-          ui.displayError(failedAttempt)
-        case _ => {}
-      }
-      config
-    }
-    case Left(failedAttempt) =>
-      UI.outputFailure(failedAttempt)
-      System.exit(failedAttempt.exitCode)
-      null
+  def startUiSuccess(config: SSMConfig): Unit = {
+    ui.ready(config.targets.map(i => i.id), config.name)
+    this.config = config
   }
-  ui.ready(config.targets.map(i => i.id), config.name)
+
+  def startUiFail(failedAttempt: FailedAttempt): Unit = {
+    ui.displayError(failedAttempt)
+    ui.ready(List(), "")
+  }
 
   /**
     * Kick off execution of a new command and update UI when it returns
@@ -154,6 +148,13 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
     logger.trace("resolved instances and username, UI ready")
     textGUI.removeWindow(textGUI.getActiveWindow)
     textGUI.addWindow(mainWindow(instances, username, Nil))
+    textGUI.updateScreen()
+  }
+
+  def searching = {
+    logger.trace("waiting to resolve instances and username, UI ready")
+    textGUI.removeWindow(textGUI.getActiveWindow)
+    textGUI.addWindow(mainWindow(List(), "", Nil))
     textGUI.updateScreen()
   }
 
