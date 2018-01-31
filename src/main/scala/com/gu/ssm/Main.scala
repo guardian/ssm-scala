@@ -36,14 +36,6 @@ object Main {
     System.exit(UnhandledError.code)
   }
 
-  private def waitForIt[C](fProgramResult: Attempt[C],
-                           failure: FailedAttempt => Unit,
-                           success: C => Unit ): Either[FailedAttempt, C] = {
-    val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
-    programResult.fold(failure, success)
-    programResult
-  }
-
   private def setUpSSH(awsClients: AWSClients, profile: String, region: Region, executionTarget: ExecutionTarget): Unit = {
     val fProgramResult = for {
       config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, profile, region, executionTarget)
@@ -55,7 +47,8 @@ object Main {
       _ <- IO.installSshKey(instance, config.name, addAndRemoveKeyCommand, awsClients.ssmClient)
     } yield config.targets.map(SSH.sshCmd(authFile, _))
 
-    val programResult = waitForIt(fProgramResult, UI.outputFailure, UI.sshOutput)
+    val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
+    programResult.fold(UI.outputFailure, UI.sshOutput)
     System.exit(programResult.fold(_.exitCode, _ => 0))
   }
 
@@ -65,7 +58,8 @@ object Main {
       _ <- Attempt.fromEither(Logic.checkInstancesList(config))
       results <- IO.executeOnInstances(config.targets.map(i => i.id), config.name, toExecute, awsClients.ssmClient)
     } yield results
-    val programResult = waitForIt(fProgramResult, UI.outputFailure, UI.output)
+    val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
+    programResult.fold(UI.outputFailure, UI.output)
     System.exit(programResult.fold(_.exitCode, _ => 0))
   }
 
