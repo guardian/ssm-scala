@@ -7,7 +7,7 @@ import com.googlecode.lanterna.gui2._
 import com.googlecode.lanterna.gui2.dialogs.{MessageDialog, WaitingDialog}
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 import com.googlecode.lanterna.terminal.{DefaultTerminalFactory, Terminal, TerminalResizeListener}
-import com.gu.ssm.utils.attempt.{ErrorCode, FailedAttempt, Failure}
+import com.gu.ssm.utils.attempt.{Attempt, ErrorCode, FailedAttempt, Failure}
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -20,11 +20,12 @@ class InteractiveProgram(val awsClients: AWSClients)(implicit ec: ExecutionConte
     Future {
       ui.start()
     }
+    val configAttempt = for {
+      config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, profile, region, executionTarget)
+      _ <- Attempt.fromEither(Logic.checkInstancesList(config))
+    } yield config
 
-    IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, profile, region, executionTarget).onComplete {
-      case Right(SSMConfig(List(), _)) =>
-        ui.displayError(FailedAttempt(List(Failure("No instances found", "No instances found", ErrorCode, None, None))))
-        ui.ready(List(), "")
+    configAttempt.onComplete {
       case Right(SSMConfig(targets, name)) =>
         ui.ready(targets.map(i => i.id), name)
       case Left(failedAttempt) =>

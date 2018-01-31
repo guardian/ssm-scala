@@ -17,7 +17,7 @@ object Main {
         val awsClients = Logic.getClients(profile, region)
         mode match {
           case SsmRepl =>
-            readEvaluatePrintLoop(awsClients, profile, region, executionTarget)
+            new InteractiveProgram(awsClients).main(profile, region, executionTarget)
           case SsmCmd =>
             toExecuteOpt match {
               case Some(toExecute) => execute(awsClients, profile, region, executionTarget, toExecute)
@@ -63,8 +63,4 @@ object Main {
     System.exit(programResult.fold(_.exitCode, _ => 0))
   }
 
-  private def readEvaluatePrintLoop(awsClients: AWSClients, profile: String, region: Region, executionTarget: ExecutionTarget): Unit = {
-    val ip = new InteractiveProgram(awsClients)(ec)
-    ip.main(profile, region, executionTarget)
-  }
 }
