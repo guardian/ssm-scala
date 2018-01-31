@@ -1,41 +1,43 @@
 package com.gu.ssm
 
+import com.amazonaws.regions.Region
 import com.googlecode.lanterna.{TerminalSize, TextColor}
 import com.googlecode.lanterna.gui2.Interactable.Result
 import com.googlecode.lanterna.gui2._
 import com.googlecode.lanterna.gui2.dialogs.{MessageDialog, WaitingDialog}
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 import com.googlecode.lanterna.terminal.{DefaultTerminalFactory, Terminal, TerminalResizeListener}
-import com.gu.ssm.utils.attempt.FailedAttempt
+import com.gu.ssm.utils.attempt.{ErrorCode, FailedAttempt, Failure}
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class InteractiveProgram()(implicit ec: ExecutionContext) extends LazyLogging {
-  private var config: SSMConfig = _
+class InteractiveProgram(val awsClients: AWSClients)(implicit ec: ExecutionContext) extends LazyLogging {
   val ui = new InteractiveUI(this)
 
-  // start UI on a new thread (it blocks while it listens for keyboard input)
-  Future {
-    ui.start()
-  }
-  ui.searching
+  def main(profile: String, region: Region, executionTarget: ExecutionTarget): Unit = {
+    // start UI on a new thread (it blocks while it listens for keyboard input)
+    Future {
+      ui.start()
+    }
 
-  def startUiSuccess(config: SSMConfig): Unit = {
-    ui.ready(config.targets.map(i => i.id), config.name)
-    this.config = config
-  }
-
-  def startUiFail(failedAttempt: FailedAttempt): Unit = {
-    ui.displayError(failedAttempt)
-    ui.ready(List(), "")
+    IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, profile, region, executionTarget).onComplete {
+      case Right(SSMConfig(List(), _)) =>
+        ui.displayError(FailedAttempt(List(Failure("No instances found", "No instances found", ErrorCode, None, None))))
+        ui.ready(List(), "")
+      case Right(SSMConfig(targets, name)) =>
+        ui.ready(targets.map(i => i.id), name)
+      case Left(failedAttempt) =>
+        ui.displayError(failedAttempt)
+        ui.ready(List(), "")
+    }
   }
 
   /**
     * Kick off execution of a new command and update UI when it returns
     */
   def executeCommand(command: String, instances: List[InstanceId], username: String): Unit = {
-    IO.executeOnInstances(instances, username, command, config.ssmClient).onComplete {
+    IO.executeOnInstances(instances, username, command, awsClients.ssmClient).onComplete {
       case Right(results) =>
         ui.displayResults(instances, username, results)
       case Left(fa) =>
@@ -151,7 +153,7 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
     textGUI.updateScreen()
   }
 
-  def searching = {
+  def searching(): Unit = {
     logger.trace("waiting to resolve instances and username, UI ready")
     textGUI.removeWindow(textGUI.getActiveWindow)
     textGUI.addWindow(mainWindow(List(), "", Nil))

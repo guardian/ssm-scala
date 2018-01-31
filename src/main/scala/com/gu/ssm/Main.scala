@@ -1,10 +1,6 @@
 package com.gu.ssm
 
 import com.amazonaws.regions.Region
-import com.amazonaws.services.ec2.AmazonEC2Async
-import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceAsync
-import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
-import com.gu.ssm.aws.{EC2, SSM, STS}
 import com.gu.ssm.utils.attempt._
 
 import scala.concurrent.duration._
@@ -18,16 +14,17 @@ object Main {
   def main(args: Array[String]): Unit = {
     argParser.parse(args, Arguments.empty()) match {
       case Some(Arguments(Some(executionTarget), toExecuteOpt, Some(profile), region, Some(mode))) =>
-        val ssmConfig = getSSMConfig(profile, region, executionTarget)
+        val awsClients = Logic.getClients(profile, region)
         mode match {
           case SsmRepl =>
-            readEvaluatePrintLoop(ssmConfig)
-          case SsmCmd if toExecuteOpt.nonEmpty =>
-            val toExecute = toExecuteOpt.get
-            execute(ssmConfig, toExecute)
+            readEvaluatePrintLoop(awsClients, profile, region, executionTarget)
+          case SsmCmd =>
+            toExecuteOpt match {
+              case Some(toExecute) => execute(awsClients, profile, region, executionTarget, toExecute)
+              case _ => fail()
+            }
           case SsmSsh =>
-            setUpSSH(ssmConfig)
-          case _ => fail()
+            setUpSSH(awsClients, profile, region, executionTarget)
         }
       case Some(_) => fail()
       case None => System.exit(ArgumentsError.code) // parsing cmd line args failed, help message will have been displayed
@@ -39,66 +36,41 @@ object Main {
     System.exit(UnhandledError.code)
   }
 
-  private def getSSMConfig(profile: String, region: Region, executionTarget: ExecutionTarget) = {
-    val stsClient: AWSSecurityTokenServiceAsync = STS.client(profile, region)
-    val ssmClient: AWSSimpleSystemsManagementAsync = SSM.client(profile, region)
-    val ec2Client: AmazonEC2Async = EC2.client(profile, region)
-    for {
-      instances <- IO.resolveInstances(executionTarget, ec2Client)
-      name <- STS.getCallerIdentity(stsClient)
-    } yield SSMConfig(stsClient, ssmClient, ec2Client, instances, name)
-  }
-
   private def waitForIt[C](fProgramResult: Attempt[C],
                            failure: FailedAttempt => Unit,
-                           success: C => Unit ) = {
+                           success: C => Unit ): Either[FailedAttempt, C] = {
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
     programResult.fold(failure, success)
     programResult
   }
 
-  def getSingleInstance(instances: List[Instance]): Either[FailedAttempt, List[InstanceId]] = {
-    if (instances.lengthCompare(1) != 0) Left(FailedAttempt(
-      Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${instances.map(i => i.id.id).mkString(", ")}", UnhandledError, None, None)))
-    else Right(instances.map(i => i.id))
-  }
-
-  def checkInstancesList(config: SSMConfig): Either[FailedAttempt, Unit] = config.targets match {
-    case List() => Left(FailedAttempt(List(Failure("No instances found", "No instances found", ErrorCode, None, None))))
-    case _ => Right(Unit)
-  }
-
-  private def setUpSSH(ssmConfig: Attempt[SSMConfig]): Unit = {
+  private def setUpSSH(awsClients: AWSClients, profile: String, region: Region, executionTarget: ExecutionTarget): Unit = {
     val fProgramResult = for {
-      config <- ssmConfig
+      config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, profile, region, executionTarget)
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
       (authFile, authKey) = sshArtifacts
       addAndRemoveKeyCommand = SSH.addTaintedCommand(config.name) + SSH.addKeyCommand(authKey) + SSH.removeKeyCommand(authKey)
-      instance <- Attempt.fromEither(getSingleInstance(config.targets))
-      _ <- IO.tagAsTainted(instance, config.name, config.ec2Client)
-      _ <- IO.installSshKey(instance, config.name, addAndRemoveKeyCommand, config.ssmClient)
+      instance <- Attempt.fromEither(Logic.getSingleInstance(config.targets))
+      _ <- IO.tagAsTainted(instance, config.name, awsClients.ec2Client)
+      _ <- IO.installSshKey(instance, config.name, addAndRemoveKeyCommand, awsClients.ssmClient)
     } yield config.targets.map(SSH.sshCmd(authFile, _))
 
     val programResult = waitForIt(fProgramResult, UI.outputFailure, UI.sshOutput)
     System.exit(programResult.fold(_.exitCode, _ => 0))
   }
 
-  private def execute(ssmConfig: Attempt[SSMConfig], toExecute: String): Unit = {
+  private def execute(awsClients: AWSClients, profile: String, region: Region, executionTarget: ExecutionTarget, toExecute: String): Unit = {
     val fProgramResult = for {
-      config <- ssmConfig
-      _ <- Attempt.fromEither(checkInstancesList(config))
-      results <- IO.executeOnInstances(config.targets.map(i => i.id), config.name, toExecute, config.ssmClient)
+      config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, profile, region, executionTarget)
+      _ <- Attempt.fromEither(Logic.checkInstancesList(config))
+      results <- IO.executeOnInstances(config.targets.map(i => i.id), config.name, toExecute, awsClients.ssmClient)
     } yield results
     val programResult = waitForIt(fProgramResult, UI.outputFailure, UI.output)
     System.exit(programResult.fold(_.exitCode, _ => 0))
   }
 
-  private def readEvaluatePrintLoop(ssmConfig: Attempt[SSMConfig]): Unit = {
-    val ip = new InteractiveProgram()(ec)
-    val fProgramResult = for {
-      config <- ssmConfig
-      _ <- Attempt.fromEither(checkInstancesList(config))
-    } yield config
-    waitForIt(fProgramResult, ip.startUiFail, ip.startUiSuccess)
+  private def readEvaluatePrintLoop(awsClients: AWSClients, profile: String, region: Region, executionTarget: ExecutionTarget): Unit = {
+    val ip = new InteractiveProgram(awsClients)(ec)
+    ip.main(profile, region, executionTarget)
   }
 }
