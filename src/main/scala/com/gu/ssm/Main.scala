@@ -59,13 +59,12 @@ object Main {
       results <- IO.executeOnInstances(config.targets.map(i => i.id), config.name, toExecute, awsClients.ssmClient)
     } yield results
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
-    programResult.fold(UI.outputFailure, UI.output)
-
     val leftOverInstances = executionTarget.instances.getOrElse(List()).filterNot(programResult.right.get.map(x => x._1).toSet)
     if (leftOverInstances.nonEmpty) {
       UI.printErr(s"The following instance(s) could not be found: ${leftOverInstances.map( x => x.id ).mkString(", ")}")
+      UI.printErr("")
     }
-
+    programResult.fold(UI.outputFailure, UI.output)
     System.exit(programResult.fold(_.exitCode, _ => 0))
   }
 
