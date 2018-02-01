@@ -40,4 +40,22 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
       // TODO: testing IO is hard, should extract file's content separately
     }
   }
+
+  "Get single instance" - {
+    import Logic.getSingleInstance
+
+    "More than one instance" in {
+      getSingleInstance(List(Instance(InstanceId("X"), None), Instance(InstanceId("Y"), None))).isLeft shouldBe true
+    }
+
+    "No instances" in {
+      getSingleInstance(List()).isLeft shouldBe true
+    }
+
+    "Exactly one instance" in {
+      getSingleInstance(List(Instance(InstanceId("X"), None))).isRight shouldBe true
+    }
+  }
+
+
 }

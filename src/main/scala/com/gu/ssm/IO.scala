@@ -1,8 +1,10 @@
 package com.gu.ssm
 
+import com.amazonaws.regions.Region
 import com.amazonaws.services.ec2.AmazonEC2Async
+import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceAsync
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
-import com.gu.ssm.aws.{EC2, SSM}
+import com.gu.ssm.aws.{EC2, SSM, STS}
 import com.gu.ssm.utils.attempt.{ArgumentsError, Attempt, Failure}
 
 import scala.concurrent.ExecutionContext
@@ -34,4 +36,12 @@ object IO {
 
   def tagAsTainted(instances: List[InstanceId], username: String,ec2Client: AmazonEC2Async)(implicit ec: ExecutionContext): Attempt[Unit] =
     EC2.tagInstances(instances, "taintedBy", username, ec2Client)
+
+  def getSSMConfig(ec2Client: AmazonEC2Async, stsClient: AWSSecurityTokenServiceAsync, profile: String, region: Region, executionTarget: ExecutionTarget)(implicit ec: ExecutionContext): Attempt[SSMConfig] = {
+    for {
+      instances <- IO.resolveInstances(executionTarget, ec2Client)
+      name <- STS.getCallerIdentity(stsClient)
+    } yield SSMConfig(instances, name)
+  }
+
 }
