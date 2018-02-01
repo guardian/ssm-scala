@@ -1,6 +1,10 @@
 package com.gu.ssm
 
 import com.amazonaws.regions.{Region, Regions}
+import com.amazonaws.services.ec2.AmazonEC2Async
+import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceAsync
+import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
+import com.gu.ssm.aws.SSM
 
 
 case class InstanceId(id: String) extends AnyVal
@@ -31,3 +35,14 @@ case object SsmRepl extends SsmMode
 case object SsmSsh extends SsmMode
 
 case class CommandResult(stdOut: String, stdErr: String)
+
+case class SSMConfig (
+  targets: List[Instance],
+  name: String
+)
+
+case class AWSClients (
+  ssmClient: AWSSimpleSystemsManagementAsync,
+  stsClient: AWSSecurityTokenServiceAsync,
+  ec2Client: AmazonEC2Async
+)

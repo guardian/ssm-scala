@@ -1,32 +1,36 @@
 package com.gu.ssm
 
-import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
+import com.amazonaws.regions.Region
 import com.googlecode.lanterna.{TerminalSize, TextColor}
 import com.googlecode.lanterna.gui2.Interactable.Result
 import com.googlecode.lanterna.gui2._
 import com.googlecode.lanterna.gui2.dialogs.{MessageDialog, WaitingDialog}
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 import com.googlecode.lanterna.terminal.{DefaultTerminalFactory, Terminal, TerminalResizeListener}
-import com.gu.ssm.utils.attempt.{Attempt, FailedAttempt}
+import com.gu.ssm.utils.attempt.{Attempt, ErrorCode, FailedAttempt, Failure}
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ExecutionContext, Future}
 
-
-class InteractiveProgram(client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext) extends LazyLogging {
+class InteractiveProgram(val awsClients: AWSClients)(implicit ec: ExecutionContext) extends LazyLogging {
   val ui = new InteractiveUI(this)
 
-  def main(setupAttempt: Attempt[(List[Instance], String)])(implicit ec: ExecutionContext): Unit = {
+  def main(profile: String, region: Region, executionTarget: ExecutionTarget): Unit = {
     // start UI on a new thread (it blocks while it listens for keyboard input)
     Future {
       ui.start()
     }
-    // update UI when we're ready to get started
-    setupAttempt.onComplete {
-      case Right((instances, username)) =>
-        ui.ready(instances.map(i => i.id), username)
-      case Left(fa) =>
-        ui.displayError(fa)
+    val configAttempt = for {
+      config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, profile, region, executionTarget)
+      _ <- Attempt.fromEither(Logic.checkInstancesList(config))
+    } yield config
+
+    configAttempt.onComplete {
+      case Right(SSMConfig(targets, name)) =>
+        ui.ready(targets.map(i => i.id), name)
+      case Left(failedAttempt) =>
+        ui.displayError(failedAttempt)
+        ui.ready(List(), "")
     }
   }
 
@@ -34,7 +38,7 @@ class InteractiveProgram(client: AWSSimpleSystemsManagementAsync)(implicit ec: E
     * Kick off execution of a new command and update UI when it returns
     */
   def executeCommand(command: String, instances: List[InstanceId], username: String): Unit = {
-    IO.executeOnInstances(instances, username, command, client).onComplete {
+    IO.executeOnInstances(instances, username, command, awsClients.ssmClient).onComplete {
       case Right(results) =>
         ui.displayResults(instances, username, results)
       case Left(fa) =>
@@ -49,7 +53,7 @@ class InteractiveProgram(client: AWSSimpleSystemsManagementAsync)(implicit ec: E
 
 class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
   val terminalFactory = new DefaultTerminalFactory()
-  val screen = terminalFactory.createScreen()
+  private val screen = terminalFactory.createScreen()
   private val guiThreadFactory = new SeparateTextGUIThread.Factory()
   val textGUI = new MultiWindowTextGUI(guiThreadFactory, screen)
   screen.startScreen()
@@ -71,21 +75,23 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
         contentPanel.setPreferredSize(fullscreenPanelSize(newSize))
     }
 
-    contentPanel.addComponent(new Label("command to run"))
-    val cmdInput = new TextBox(new TerminalSize(40, 1)) {
-      override def handleKeyStroke(keyStroke: KeyStroke): Result = {
-        keyStroke.getKeyType match {
-          case KeyType.Enter =>
-            program.executeCommand(this.getText, instances, username)
-            val loading = WaitingDialog.createDialog("Executing...", "Executing command on instances")
-            textGUI.addWindow(loading)
-            Result.HANDLED
-          case _ =>
-            super.handleKeyStroke(keyStroke)
+    if (instances.nonEmpty) {
+      contentPanel.addComponent(new Label("Command to run"))
+      val cmdInput = new TextBox(new TerminalSize(40, 1)) {
+        override def handleKeyStroke(keyStroke: KeyStroke): Result = {
+          keyStroke.getKeyType match {
+            case KeyType.Enter =>
+              program.executeCommand(this.getText, instances, username)
+              val loading = WaitingDialog.createDialog("Executing...", "Executing command on instances")
+              textGUI.addWindow(loading)
+              Result.HANDLED
+            case _ =>
+              super.handleKeyStroke(keyStroke)
+          }
         }
       }
+      contentPanel.addComponent(cmdInput)
     }
-    contentPanel.addComponent(cmdInput)
 
     // show results, if present
     if (results.nonEmpty) {
@@ -103,7 +109,7 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
       errOutputBox.setForegroundColor(TextColor.ANSI.RED)
       val stdOutputBox = new Label(outputs(0).stdOut)
 
-      val instancesComboBox = new ComboBox(instances.map(_.id):_*).addListener { (selectedIndex: Int, previousSelection: Int) =>
+      val instancesComboBox = new ComboBox(instances.map(_.id):_*).addListener { (selectedIndex: Int, _: Int) =>
         errOutputBox.setText(outputs(selectedIndex).stdErr)
         stdOutputBox.setText(outputs(selectedIndex).stdOut)
       }
@@ -145,6 +151,13 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
     logger.trace("resolved instances and username, UI ready")
     textGUI.removeWindow(textGUI.getActiveWindow)
     textGUI.addWindow(mainWindow(instances, username, Nil))
+    textGUI.updateScreen()
+  }
+
+  def searching(): Unit = {
+    logger.trace("waiting to resolve instances and username, UI ready")
+    textGUI.removeWindow(textGUI.getActiveWindow)
+    textGUI.addWindow(mainWindow(List(), "", Nil))
     textGUI.updateScreen()
   }
 
