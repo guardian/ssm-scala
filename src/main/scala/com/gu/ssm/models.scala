@@ -46,3 +46,5 @@ case class AWSClients (
   stsClient: AWSSecurityTokenServiceAsync,
   ec2Client: AmazonEC2Async
 )
+
+case class ResultsWithInstancesNotFound(results: List[(InstanceId, scala.Either[CommandStatus, CommandResult])], instancesNotFound: List[InstanceId])
