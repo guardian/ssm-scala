@@ -27,7 +27,7 @@ class InteractiveProgram(val awsClients: AWSClients)(implicit ec: ExecutionConte
 
     configAttempt.onComplete {
       case Right(SSMConfig(targets, name)) => {
-        val incorrectInstancesFromInstancesTag = executionTarget.instances.getOrElse(Nil).filterNot(targets.map(i => i.id).toSet)
+        val incorrectInstancesFromInstancesTag = Logic.computeIncorrectInstances(executionTarget, targets.map(i => i.id))
         ui.ready(targets.map(i => i.id), name, incorrectInstancesFromInstancesTag)
       }
       case Left(failedAttempt) =>
@@ -159,14 +159,14 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
   def ready(instances: List[InstanceId], username: String, instancesToReport: List[InstanceId]): Unit = {
     logger.trace("resolved instances and username, UI ready")
     textGUI.removeWindow(textGUI.getActiveWindow)
-    textGUI.addWindow(mainWindow(instances, username, ResultsWithInstancesNotFound(Nil,instancesToReport)))
+    textGUI.addWindow(mainWindow(instances, username, ResultsWithInstancesNotFound(Nil, instancesToReport)))
     textGUI.updateScreen()
   }
 
   def searching(): Unit = {
     logger.trace("waiting to resolve instances and username, UI ready")
     textGUI.removeWindow(textGUI.getActiveWindow)
-    textGUI.addWindow(mainWindow(List(), "", ResultsWithInstancesNotFound(Nil,Nil)))
+    textGUI.addWindow(mainWindow(List(), "", ResultsWithInstancesNotFound(Nil, Nil)))
     textGUI.updateScreen()
   }
 
