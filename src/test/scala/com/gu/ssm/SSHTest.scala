@@ -6,6 +6,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 
 class SSHTest extends FreeSpec with Matchers with EitherValues {
+
   "create add key command" - {
     import SSH.addKeyCommand
 

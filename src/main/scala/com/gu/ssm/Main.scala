@@ -52,7 +52,7 @@ object Main {
     System.exit(programResult.fold(_.exitCode, _ => 0))
   }
 
-  private def computeIncorrectInstances(executionTarget: ExecutionTarget, results: List[(InstanceId, scala.Either[CommandStatus, CommandResult])]): List[InstanceId] =
+  private[ssm] def computeIncorrectInstances(executionTarget: ExecutionTarget, results: List[(InstanceId, scala.Either[CommandStatus, CommandResult])]): List[InstanceId] =
     executionTarget.instances.getOrElse(List()).filterNot(results.map(_._1).toSet)
 
   private def execute(awsClients: AWSClients, profile: String, region: Region, executionTarget: ExecutionTarget, toExecute: String): Unit = {
