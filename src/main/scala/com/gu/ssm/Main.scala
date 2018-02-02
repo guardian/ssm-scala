@@ -57,7 +57,8 @@ object Main {
       config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, profile, region, executionTarget)
       _ <- Attempt.fromEither(Logic.checkInstancesList(config))
       results <- IO.executeOnInstances(config.targets.map(i => i.id), config.name, toExecute, awsClients.ssmClient)
-    } yield results
+      incorrectInstancesFromInstancesTag = Logic.computeIncorrectInstances(executionTarget, results)
+    } yield ResultsWithInstancesNotFound(results,incorrectInstancesFromInstancesTag)
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
     programResult.fold(UI.outputFailure, UI.output)
     System.exit(programResult.fold(_.exitCode, _ => 0))
