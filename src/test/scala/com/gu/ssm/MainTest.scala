@@ -1,7 +1,7 @@
 package com.gu.ssm
 
 import org.scalatest.{EitherValues, FreeSpec, Matchers}
-import com.gu.ssm.Main.computeIncorrectInstances
+import com.gu.ssm.Logic.computeIncorrectInstances
 
 
 class MainTest extends FreeSpec with Matchers with EitherValues {
