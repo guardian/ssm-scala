@@ -4,8 +4,11 @@ import com.gu.ssm.utils.attempt.FailedAttempt
 
 
 object UI {
-  def output(results: List[(InstanceId, scala.Either[CommandStatus, CommandResult])]): Unit = {
-    results.foreach { case (instance, result) =>
+  def output(extendedResults: ResultsWithInstancesNotFound): Unit = {
+    if(extendedResults.instancesNotFound.nonEmpty){
+      UI.printErr(s"The following instance(s) could not be found: ${extendedResults.instancesNotFound.map(_.id).mkString(", ")}\n")
+    }
+    extendedResults.results.foreach { case (instance, result) =>
       UI.printMetadata(s"========= ${instance.id} =========")
       if (result.isLeft) {
         UI.printErr(result.left.get.toString)
