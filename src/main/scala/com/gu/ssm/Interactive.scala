@@ -26,21 +26,23 @@ class InteractiveProgram(val awsClients: AWSClients)(implicit ec: ExecutionConte
     } yield config
 
     configAttempt.onComplete {
-      case Right(SSMConfig(targets, name)) =>
-        ui.ready(targets.map(i => i.id), name)
+      case Right(SSMConfig(targets, name)) => {
+        val incorrectInstancesFromInstancesTag = Logic.computeIncorrectInstances(executionTarget, targets.map(i => i.id))
+        ui.ready(targets.map(i => i.id), name, incorrectInstancesFromInstancesTag)
+      }
       case Left(failedAttempt) =>
         ui.displayError(failedAttempt)
-        ui.ready(List(), "")
+        ui.ready(List(), "", Nil)
     }
   }
 
   /**
     * Kick off execution of a new command and update UI when it returns
     */
-  def executeCommand(command: String, instances: List[InstanceId], username: String): Unit = {
+  def executeCommand(command: String, instances: List[InstanceId], username: String, instancesNotFound: List[InstanceId]): Unit = {
     IO.executeOnInstances(instances, username, command, awsClients.ssmClient).onComplete {
       case Right(results) =>
-        ui.displayResults(instances, username, results)
+        ui.displayResults(instances, username, ResultsWithInstancesNotFound(results, instancesNotFound))
       case Left(fa) =>
         ui.displayError(fa)
     }
@@ -61,7 +63,8 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
   /**
     * Create window that displays the main UI along with the results of the previous command
     */
-  def mainWindow(instances: List[InstanceId], username: String, results: List[(InstanceId, Either[CommandStatus, CommandResult])]): BasicWindow = {
+  def mainWindow(instances: List[InstanceId], username: String, extendedResults: ResultsWithInstancesNotFound): BasicWindow = {
+
     val window = new BasicWindow(username)
 
     val initialSize = screen.getTerminal.getTerminalSize
@@ -81,7 +84,7 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
         override def handleKeyStroke(keyStroke: KeyStroke): Result = {
           keyStroke.getKeyType match {
             case KeyType.Enter =>
-              program.executeCommand(this.getText, instances, username)
+              program.executeCommand(this.getText, instances, username, extendedResults.instancesNotFound)
               val loading = WaitingDialog.createDialog("Executing...", "Executing command on instances")
               textGUI.addWindow(loading)
               Result.HANDLED
@@ -93,9 +96,15 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
       contentPanel.addComponent(cmdInput)
     }
 
+    if (extendedResults.instancesNotFound.nonEmpty) {
+      contentPanel.addComponent(new EmptySpace())
+      contentPanel.addComponent(new Label(s"The following instance(s) could not be found: ${extendedResults.instancesNotFound.map(_.id).mkString(", ")}").setForegroundColor(TextColor.ANSI.RED))
+      contentPanel.addComponent(new EmptySpace())
+    }
+
     // show results, if present
-    if (results.nonEmpty) {
-      val outputs = results.zipWithIndex.map { case ((_, result), i) =>
+    if (extendedResults.results.nonEmpty) {
+      val outputs = extendedResults.results.zipWithIndex.map { case ((_, result), i) =>
         val outputStreams = result match {
           case Right(cmdResult) =>
             cmdResult
@@ -147,24 +156,24 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
     textGUI.addWindowAndWait(window)
   }
 
-  def ready(instances: List[InstanceId], username: String): Unit = {
+  def ready(instances: List[InstanceId], username: String, instancesToReport: List[InstanceId]): Unit = {
     logger.trace("resolved instances and username, UI ready")
     textGUI.removeWindow(textGUI.getActiveWindow)
-    textGUI.addWindow(mainWindow(instances, username, Nil))
+    textGUI.addWindow(mainWindow(instances, username, ResultsWithInstancesNotFound(Nil, instancesToReport)))
     textGUI.updateScreen()
   }
 
   def searching(): Unit = {
     logger.trace("waiting to resolve instances and username, UI ready")
     textGUI.removeWindow(textGUI.getActiveWindow)
-    textGUI.addWindow(mainWindow(List(), "", Nil))
+    textGUI.addWindow(mainWindow(List(), "", ResultsWithInstancesNotFound(Nil, Nil)))
     textGUI.updateScreen()
   }
 
-  def displayResults(instances: List[InstanceId], username: String, results: List[(InstanceId, Either[CommandStatus, CommandResult])]): Unit = {
+  def displayResults(instances: List[InstanceId], username: String, extendedResults: ResultsWithInstancesNotFound): Unit = {
     logger.trace("displaying results")
     textGUI.removeWindow(textGUI.getActiveWindow)
-    textGUI.addWindow(mainWindow(instances, username, results))
+    textGUI.addWindow(mainWindow(instances, username, extendedResults))
     textGUI.updateScreen()
   }
 

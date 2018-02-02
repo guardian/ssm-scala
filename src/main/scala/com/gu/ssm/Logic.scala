@@ -47,7 +47,8 @@ object Logic {
     AWSClients(ssmClient, stsClient, ec2Client)
   }
 
-  def computeIncorrectInstances(executionTarget: ExecutionTarget, results: List[(InstanceId, scala.Either[CommandStatus, CommandResult])]): List[InstanceId] =
-    executionTarget.instances.getOrElse(List()).filterNot(results.map(_._1).toSet)
+  def computeIncorrectInstances(executionTarget: ExecutionTarget, instanceIds: List[InstanceId]): List[InstanceId] =
+    executionTarget.instances.getOrElse(List()).filterNot(instanceIds.toSet)
+
 
 }
