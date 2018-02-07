@@ -1,10 +1,12 @@
-Scala-SSM
+SSM-Scala
 =========
 
-Sala-SSM is a command-line tool for executing commands on EC2 servers
+SSM-Scala is a command-line tool for executing commands on EC2 servers
 using EC2 Run Command, written in Scala. This can be used as an
 alternative to `ssh` for servers in AWS accounts to which you have
 [IAM](https://aws.amazon.com/iam/) access.
+
+Instructions for using SSM Scala in your own project can be found [below](#How-to-use-SSM-Scala-with-your-own-project).
 
 ## Installation
 
@@ -160,4 +162,16 @@ The jar can then be invoked as follows (it may be useful to create a
 wrapper script, as described above in 'Installation').
 
     java -jar <path-to-jar>/ssm.jar "@$"
+
+
+## How to use SSM Scala with your own project
+
+To use ssm-scala against the instances of your project, three things need to happen:
+
+1. Update your base image in AMIgo with the **ssm-agent** role.
+2. Update your cloudformation to enable the use of Systems Manager Agent.
+	```
+	ManagedPolicyArns: [ "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM" ]
+	```
+3. Download the executable from the [project release page](https://github.com/guardian/ssm-scala/releases). Instructions on usage can be found in the above sections.
 
