@@ -169,9 +169,12 @@ wrapper script, as described above in 'Installation').
 To use ssm-scala against the instances of your project, three things need to happen:
 
 1. Update your base image in AMIgo with the **ssm-agent** role.
-2. Update your cloudformation to enable the use of Systems Manager Agent.
+
+2. Add the following declaration 
 	```
 	ManagedPolicyArns: [ "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM" ]
 	```
+	to your cloudformation. Example: the [Security-HQ cloudformation](https://github.com/guardian/security-hq/blob/master/cloudformation/security-hq.template.yaml#L86).
+
 3. Download the executable from the [project release page](https://github.com/guardian/ssm-scala/releases). Instructions on usage can be found in the above sections.
 
