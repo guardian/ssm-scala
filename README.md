@@ -10,7 +10,7 @@ Instructions for using SSM Scala in your own project can be found [below](#How-t
 
 ## Installation
 
-Fetch the most recently released version of the program from the [Github releases page](https://github.com/guardian/ssm-scala/releases/latest) and make sure it is executable (`chmod +x ssm`).
+Fetch the most recently released version of the program from the [Github releases page](https://github.com/guardian/ssm-scala/releases/latest) and make sure it is executable (`chmod +x ssm`). You may then want to put it somewhere in your PATH.
 
 ## Usage
 
