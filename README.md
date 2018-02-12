@@ -78,7 +78,7 @@ output the command to `ssh` directly to that instance.
 The instance must already have both a public IP address _and_
 appropriate security groups.
 
-Notet that if the argument `-t <app>,<stack>,<stage>` resolves to more than one instance, the command will stop with an error message. You can circumvent this behaviour and instruct `ssm` to process with one single instance with the argument `-a true`.
+Note that if the argument `-t <app>,<stack>,<stage>` resolves to more than one instance, the command will stop with an error message. You can circumvent this behaviour and instruct `ssm` to process with one single instance with the argument `-a true`.
 
 ### More usage examples
 
