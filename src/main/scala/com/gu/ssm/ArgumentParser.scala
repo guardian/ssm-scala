@@ -13,13 +13,13 @@ object ArgumentParser {
     opt[String]('p', "profile").required()
       .action { (profile, args) =>
         args.copy(profile = Some(profile))
-      } text "the AWS profile name to use for authenticating this execution"
+      } text "The AWS profile name to use for authenticating this execution"
 
     opt[Seq[String]]('i', "instances")
       .action { (instanceIds, args) =>
         val instances = instanceIds.map(i => InstanceId(i)).toList
         args.copy(executionTarget = Some(ExecutionTarget(instances = Some(instances))))
-      } text "specify the instance ID(s) on which the specified command(s) should execute"
+      } text "Specify the instance ID(s) on which the specified command(s) should execute"
 
     opt[String]('t', "tags")
       .validate { tagsStr =>
@@ -31,7 +31,7 @@ object ArgumentParser {
             _ => args,
             ass => args.copy(executionTarget = Some(ExecutionTarget(ass = Some(ass))))
           )
-      } text "search for instances by tag e.g. '--tags app,stack,stage'"
+      } text "Search for instances by tag e.g. '--tags app,stack,stage'"
 
     opt[String]('r', "region").optional()
       .validate { region =>
@@ -48,23 +48,28 @@ object ArgumentParser {
 
     cmd("cmd")
       .action((_, c) => c.copy(mode = Some(SsmCmd)))
-      .text("execute a single (bash) command, or a file containing bash commands")
+      .text("Execute a single (bash) command, or a file containing bash commands")
       .children(
         opt[String]('c', "cmd").optional()
           .action((cmd, args) => args.copy(toExecute = Some(cmd)))
-          .text("a bash command to execute"),
+          .text("A bash command to execute"),
         opt[File]('f', "file").optional()
           .action((file, args) => args.copy(toExecute = Some(Logic.generateScript(Right(file)))))
-          .text("a file containing bash commands to execute")
+          .text("A file containing bash commands to execute")
       )
 
     cmd("repl")
       .action((_, c) => c.copy(mode = Some(SsmRepl)))
-      .text("run SSM in interactive/repl mode")
+      .text("Run SSM in interactive/repl mode")
 
     cmd("ssh")
       .action((_, c) => c.copy(mode = Some(SsmSsh)))
-      .text("create and upload a temporary ssh key")
+      .text("Create and upload a temporary ssh key")
+      .children(
+        opt[Boolean]('a', "any").optional()
+          .action((flag, args) => args.copy(takeAnySingleInstance = Some(flag)))
+          .text("Indicates whether the command should run on any single instance"),
+      )
 
     checkConfig { args =>
       if (args.mode.isEmpty) Left("You must select a mode to use: cmd, repl or ssh")

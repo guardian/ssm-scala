@@ -12,9 +12,9 @@ case class Instance(id: InstanceId, publicIpAddressOpt: Option[String])
 case class AppStackStage(app: String, stack: String, stage: String)
 case class ExecutionTarget(instances: Option[List[InstanceId]] = None, ass: Option[AppStackStage] = None)
 
-case class Arguments(executionTarget: Option[ExecutionTarget], toExecute: Option[String], profile: Option[String], region: Region, mode: Option[SsmMode])
+case class Arguments(executionTarget: Option[ExecutionTarget], toExecute: Option[String], profile: Option[String], region: Region, mode: Option[SsmMode], takeAnySingleInstance: Option[Boolean])
 object Arguments {
-  def empty(): Arguments = Arguments(None, None, None, Region.getRegion(Regions.EU_WEST_1), None)
+  def empty(): Arguments = Arguments(None, None, None, Region.getRegion(Regions.EU_WEST_1), None, Some(false))
 }
 
 sealed trait CommandStatus

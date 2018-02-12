@@ -35,9 +35,23 @@ object Logic {
   }
 
   def getSingleInstance(instances: List[Instance]): Either[FailedAttempt, List[InstanceId]] = {
-    if (instances.lengthCompare(1) != 0) Left(FailedAttempt(
+    if (instances.length != 1) Left(FailedAttempt(
       Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${instances.map(i => i.id.id).mkString(", ")}", UnhandledError, None, None)))
     else Right(instances.map(i => i.id))
+  }
+
+  def getFirstInstance(instances: List[Instance]): Either[FailedAttempt, List[InstanceId]] = {
+    if (instances.length == 0) Left(FailedAttempt(
+      Failure(s"Unable to identify a single instance", s"Could not find any instance", UnhandledError, None, None)))
+    else Right(instances.map(i => i.id).take(1))
+  }
+
+  def getRelevantInstancesAsEither(instances: List[Instance], takeAnySingleInstance: Boolean): Either[FailedAttempt, List[InstanceId]] = {
+    if (takeAnySingleInstance) getFirstInstance(instances) else getSingleInstance(instances)
+  }
+
+  def getRelevantInstancesAsList(instances: List[Instance], takeAnySingleInstance: Boolean): List[Instance] = {
+    if (takeAnySingleInstance) instances.take(1) else instances
   }
 
   def getClients(profile: String, region: Region): AWSClients = {

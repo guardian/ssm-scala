@@ -18,21 +18,23 @@ The automatically generated help section for `ssm` is
 
 ```
 Usage: ssm [cmd|repl|ssh] [options]
-  -p, --profile <value>    the AWS profile name to use for authenticating this execution
-  -i, --instances <value>  specify the instance ID(s) on which the specified command(s) should execute
-  -t, --tags <value>       search for instances by tag e.g. '--tags app,stack,stage'
+
+  -p, --profile <value>    The AWS profile name to use for authenticating this execution
+  -i, --instances <value>  Specify the instance ID(s) on which the specified command(s) should execute
+  -t, --tags <value>       Search for instances by tag e.g. '--tags app,stack,stage'
   -r, --region <value>     AWS region name (defaults to eu-west-1)
 
 Command: cmd [options]
-execute a single (bash) command, or a file containing bash commands
-  -c, --cmd <value>        a bash command to execute
-  -f, --file <value>       a file containing bash commands to execute
+Execute a single (bash) command, or a file containing bash commands
+  -c, --cmd <value>        A bash command to execute
+  -f, --file <value>       A file containing bash commands to execute
 
 Command: repl
-run SSM in interactive/repl mode
+Run SSM in interactive/repl mode
 
-Command: ssh
-create and upload a temporary ssh key
+Command: ssh [options]
+Create and upload a temporary ssh key
+  -a, --any <value>        Indicates whether the command should run on any single instance
 ```
 
 The general syntax is 
@@ -75,6 +77,8 @@ key, and install the public key on a specific instance.  It will then
 output the command to `ssh` directly to that instance. 
 The instance must already have both a public IP address _and_
 appropriate security groups.
+
+Notet that if the argument `-t <app>,<stack>,<stage>` resolves to more than one instance, the command will stop with an error message. You can circumvent this behaviour and instruct `ssm` to process with one single instance with the argument `-a true`.
 
 ### More usage examples
 

@@ -13,7 +13,7 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     argParser.parse(args, Arguments.empty()) match {
-      case Some(Arguments(Some(executionTarget), toExecuteOpt, Some(profile), region, Some(mode))) =>
+      case Some(Arguments(Some(executionTarget), toExecuteOpt, Some(profile), region, Some(mode), Some(takeAnySingleInstance))) =>
         val awsClients = Logic.getClients(profile, region)
         mode match {
           case SsmRepl =>
@@ -24,7 +24,7 @@ object Main {
               case _ => fail()
             }
           case SsmSsh =>
-            setUpSSH(awsClients, profile, region, executionTarget)
+            setUpSSH(awsClients, profile, region, executionTarget, takeAnySingleInstance)
         }
       case Some(_) => fail()
       case None => System.exit(ArgumentsError.code) // parsing cmd line args failed, help message will have been displayed
@@ -36,16 +36,16 @@ object Main {
     System.exit(UnhandledError.code)
   }
 
-  private def setUpSSH(awsClients: AWSClients, profile: String, region: Region, executionTarget: ExecutionTarget): Unit = {
+  private def setUpSSH(awsClients: AWSClients, profile: String, region: Region, executionTarget: ExecutionTarget, takeAnySingleInstance: Boolean): Unit = {
     val fProgramResult = for {
       config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, profile, region, executionTarget)
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
       (authFile, authKey) = sshArtifacts
       addAndRemoveKeyCommand = SSH.addTaintedCommand(config.name) + SSH.addKeyCommand(authKey) + SSH.removeKeyCommand(authKey)
-      instance <- Attempt.fromEither(Logic.getSingleInstance(config.targets))
+      instance <- Attempt.fromEither(Logic.getRelevantInstancesAsEither(config.targets, takeAnySingleInstance))
       _ <- IO.tagAsTainted(instance, config.name, awsClients.ec2Client)
       _ <- IO.installSshKey(instance, config.name, addAndRemoveKeyCommand, awsClients.ssmClient)
-    } yield config.targets.map(SSH.sshCmd(authFile, _))
+    } yield Logic.getRelevantInstancesAsList(config.targets,takeAnySingleInstance).map(SSH.sshCmd(authFile, _))
 
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
     programResult.fold(UI.outputFailure, UI.sshOutput)
