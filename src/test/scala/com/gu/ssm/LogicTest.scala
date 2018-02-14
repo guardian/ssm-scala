@@ -2,7 +2,6 @@ package com.gu.ssm
 
 import org.scalatest.{EitherValues, FreeSpec, Matchers}
 
-
 class LogicTest extends FreeSpec with Matchers with EitherValues {
   "extractSASTags" - {
     import Logic.extractSASTags
@@ -41,21 +40,31 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
     }
   }
 
-  "Get single instance" - {
-    import Logic.getSingleInstance
-
-    "More than one instance" in {
-      getSingleInstance(List(Instance(InstanceId("X"), None), Instance(InstanceId("Y"), None))).isLeft shouldBe true
+  "getRelevantInstance" - {
+    import Logic.getRelevantInstance
+    val instanceIdX = InstanceId("X")
+    val instanceIdY = InstanceId("Y")
+    val instanceX = Instance(instanceIdX, None)
+    val instanceY = Instance(instanceIdY, None)
+    "should be Left if given no instances" in {
+      getRelevantInstance(List(), true).isLeft shouldBe true
     }
-
-    "No instances" in {
-      getSingleInstance(List()).isLeft shouldBe true
+    "with one instance given" - {
+      "should return passed argument if takeAnySingleInstance is true" in {
+        getRelevantInstance(List(instanceX), true) shouldBe Right(instanceX)
+      }
+      "should return passed argument if takeAnySingleInstance is false" in {
+        getRelevantInstance(List(instanceX), false) shouldBe Right(instanceX)
+      }
     }
-
-    "Exactly one instance" in {
-      getSingleInstance(List(Instance(InstanceId("X"), None))).isRight shouldBe true
+    "with two instances given" - {
+      "should select the first (in lexicographic order of InstanceId) if takeAnySingleInstance is true" in {
+        getRelevantInstance(List(instanceX, instanceY), true) shouldBe Right(instanceX)
+      }
+      "should be Left if takeAnySingleInstance is false" in {
+        getRelevantInstance(List(instanceX, instanceY), false).isLeft shouldBe true
+      }
     }
   }
-
 
 }

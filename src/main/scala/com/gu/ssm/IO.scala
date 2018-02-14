@@ -21,21 +21,21 @@ object IO {
     }.getOrElse(Attempt.Left(Failure("Unable to resolve execution target", "You must provide an execution target (instance(s) or tags)", ArgumentsError)))
   }
 
-  def executeOnInstances(instances: List[InstanceId], username: String, cmd: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[List[(InstanceId, Either[CommandStatus, CommandResult])]] = {
+  def executeOnInstances(instanceIds: List[InstanceId], username: String, cmd: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[List[(InstanceId, Either[CommandStatus, CommandResult])]] = {
     for {
-      cmdId <- SSM.sendCommand(instances, cmd, username, client)
-      results <- SSM.getCmdOutputs(instances, cmdId, client)
+      cmdId <- SSM.sendCommand(instanceIds, cmd, username, client)
+      results <- SSM.getCmdOutputs(instanceIds, cmdId, client)
     } yield results
   }
 
-  def installSshKey(instances: List[InstanceId], username: String, script: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[String] = {
+  def installSshKey(instanceId: InstanceId, username: String, script: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[String] = {
     for {
-      cmdId <- SSM.sendCommand(instances, script, username, client)
+      cmdId <- SSM.sendCommand(List(instanceId), script, username, client)
     } yield cmdId
   }
 
-  def tagAsTainted(instances: List[InstanceId], username: String,ec2Client: AmazonEC2Async)(implicit ec: ExecutionContext): Attempt[Unit] =
-    EC2.tagInstances(instances, "taintedBy", username, ec2Client)
+  def tagAsTainted(instance: InstanceId, username: String,ec2Client: AmazonEC2Async)(implicit ec: ExecutionContext): Attempt[Unit] =
+    EC2.tagInstance(instance, "taintedBy", username, ec2Client)
 
   def getSSMConfig(ec2Client: AmazonEC2Async, stsClient: AWSSecurityTokenServiceAsync, profile: String, region: Region, executionTarget: ExecutionTarget)(implicit ec: ExecutionContext): Attempt[SSMConfig] = {
     for {

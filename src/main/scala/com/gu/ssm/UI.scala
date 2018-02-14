@@ -22,12 +22,10 @@ object UI {
     }
   }
 
-  def sshOutput(results: List[(InstanceId, String)]): Unit = {
-    results.foreach { case (instance, cmd) =>
-      UI.printMetadata(s"========= ${instance.id} =========")
-      UI.printMetadata(s"STDOUT:")
-      println(cmd)
-    }
+  def sshOutput(results: (InstanceId, String)): Unit = {
+    UI.printMetadata(s"========= ${results._1.id} =========")
+    UI.printMetadata(s"STDOUT:")
+    println(results._2)
   }
 
   def outputFailure(failedAttempt: FailedAttempt): Unit = {

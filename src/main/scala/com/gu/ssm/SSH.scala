@@ -4,7 +4,6 @@ import java.io.{File, IOException}
 import java.security.{NoSuchAlgorithmException, NoSuchProviderException}
 import java.util.Calendar
 
-import scala.concurrent.ExecutionContext
 import com.gu.ssm.utils.attempt._
 import com.gu.ssm.utils.{KeyMaker, FilePermissions}
 
@@ -23,8 +22,6 @@ object SSH {
     try {
       val tempFile = File.createTempFile(prefix, suffix)
       FilePermissions(tempFile, "0600")
-
-
       val authKey = KeyMaker.makeKey(tempFile, keyAlgorithm, keyProvider)
       Right((tempFile, authKey))
     } catch {
@@ -63,12 +60,12 @@ object SSH {
       | /bin/sed -i '/${authKey.replaceAll("/", "\\\\/")}/d' /home/ubuntu/.ssh/authorized_keys;
       |""".stripMargin
 
-  def sshCmd(tempFile: File, instance: Instance)(implicit ec: ExecutionContext): (InstanceId, String) = {
+  def sshCmd(tempFile: File, instance: Instance): (InstanceId, String) = {
     val cmd = s"""
       | # Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:
       | ssh -i ${tempFile.getCanonicalFile.toString} ubuntu@${instance.publicIpAddressOpt.get};
       |""".stripMargin
-    instance.id -> cmd
+    (instance.id, cmd)
   }
 
 }

@@ -21,11 +21,11 @@ object SSM {
       .build()
   }
 
-  def sendCommand(instances: List[InstanceId], cmd: String, username: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[String] = {
+  def sendCommand(instanceIds: List[InstanceId], cmd: String, username: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[String] = {
     val parameters = Map("commands" -> List(cmd).asJava).asJava
     val sendCommandRequest = new SendCommandRequest()
       .withComment(s"Command submitted by $username")
-      .withInstanceIds(instances.map(i => i.id).asJava)
+      .withInstanceIds(instanceIds.map(_.id).asJava)
       .withDocumentName("AWS-RunShellScript")
       .withParameters(parameters)
     handleAWSErrs(awsToScala(client.sendCommandAsync)(sendCommandRequest).map(extractCommandId))
@@ -60,8 +60,8 @@ object SSM {
     } yield instance -> cmdResult
   }
 
-  def getCmdOutputs(instances: List[InstanceId], commandId: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[List[(InstanceId, Either[CommandStatus, CommandResult])]] = {
-    Attempt.traverse(instances)(getCmdOutput(_, commandId, client))
+  def getCmdOutputs(instanceIds: List[InstanceId], commandId: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[List[(InstanceId, Either[CommandStatus, CommandResult])]] = {
+    Attempt.traverse(instanceIds)(getCmdOutput(_, commandId, client))
   }
 
   def commandStatus(statusDetail: String): CommandStatus = {

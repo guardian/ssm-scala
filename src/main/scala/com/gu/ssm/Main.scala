@@ -42,10 +42,10 @@ object Main {
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
       (authFile, authKey) = sshArtifacts
       addAndRemoveKeyCommand = SSH.addTaintedCommand(config.name) + SSH.addKeyCommand(authKey) + SSH.removeKeyCommand(authKey)
-      instance <- Attempt.fromEither(Logic.getRelevantInstancesAsEither(config.targets, takeAnySingleInstance))
-      _ <- IO.tagAsTainted(instance, config.name, awsClients.ec2Client)
-      _ <- IO.installSshKey(instance, config.name, addAndRemoveKeyCommand, awsClients.ssmClient)
-    } yield Logic.getRelevantInstancesAsList(config.targets,takeAnySingleInstance).map(SSH.sshCmd(authFile, _))
+      instance <- Attempt.fromEither(Logic.getRelevantInstance(config.targets, takeAnySingleInstance))
+      _ <- IO.tagAsTainted(instance.id, config.name, awsClients.ec2Client)
+      _ <- IO.installSshKey(instance.id, config.name, addAndRemoveKeyCommand, awsClients.ssmClient)
+    } yield SSH.sshCmd(authFile, instance)
 
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
     programResult.fold(UI.outputFailure, UI.sshOutput)
