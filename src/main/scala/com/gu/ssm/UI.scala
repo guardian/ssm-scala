@@ -22,10 +22,10 @@ object UI {
     }
   }
 
-  def sshOutput(results: (InstanceId, String)): Unit = {
-    UI.printMetadata(s"========= ${results._1.id} =========")
+  def sshOutput(result: (InstanceId, String)): Unit = {
+    UI.printMetadata(s"========= ${result._1.id} =========")
     UI.printMetadata(s"STDOUT:")
-    println(results._2)
+    println(result._2)
   }
 
   def outputFailure(failedAttempt: FailedAttempt): Unit = {

@@ -2,6 +2,7 @@ package com.gu.ssm
 
 import org.scalatest.{EitherValues, FreeSpec, Matchers}
 
+
 class LogicTest extends FreeSpec with Matchers with EitherValues {
   "extractSASTags" - {
     import Logic.extractSASTags
@@ -41,30 +42,56 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
   }
 
   "getRelevantInstance" - {
-    import Logic.getRelevantInstance
+    import Logic.getSSHInstance
     val instanceIdX = InstanceId("X")
     val instanceIdY = InstanceId("Y")
-    val instanceX = Instance(instanceIdX, None)
-    val instanceY = Instance(instanceIdY, None)
-    "should be Left if given no instances" in {
-      getRelevantInstance(List(), true).isLeft shouldBe true
+    val sip = Some("1278.0.0.1")
+    "if given no instances, should be Left" in {
+      getSSHInstance(List(), true).isLeft shouldBe true
     }
-    "with one instance given" - {
-      "should return passed argument if takeAnySingleInstance is true" in {
-        getRelevantInstance(List(instanceX), true) shouldBe Right(instanceX)
+    "Given one instance" - {
+      "Instance is ill-formed" - {
+        "If takeAnySingleInstance is true, should be Left" in {
+          getSSHInstance(List(Instance(instanceIdX, None)), true).isLeft shouldBe true
+        }
+        "If takeAnySingleInstance is false, should be Left" in {
+          getSSHInstance(List(Instance(instanceIdX, None)), false).isLeft shouldBe true
+        }
       }
-      "should return passed argument if takeAnySingleInstance is false" in {
-        getRelevantInstance(List(instanceX), false) shouldBe Right(instanceX)
+      "Instance is well-formed" - {
+        "If takeAnySingleInstance is true, returns argument" in {
+          getSSHInstance(List(Instance(instanceIdX, sip)), true) shouldBe Right(Instance(instanceIdX, sip))
+        }
+        "If takeAnySingleInstance is false, should be Left" in {
+          getSSHInstance(List(Instance(instanceIdX, sip)), false) shouldBe Right(Instance(instanceIdX, sip))
+        }
       }
     }
-    "with two instances given" - {
-      "should select the first (in lexicographic order of InstanceId) if takeAnySingleInstance is true" in {
-        getRelevantInstance(List(instanceX, instanceY), true) shouldBe Right(instanceX)
+    "Given more than one instance" - {
+      "All instances are ill-formed" - {
+        "If takeAnySingleInstance is true, should be Left" in {
+          getSSHInstance(List(Instance(instanceIdX, None), Instance(instanceIdY, None)), true).isLeft shouldBe true
+        }
+        "If takeAnySingleInstance is false, should be Left" in {
+          getSSHInstance(List(Instance(instanceIdX, None), Instance(instanceIdY, None)), false).isLeft shouldBe true
+        }
       }
-      "should be Left if takeAnySingleInstance is false" in {
-        getRelevantInstance(List(instanceX, instanceY), false).isLeft shouldBe true
+      "At least one instance is well formed" - {
+        "If takeAnySingleInstance is true, selects the well-formed instance" in {
+          getSSHInstance(List(Instance(instanceIdX, None), Instance(instanceIdY, sip)), true) shouldBe Right(Instance(instanceIdY, sip))
+        }
+        "If takeAnySingleInstance is false, should be Left" in {
+          getSSHInstance(List(Instance(instanceIdX, None), Instance(instanceIdY, sip)), false) shouldBe Right(Instance(instanceIdY, sip))
+        }
+      }
+      "All instances are well formed" - {
+        "If takeAnySingleInstance is true, selects the first well-formed instance (in lexicographic order of InstanceId)" in {
+          getSSHInstance(List(Instance(instanceIdY, sip), Instance(instanceIdX, sip)), true) shouldBe Right(Instance(instanceIdX, sip))
+        }
+        "If takeAnySingleInstance is false, should be Left" in {
+          getSSHInstance(List(Instance(instanceIdX, sip), Instance(instanceIdY, sip)), false).isLeft shouldBe true
+        }
       }
     }
   }
-
 }

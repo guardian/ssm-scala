@@ -34,8 +34,8 @@ object IO {
     } yield cmdId
   }
 
-  def tagAsTainted(instance: InstanceId, username: String,ec2Client: AmazonEC2Async)(implicit ec: ExecutionContext): Attempt[Unit] =
-    EC2.tagInstance(instance, "taintedBy", username, ec2Client)
+  def tagAsTainted(instanceId: InstanceId, username: String,ec2Client: AmazonEC2Async)(implicit ec: ExecutionContext): Attempt[Unit] =
+    EC2.tagInstance(instanceId, "taintedBy", username, ec2Client)
 
   def getSSMConfig(ec2Client: AmazonEC2Async, stsClient: AWSSecurityTokenServiceAsync, profile: String, region: Region, executionTarget: ExecutionTarget)(implicit ec: ExecutionContext): Attempt[SSMConfig] = {
     for {
@@ -43,5 +43,4 @@ object IO {
       name <- STS.getCallerIdentity(stsClient)
     } yield SSMConfig(instances, name)
   }
-
 }

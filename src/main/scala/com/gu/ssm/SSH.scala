@@ -22,6 +22,8 @@ object SSH {
     try {
       val tempFile = File.createTempFile(prefix, suffix)
       FilePermissions(tempFile, "0600")
+
+
       val authKey = KeyMaker.makeKey(tempFile, keyAlgorithm, keyProvider)
       Right((tempFile, authKey))
     } catch {
