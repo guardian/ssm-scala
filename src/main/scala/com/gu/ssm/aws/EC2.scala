@@ -48,10 +48,10 @@ object EC2 {
     } yield Instance(InstanceId(instanceId), Option(awsInstance.getPublicIpAddress))).toList
   }
 
-  def tagInstances(ids:List[InstanceId], key: String, value: String, client: AmazonEC2Async)(implicit ec: ExecutionContext): Attempt[Unit] = {
+  def tagInstance(id: InstanceId, key: String, value: String, client: AmazonEC2Async)(implicit ec: ExecutionContext): Attempt[Unit] = {
     val request = new CreateTagsRequest()
       .withTags(new Tag(key, value))
-      .withResources(ids.map(_.id).asJava)
+      .withResources(id.id)
     handleAWSErrs(awsToScala(client.createTagsAsync)(request)).map(_ => Unit)
   }
 

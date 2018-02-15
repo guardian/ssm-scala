@@ -34,10 +34,16 @@ object Logic {
     case _ => Right(Unit)
   }
 
-  def getSingleInstance(instances: List[Instance]): Either[FailedAttempt, List[InstanceId]] = {
-    if (instances.lengthCompare(1) != 0) Left(FailedAttempt(
-      Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${instances.map(i => i.id.id).mkString(", ")}", UnhandledError, None, None)))
-    else Right(instances.map(i => i.id))
+  def getRelevantInstance(instances: List[Instance], takeAnySingleInstance: Boolean): Either[FailedAttempt, Instance] = {
+    if (instances.length == 0) {
+      Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Could not find any instance", UnhandledError, None, None)))
+    } else if (instances.length == 1) {
+      Right(instances.sortBy(_.id.id).head) // head safe as length is necessary > 0
+    } else {
+      val sortedInstances = instances.sortBy(_.id.id)
+      if (takeAnySingleInstance) Right(sortedInstances.head) // head safe as length is necessary > 0
+      else Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${sortedInstances.mkString(", ")}", UnhandledError, None, None)))
+    }
   }
 
   def getClients(profile: String, region: Region): AWSClients = {
