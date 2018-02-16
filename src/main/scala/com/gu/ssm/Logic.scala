@@ -47,7 +47,7 @@ object Logic {
           Right(instance)
         case instance :: _ if takeAnySingleInstance =>
           Right(instance)
-        case _ :: _ =>
+        case _ :: _ :: _ =>
           Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${sortedValidInstances.map(_.id.id).mkString(", ")}", UnhandledError, None, None)))
       }
     }
