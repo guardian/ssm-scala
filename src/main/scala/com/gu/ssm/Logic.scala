@@ -11,7 +11,6 @@ import com.gu.ssm.utils.attempt.{ErrorCode, FailedAttempt, Failure, UnhandledErr
 
 import scala.io.Source
 
-
 object Logic {
   def generateScript(toExecute: Either[String, File]): String = {
     toExecute match {
@@ -34,15 +33,23 @@ object Logic {
     case _ => Right(Unit)
   }
 
-  def getRelevantInstance(instances: List[Instance], takeAnySingleInstance: Boolean): Either[FailedAttempt, Instance] = {
-    if (instances.length == 0) {
+  def getSSHInstance(instances: List[Instance], takeAnySingleInstance: Boolean): Either[FailedAttempt, Instance] = {
+    val sortedValidInstances = instances
+      .filter(_.publicIpAddressOpt.isDefined)
+      .sortBy(_.id.id)
+    if (instances.isEmpty) {
       Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Could not find any instance", UnhandledError, None, None)))
-    } else if (instances.length == 1) {
-      Right(instances.sortBy(_.id.id).head) // head safe as length is necessary > 0
     } else {
-      val sortedInstances = instances.sortBy(_.id.id)
-      if (takeAnySingleInstance) Right(sortedInstances.head) // head safe as length is necessary > 0
-      else Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${sortedInstances.mkString(", ")}", UnhandledError, None, None)))
+      sortedValidInstances match {
+        case Nil =>
+          Left(FailedAttempt(Failure(s"Instances with no IPs", s"Found ${instances.map(_.id.id).mkString(", ")} but none are valid targets (instances need public IP addresses)", UnhandledError, None, None)))
+        case instance :: Nil =>
+          Right(instance)
+        case instance :: _ if takeAnySingleInstance =>
+          Right(instance)
+        case _ :: _ :: _ =>
+          Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${sortedValidInstances.map(_.id.id).mkString(", ")}", UnhandledError, None, None)))
+      }
     }
   }
 
@@ -55,6 +62,5 @@ object Logic {
 
   def computeIncorrectInstances(executionTarget: ExecutionTarget, instanceIds: List[InstanceId]): List[InstanceId] =
     executionTarget.instances.getOrElse(List()).filterNot(instanceIds.toSet)
-
 
 }

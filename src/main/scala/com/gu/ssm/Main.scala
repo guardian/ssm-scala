@@ -42,7 +42,7 @@ object Main {
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
       (authFile, authKey) = sshArtifacts
       addAndRemoveKeyCommand = SSH.addTaintedCommand(config.name) + SSH.addKeyCommand(authKey) + SSH.removeKeyCommand(authKey)
-      instance <- Attempt.fromEither(Logic.getRelevantInstance(config.targets, takeAnySingleInstance))
+      instance <- Attempt.fromEither(Logic.getSSHInstance(config.targets, takeAnySingleInstance))
       _ <- IO.tagAsTainted(instance.id, config.name, awsClients.ec2Client)
       _ <- IO.installSshKey(instance.id, config.name, addAndRemoveKeyCommand, awsClients.ssmClient)
     } yield SSH.sshCmd(authFile, instance)

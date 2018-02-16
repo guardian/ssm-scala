@@ -2,6 +2,7 @@ package com.gu.ssm
 
 import org.scalatest.{EitherValues, FreeSpec, Matchers}
 
+
 class LogicTest extends FreeSpec with Matchers with EitherValues {
   "extractSASTags" - {
     import Logic.extractSASTags
@@ -41,30 +42,82 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
   }
 
   "getRelevantInstance" - {
-    import Logic.getRelevantInstance
+    import Logic.getSSHInstance
     val instanceIdX = InstanceId("X")
     val instanceIdY = InstanceId("Y")
-    val instanceX = Instance(instanceIdX, None)
-    val instanceY = Instance(instanceIdY, None)
-    "should be Left if given no instances" in {
-      getRelevantInstance(List(), true).isLeft shouldBe true
+    val instanceXWithoutIP = Instance(instanceIdX, None)
+    val instanceYWithoutIP = Instance(instanceIdY, None)
+    val instanceXWithIP = Instance(instanceIdX, Some("1278.0.0.1"))
+    val instanceYWithIP = Instance(instanceIdY, Some("1278.0.0.1"))
+
+    "if given no instances, should be Left" in {
+      getSSHInstance(List(), true).isLeft shouldBe true
     }
-    "with one instance given" - {
-      "should return passed argument if takeAnySingleInstance is true" in {
-        getRelevantInstance(List(instanceX), true) shouldBe Right(instanceX)
+
+    "Given one instance" - {
+
+      "Instance is ill-formed" - {
+        val oneInstanceWithoutIP = List(instanceXWithoutIP)
+
+        "If takeAnySingleInstance is true, should be Left" in {
+          getSSHInstance(oneInstanceWithoutIP, true).isLeft shouldBe true
+        }
+
+        "If takeAnySingleInstance is false, should be Left" in {
+          getSSHInstance(oneInstanceWithoutIP, false).isLeft shouldBe true
+        }
       }
-      "should return passed argument if takeAnySingleInstance is false" in {
-        getRelevantInstance(List(instanceX), false) shouldBe Right(instanceX)
+
+      "Instance is well-formed" - {
+        val oneInstanceWithIP = List(instanceXWithIP)
+
+        "If takeAnySingleInstance is true, returns argument" in {
+          getSSHInstance(oneInstanceWithIP, true).right.get shouldEqual instanceXWithIP
+        }
+
+        "If takeAnySingleInstance is false, should be Left" in {
+          getSSHInstance(oneInstanceWithIP, false).right.get shouldEqual instanceXWithIP
+        }
       }
     }
-    "with two instances given" - {
-      "should select the first (in lexicographic order of InstanceId) if takeAnySingleInstance is true" in {
-        getRelevantInstance(List(instanceX, instanceY), true) shouldBe Right(instanceX)
+
+    "Given more than one instance" - {
+
+      "All instances are ill-formed" - {
+        val twoInstancesWithIP = List(instanceYWithoutIP, instanceXWithoutIP)
+
+        "If takeAnySingleInstance is true, should be Left" in {
+          getSSHInstance(twoInstancesWithIP, true).isLeft shouldBe true
+        }
+
+        "If takeAnySingleInstance is false, should be Left" in {
+          getSSHInstance(twoInstancesWithIP, false).isLeft shouldBe true
+        }
       }
-      "should be Left if takeAnySingleInstance is false" in {
-        getRelevantInstance(List(instanceX, instanceY), false).isLeft shouldBe true
+
+      "At least one instance is well formed" - {
+        val twoMixedInstances = List(instanceYWithoutIP, instanceXWithIP)
+
+        "If takeAnySingleInstance is true, selects the well-formed instance" in {
+          getSSHInstance(twoMixedInstances, true).right.get shouldEqual instanceXWithIP
+        }
+
+        "If takeAnySingleInstance is false, should be Left" in {
+          getSSHInstance(twoMixedInstances, false).right.get shouldEqual instanceXWithIP
+        }
+      }
+
+      "All instances are well formed" - {
+        val twoInstancesWithIP = List(instanceYWithIP, instanceXWithIP)
+
+        "If takeAnySingleInstance is true, selects the first well-formed instance (in lexicographic order of InstanceId)" in {
+          getSSHInstance(twoInstancesWithIP, true).right.get shouldEqual instanceXWithIP
+        }
+
+        "If takeAnySingleInstance is false, should be Left" in {
+          getSSHInstance(twoInstancesWithIP, false).isLeft shouldBe true
+        }
       }
     }
   }
-
 }
