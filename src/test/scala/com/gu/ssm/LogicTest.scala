@@ -45,51 +45,77 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
     import Logic.getSSHInstance
     val instanceIdX = InstanceId("X")
     val instanceIdY = InstanceId("Y")
-    val sip = Some("1278.0.0.1")
+    val instanceXWithoutIP = Instance(instanceIdX, None)
+    val instanceYWithoutIP = Instance(instanceIdY, None)
+    val instanceXWithIP = Instance(instanceIdX, Some("1278.0.0.1"))
+    val instanceYWithIP = Instance(instanceIdY, Some("1278.0.0.1"))
+
     "if given no instances, should be Left" in {
       getSSHInstance(List(), true).isLeft shouldBe true
     }
+
     "Given one instance" - {
+
       "Instance is ill-formed" - {
+        val oneInstanceWithoutIP = List(instanceXWithoutIP)
+
         "If takeAnySingleInstance is true, should be Left" in {
-          getSSHInstance(List(Instance(instanceIdX, None)), true).isLeft shouldBe true
+          getSSHInstance(oneInstanceWithoutIP, true).isLeft shouldBe true
         }
+
         "If takeAnySingleInstance is false, should be Left" in {
-          getSSHInstance(List(Instance(instanceIdX, None)), false).isLeft shouldBe true
+          getSSHInstance(oneInstanceWithoutIP, false).isLeft shouldBe true
         }
       }
+
       "Instance is well-formed" - {
+        val oneInstanceWithIP = List(instanceXWithIP)
+
         "If takeAnySingleInstance is true, returns argument" in {
-          getSSHInstance(List(Instance(instanceIdX, sip)), true) shouldBe Right(Instance(instanceIdX, sip))
+          getSSHInstance(oneInstanceWithIP, true).right.get shouldEqual instanceXWithIP
         }
+
         "If takeAnySingleInstance is false, should be Left" in {
-          getSSHInstance(List(Instance(instanceIdX, sip)), false) shouldBe Right(Instance(instanceIdX, sip))
+          getSSHInstance(oneInstanceWithIP, false).right.get shouldEqual instanceXWithIP
         }
       }
     }
+
     "Given more than one instance" - {
+
       "All instances are ill-formed" - {
+        val twoInstancesWithIP = List(instanceYWithoutIP, instanceXWithoutIP)
+
         "If takeAnySingleInstance is true, should be Left" in {
-          getSSHInstance(List(Instance(instanceIdX, None), Instance(instanceIdY, None)), true).isLeft shouldBe true
+          getSSHInstance(twoInstancesWithIP, true).isLeft shouldBe true
         }
+
         "If takeAnySingleInstance is false, should be Left" in {
-          getSSHInstance(List(Instance(instanceIdX, None), Instance(instanceIdY, None)), false).isLeft shouldBe true
+          getSSHInstance(twoInstancesWithIP, false).isLeft shouldBe true
         }
       }
+
       "At least one instance is well formed" - {
+        val twoMixedInstances = List(instanceYWithoutIP, instanceXWithIP)
+
         "If takeAnySingleInstance is true, selects the well-formed instance" in {
-          getSSHInstance(List(Instance(instanceIdX, None), Instance(instanceIdY, sip)), true) shouldBe Right(Instance(instanceIdY, sip))
+          getSSHInstance(twoMixedInstances, true).right.get shouldEqual instanceXWithIP
         }
+
         "If takeAnySingleInstance is false, should be Left" in {
-          getSSHInstance(List(Instance(instanceIdX, None), Instance(instanceIdY, sip)), false) shouldBe Right(Instance(instanceIdY, sip))
+          getSSHInstance(twoMixedInstances, false).right.get shouldEqual instanceXWithIP
         }
       }
+
       "All instances are well formed" - {
+        val twoInstancesWithIP = List(instanceYWithIP, instanceXWithIP)
+
         "If takeAnySingleInstance is true, selects the first well-formed instance (in lexicographic order of InstanceId)" in {
-          getSSHInstance(List(Instance(instanceIdY, sip), Instance(instanceIdX, sip)), true) shouldBe Right(Instance(instanceIdX, sip))
+          getSSHInstance(twoInstancesWithIP, true).right.get shouldEqual instanceXWithIP
         }
+
         "If takeAnySingleInstance is false, should be Left" in {
-          getSSHInstance(List(Instance(instanceIdX, sip), Instance(instanceIdY, sip)), false).isLeft shouldBe true
+          getSSHInstance(twoInstancesWithIP, false).isLeft shouldBe true
         }
       }
     }

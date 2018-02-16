@@ -34,13 +34,22 @@ object Logic {
   }
 
   def getSSHInstance(instances: List[Instance], takeAnySingleInstance: Boolean): Either[FailedAttempt, Instance] = {
-    val instancesWithPublicIP = instances.filter(_.publicIpAddressOpt.isDefined)
-    if (instancesWithPublicIP.isEmpty) {
+    val sortedValidInstances = instances
+      .filter(_.publicIpAddressOpt.isDefined)
+      .sortBy(_.id.id)
+    if (instances.isEmpty) {
       Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Could not find any instance", UnhandledError, None, None)))
     } else {
-      val sortedInstances = instancesWithPublicIP.sortBy(_.id.id)
-      if (instancesWithPublicIP.length==1 || takeAnySingleInstance) Right(sortedInstances.head)
-      else Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${sortedInstances.mkString(", ")}", UnhandledError, None, None)))
+      sortedValidInstances match {
+        case Nil =>
+          Left(FailedAttempt(Failure(s"Instances with no IPs", s"Found ${instances.map(_.id.id).mkString(", ")} but none are valid targets (instances need public IP addresses)", UnhandledError, None, None)))
+        case instance :: Nil =>
+          Right(instance)
+        case instance :: _ if takeAnySingleInstance =>
+          Right(instance)
+        case _ :: _ =>
+          Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${sortedValidInstances.map(_.id.id).mkString(", ")}", UnhandledError, None, None)))
+      }
     }
   }
 
