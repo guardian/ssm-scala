@@ -43,12 +43,13 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
 
   "getRelevantInstance" - {
     import Logic.getSSHInstance
+    import java.util.Date
     val instanceIdX = InstanceId("X")
     val instanceIdY = InstanceId("Y")
-    val instanceXWithoutIP = Instance(instanceIdX, None)
-    val instanceYWithoutIP = Instance(instanceIdY, None)
-    val instanceXWithIP = Instance(instanceIdX, Some("1278.0.0.1"))
-    val instanceYWithIP = Instance(instanceIdY, Some("1278.0.0.1"))
+    val instanceXWithoutIP = Instance(instanceIdX, None, new Date())
+    val instanceYWithoutIP = Instance(instanceIdY, None, new Date())
+    val instanceXWithIP = Instance(instanceIdX, Some("1278.0.0.1"), new Date())
+    val instanceYWithIP = Instance(instanceIdY, Some("1278.0.0.1"), new Date())
 
     "if given no instances, should be Left" in {
       getSSHInstance(List(), true).isLeft shouldBe true

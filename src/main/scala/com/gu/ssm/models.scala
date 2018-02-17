@@ -5,10 +5,11 @@ import com.amazonaws.services.ec2.AmazonEC2Async
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceAsync
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
 import com.gu.ssm.aws.SSM
+import java.util.Date
 
 
 case class InstanceId(id: String) extends AnyVal
-case class Instance(id: InstanceId, publicIpAddressOpt: Option[String])
+case class Instance(id: InstanceId, publicIpAddressOpt: Option[String], launchDateTime: Date)
 case class AppStackStage(app: String, stack: String, stage: String)
 case class ExecutionTarget(instances: Option[List[InstanceId]] = None, ass: Option[AppStackStage] = None)
 
