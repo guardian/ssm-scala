@@ -33,7 +33,7 @@ object Logic {
     case _ => Right(Unit)
   }
 
-  def getSSHInstance(instances: List[Instance], singleInstanceSelectionModeOpt: Option[String]): Either[FailedAttempt, Instance] = {
+  def getSSHInstance(instances: List[Instance], sism: SingleInstanceSelectionMode): Either[FailedAttempt, Instance] = {
     val validInstances = instances
       .filter(_.publicIpAddressOpt.isDefined)
     if (instances.isEmpty) {
@@ -43,12 +43,11 @@ object Logic {
         case Nil => Left(FailedAttempt(Failure(s"Instances with no IPs", s"Found ${instances.map(_.id.id).mkString(", ")} but none are valid targets (instances need public IP addresses)", UnhandledError, None, None)))
         case instance :: Nil => Right(instance)
         case _ :: _ :: _  => {
-          singleInstanceSelectionModeOpt match {
-            case None => Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${validInstances.map(_.id.id).mkString(", ")}", UnhandledError, None, None)))
-            case Some("any") => Right(validInstances.sortBy(_.id.id).head)             // safe .head
-            case Some("newest") => Right(validInstances.sortBy(_.launchDateTime).last) // safe .last
-            case Some("oldest") => Right(validInstances.sortBy(_.launchDateTime).head) // safe .head
-            case Some(thing) => Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"The value of selection is incorrect, given ${thing}, expected: 'any', 'newest' or 'oldest'", UnhandledError, None, None)))
+          sism match {
+            case SismUnspecified => Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${validInstances.map(_.id.id).mkString(", ")}", UnhandledError, None, None)))
+            case SismAny => Right(validInstances.sortBy(_.id.id).head)             // safe .head
+            case SismNewest => Right(validInstances.sortBy(_.launchDateTime).last) // safe .last
+            case SismOldest => Right(validInstances.sortBy(_.launchDateTime).head) // safe .head
           }
         }
       }
@@ -64,5 +63,14 @@ object Logic {
 
   def computeIncorrectInstances(executionTarget: ExecutionTarget, instanceIds: List[InstanceId]): List[InstanceId] =
     executionTarget.instances.getOrElse(List()).filterNot(instanceIds.toSet)
+
+  implicit def singleInstanceSelectionModeConversion(mode: Option[String]): SingleInstanceSelectionMode = {
+    mode match {
+      case Some("any") => SismAny
+      case Some("newest") => SismNewest
+      case Some("oldest") => SismOldest
+      case _ => SismUnspecified
+    }
+  }
 
 }

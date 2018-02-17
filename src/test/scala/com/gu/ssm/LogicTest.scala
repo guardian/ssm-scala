@@ -59,33 +59,33 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
     val instanceYWithIP = Instance(instanceIdY, sip, dateNew)
 
     "if given no instances, should be Left" in {
-      getSSHInstance(List(), None).isLeft shouldBe true
+      getSSHInstance(List(), SismUnspecified).isLeft shouldBe true
     }
 
     "Given one instance" - {
 
       "Instance is ill-formed should be Left" in {
         val oneInstanceWithoutIP = List(instanceXWithoutIP)
-        getSSHInstance(oneInstanceWithoutIP, None).isLeft shouldBe true
+        getSSHInstance(oneInstanceWithoutIP,  SismUnspecified).isLeft shouldBe true
       }
 
       "Instance is well-formed, should return argument in all cases" - {
         val oneInstanceWithIP = List(instanceXWithIP)
 
-        "If singleInstanceSelectionModeOpt is None, returns argument" in {
-          getSSHInstance(oneInstanceWithIP, None).right.get shouldEqual instanceXWithIP
+        "If single instance selection mode is None, returns argument" in {
+          getSSHInstance(oneInstanceWithIP,  SismUnspecified).right.get shouldEqual instanceXWithIP
         }
 
-        "If singleInstanceSelectionModeOpt is Some(\"any\"), returns argument" in {
-          getSSHInstance(oneInstanceWithIP, Some("any")).right.get shouldEqual instanceXWithIP
+        "If single instance selection mode is SismAny, returns argument" in {
+          getSSHInstance(oneInstanceWithIP, SismAny).right.get shouldEqual instanceXWithIP
         }
 
-        "If singleInstanceSelectionModeOpt is Some(\"newest\"), returns argument" in {
-          getSSHInstance(oneInstanceWithIP, Some("newest")).right.get shouldEqual instanceXWithIP
+        "If single instance selection mode is SismNewest, returns argument" in {
+          getSSHInstance(oneInstanceWithIP, SismNewest).right.get shouldEqual instanceXWithIP
         }
 
-        "If singleInstanceSelectionModeOpt is Some(\"oldest\"), returns argument" in {
-          getSSHInstance(oneInstanceWithIP, Some("oldest")).right.get shouldEqual instanceXWithIP
+        "If single instance selection mode is SismOldest, returns argument" in {
+          getSSHInstance(oneInstanceWithIP, SismOldest).right.get shouldEqual instanceXWithIP
         }
       }
     }
@@ -95,47 +95,47 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
       "All instances are ill-formed" - {
         val twoInstancesWithoutIP = List(instanceYWithoutIP, instanceXWithoutIP)
         "should be Left" in {
-          getSSHInstance(twoInstancesWithoutIP, None).isLeft shouldBe true
+          getSSHInstance(twoInstancesWithoutIP, SismUnspecified).isLeft shouldBe true
         }
       }
 
       "At least one instance is well formed" - {
         val twoMixedInstances = List(instanceYWithoutIP, instanceXWithIP)
 
-        "If singleInstanceSelectionModeOpt is None, should be Left" in {
-          getSSHInstance(twoMixedInstances, None).right.get shouldEqual instanceXWithIP
+        "If single instance selection mode is SismUnspecified), should be Left" in {
+          getSSHInstance(twoMixedInstances, SismUnspecified).right.get shouldEqual instanceXWithIP
         }
 
-        "If singleInstanceSelectionModeOpt is Some(\"any\"), selects the well-formed instance" in {
-          getSSHInstance(twoMixedInstances, Some("any")).right.get shouldEqual instanceXWithIP
+        "If single instance selection mode is SismAny, selects the well-formed instance" in {
+          getSSHInstance(twoMixedInstances, SismAny).right.get shouldEqual instanceXWithIP
         }
 
-        "If singleInstanceSelectionModeOpt is Some(\"newest\"), selects the well-formed instance" in {
-          getSSHInstance(twoMixedInstances, Some("newest")).right.get shouldEqual instanceXWithIP
+        "If single instance selection mode is SismNewest, selects the well-formed instance" in {
+          getSSHInstance(twoMixedInstances, SismNewest).right.get shouldEqual instanceXWithIP
         }
 
-        "If singleInstanceSelectionModeOpt is Some(\"oldest\"), selects the well-formed instance" in {
-          getSSHInstance(twoMixedInstances, Some("oldest")).right.get shouldEqual instanceXWithIP
+        "If single instance selection mode is SismOldest, selects the well-formed instance" in {
+          getSSHInstance(twoMixedInstances, SismOldest).right.get shouldEqual instanceXWithIP
         }
       }
 
       "All instances are well formed" - {
         val twoInstancesWithIP = List(instanceYWithIP, instanceXWithIP)
 
-        "If singleInstanceSelectionModeOpt is None, should be Left" in {
-          getSSHInstance(twoInstancesWithIP, None).isLeft shouldBe true
+        "If single instance selection mode is SismUnspecified, should be Left" in {
+          getSSHInstance(twoInstancesWithIP, SismUnspecified).isLeft shouldBe true
         }
 
-        "If singleInstanceSelectionModeOpt is Some(\"any\"), selects the first well-formed instance (in lexicographic order of InstanceId)" in {
-          getSSHInstance(twoInstancesWithIP, Some("any")).right.get shouldEqual instanceXWithIP
+        "If single instance selection mode is SismAny, selects the first well-formed instance (in lexicographic order of InstanceId)" in {
+          getSSHInstance(twoInstancesWithIP, SismAny).right.get shouldEqual instanceXWithIP
         }
 
-        "If singleInstanceSelectionModeOpt is Some(\"newest\"), selects the instance with the most recent launch DateTime" in {
-          getSSHInstance(twoInstancesWithIP, Some("newest")).right.get shouldEqual instanceYWithIP
+        "If single instance selection mode is SismNewest, selects the instance with the most recent launch DateTime" in {
+          getSSHInstance(twoInstancesWithIP, SismNewest).right.get shouldEqual instanceYWithIP
         }
 
-        "If singleInstanceSelectionModeOpt is Some(\"oldest\"), selects the instance with the oldest launch DateTime" in {
-          getSSHInstance(twoInstancesWithIP, Some("oldest")).right.get shouldEqual instanceXWithIP
+        "If single instance selection mode is SismOldest, selects the instance with the oldest launch DateTime" in {
+          getSSHInstance(twoInstancesWithIP, SismOldest).right.get shouldEqual instanceXWithIP
         }
       }
     }

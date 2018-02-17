@@ -7,13 +7,15 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
 import com.gu.ssm.ArgumentParser.argParser
 
+import com.gu.ssm.Logic._
+
 object Main {
   implicit val ec: ExecutionContextExecutor = ExecutionContext.global
   private val maximumWaitTime = 25.seconds
 
   def main(args: Array[String]): Unit = {
     argParser.parse(args, Arguments.empty()) match {
-      case Some(Arguments(Some(executionTarget), toExecuteOpt, Some(profile), region, Some(mode), singleInstanceSelectionModeOpt)) =>
+      case Some(Arguments(Some(executionTarget), toExecuteOpt, Some(profile), region, Some(mode), sismOpt)) =>
         val awsClients = Logic.getClients(profile, region)
         mode match {
           case SsmRepl =>
@@ -24,7 +26,7 @@ object Main {
               case _ => fail()
             }
           case SsmSsh =>
-            setUpSSH(awsClients, profile, region, executionTarget, singleInstanceSelectionModeOpt)
+            setUpSSH(awsClients, profile, region, executionTarget, sismOpt)
         }
       case Some(_) => fail()
       case None => System.exit(ArgumentsError.code) // parsing cmd line args failed, help message will have been displayed
@@ -36,13 +38,13 @@ object Main {
     System.exit(UnhandledError.code)
   }
 
-  private def setUpSSH(awsClients: AWSClients, profile: String, region: Region, executionTarget: ExecutionTarget, singleInstanceSelectionModeOpt: Option[String]): Unit = {
+  private def setUpSSH(awsClients: AWSClients, profile: String, region: Region, executionTarget: ExecutionTarget, sism: SingleInstanceSelectionMode): Unit = {
     val fProgramResult = for {
       config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, profile, region, executionTarget)
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
       (authFile, authKey) = sshArtifacts
       addAndRemoveKeyCommand = SSH.addTaintedCommand(config.name) + SSH.addKeyCommand(authKey) + SSH.removeKeyCommand(authKey)
-      instance <- Attempt.fromEither(Logic.getSSHInstance(config.targets, singleInstanceSelectionModeOpt))
+      instance <- Attempt.fromEither(Logic.getSSHInstance(config.targets, sism))
       _ <- IO.tagAsTainted(instance.id, config.name, awsClients.ec2Client)
       _ <- IO.installSshKey(instance.id, config.name, addAndRemoveKeyCommand, awsClients.ssmClient)
     } yield SSH.sshCmd(authFile, instance)

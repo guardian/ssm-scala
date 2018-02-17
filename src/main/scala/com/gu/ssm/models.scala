@@ -48,3 +48,9 @@ case class AWSClients (
 )
 
 case class ResultsWithInstancesNotFound(results: List[(InstanceId, scala.Either[CommandStatus, CommandResult])], instancesNotFound: List[InstanceId])
+
+sealed trait SingleInstanceSelectionMode
+case object SismAny extends SingleInstanceSelectionMode
+case object SismNewest extends SingleInstanceSelectionMode
+case object SismOldest extends SingleInstanceSelectionMode
+case object SismUnspecified extends SingleInstanceSelectionMode
