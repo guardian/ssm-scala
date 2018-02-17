@@ -4,7 +4,6 @@ import com.amazonaws.regions.{Region, Regions}
 import com.amazonaws.services.ec2.AmazonEC2Async
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceAsync
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
-import com.gu.ssm.aws.SSM
 import java.util.Date
 
 
@@ -13,9 +12,9 @@ case class Instance(id: InstanceId, publicIpAddressOpt: Option[String], launchDa
 case class AppStackStage(app: String, stack: String, stage: String)
 case class ExecutionTarget(instances: Option[List[InstanceId]] = None, ass: Option[AppStackStage] = None)
 
-case class Arguments(executionTarget: Option[ExecutionTarget], toExecute: Option[String], profile: Option[String], region: Region, mode: Option[SsmMode], takeAnySingleInstance: Option[Boolean])
+case class Arguments(executionTarget: Option[ExecutionTarget], toExecute: Option[String], profile: Option[String], region: Region, mode: Option[SsmMode], singleInstanceSelectionMode: Option[String])
 object Arguments {
-  def empty(): Arguments = Arguments(None, None, None, Region.getRegion(Regions.EU_WEST_1), None, Some(false))
+  def empty(): Arguments = Arguments(None, None, None, Region.getRegion(Regions.EU_WEST_1), None, None)
 }
 
 sealed trait CommandStatus

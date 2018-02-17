@@ -33,7 +33,7 @@ object Logic {
     case _ => Right(Unit)
   }
 
-  def getSSHInstance(instances: List[Instance], takeAnySingleInstance: Boolean): Either[FailedAttempt, Instance] = {
+  def getSSHInstance(instances: List[Instance], singleInstanceSelectionModeOpt: Option[String]): Either[FailedAttempt, Instance] = {
     val sortedValidInstances = instances
       .filter(_.publicIpAddressOpt.isDefined)
       .sortBy(_.id.id)
@@ -45,7 +45,7 @@ object Logic {
           Left(FailedAttempt(Failure(s"Instances with no IPs", s"Found ${instances.map(_.id.id).mkString(", ")} but none are valid targets (instances need public IP addresses)", UnhandledError, None, None)))
         case instance :: Nil =>
           Right(instance)
-        case instance :: _ if takeAnySingleInstance =>
+        case instance :: _ if singleInstanceSelectionModeOpt.getOrElse("") == "any" =>
           Right(instance)
         case _ :: _ :: _ =>
           Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${sortedValidInstances.map(_.id.id).mkString(", ")}", UnhandledError, None, None)))

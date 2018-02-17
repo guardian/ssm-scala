@@ -52,7 +52,7 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
     val instanceYWithIP = Instance(instanceIdY, Some("1278.0.0.1"), new Date())
 
     "if given no instances, should be Left" in {
-      getSSHInstance(List(), true).isLeft shouldBe true
+      getSSHInstance(List(), Some("any")).isLeft shouldBe true
     }
 
     "Given one instance" - {
@@ -60,24 +60,24 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
       "Instance is ill-formed" - {
         val oneInstanceWithoutIP = List(instanceXWithoutIP)
 
-        "If takeAnySingleInstance is true, should be Left" in {
-          getSSHInstance(oneInstanceWithoutIP, true).isLeft shouldBe true
+        "If singleInstanceSelectionModeOpt is Some(\"any\"), should be Left" in {
+          getSSHInstance(oneInstanceWithoutIP, Some("any")).isLeft shouldBe true
         }
 
-        "If takeAnySingleInstance is false, should be Left" in {
-          getSSHInstance(oneInstanceWithoutIP, false).isLeft shouldBe true
+        "If singleInstanceSelectionModeOpt is None, should be Left" in {
+          getSSHInstance(oneInstanceWithoutIP, None).isLeft shouldBe true
         }
       }
 
       "Instance is well-formed" - {
         val oneInstanceWithIP = List(instanceXWithIP)
 
-        "If takeAnySingleInstance is true, returns argument" in {
-          getSSHInstance(oneInstanceWithIP, true).right.get shouldEqual instanceXWithIP
+        "IfsingleInstanceSelectionModeOpt is Some(\"any\"), returns argument" in {
+          getSSHInstance(oneInstanceWithIP, Some("any")).right.get shouldEqual instanceXWithIP
         }
 
-        "If takeAnySingleInstance is false, should be Left" in {
-          getSSHInstance(oneInstanceWithIP, false).right.get shouldEqual instanceXWithIP
+        "If singleInstanceSelectionModeOpt is None, should be Left" in {
+          getSSHInstance(oneInstanceWithIP, None).right.get shouldEqual instanceXWithIP
         }
       }
     }
@@ -87,36 +87,36 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
       "All instances are ill-formed" - {
         val twoInstancesWithIP = List(instanceYWithoutIP, instanceXWithoutIP)
 
-        "If takeAnySingleInstance is true, should be Left" in {
-          getSSHInstance(twoInstancesWithIP, true).isLeft shouldBe true
+        "If singleInstanceSelectionModeOpt is Some(\"any\"), should be Left" in {
+          getSSHInstance(twoInstancesWithIP, Some("any")).isLeft shouldBe true
         }
 
-        "If takeAnySingleInstance is false, should be Left" in {
-          getSSHInstance(twoInstancesWithIP, false).isLeft shouldBe true
+        "If singleInstanceSelectionModeOpt is None, should be Left" in {
+          getSSHInstance(twoInstancesWithIP, None).isLeft shouldBe true
         }
       }
 
       "At least one instance is well formed" - {
         val twoMixedInstances = List(instanceYWithoutIP, instanceXWithIP)
 
-        "If takeAnySingleInstance is true, selects the well-formed instance" in {
-          getSSHInstance(twoMixedInstances, true).right.get shouldEqual instanceXWithIP
+        "If singleInstanceSelectionModeOpt is Some(\"any\"), selects the well-formed instance" in {
+          getSSHInstance(twoMixedInstances, Some("any")).right.get shouldEqual instanceXWithIP
         }
 
-        "If takeAnySingleInstance is false, should be Left" in {
-          getSSHInstance(twoMixedInstances, false).right.get shouldEqual instanceXWithIP
+        "If singleInstanceSelectionModeOpt is None, should be Left" in {
+          getSSHInstance(twoMixedInstances, None).right.get shouldEqual instanceXWithIP
         }
       }
 
       "All instances are well formed" - {
         val twoInstancesWithIP = List(instanceYWithIP, instanceXWithIP)
 
-        "If takeAnySingleInstance is true, selects the first well-formed instance (in lexicographic order of InstanceId)" in {
-          getSSHInstance(twoInstancesWithIP, true).right.get shouldEqual instanceXWithIP
+        "If singleInstanceSelectionModeOpt is Some(\"any\"), selects the first well-formed instance (in lexicographic order of InstanceId)" in {
+          getSSHInstance(twoInstancesWithIP, Some("any")).right.get shouldEqual instanceXWithIP
         }
 
-        "If takeAnySingleInstance is false, should be Left" in {
-          getSSHInstance(twoInstancesWithIP, false).isLeft shouldBe true
+        "If singleInstanceSelectionModeOpt is None, should be Left" in {
+          getSSHInstance(twoInstancesWithIP, None).isLeft shouldBe true
         }
       }
     }

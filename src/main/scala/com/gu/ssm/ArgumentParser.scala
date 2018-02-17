@@ -66,9 +66,9 @@ object ArgumentParser {
       .action((_, c) => c.copy(mode = Some(SsmSsh)))
       .text("Create and upload a temporary ssh key")
       .children(
-        opt[Boolean]('a', "any").optional()
-          .action((flag, args) => args.copy(takeAnySingleInstance = Some(flag)))
-          .text("Indicates whether the command should run on any single instance"),
+        opt[String]('s', "selection").optional()
+          .action((selectionMode, args) => args.copy(singleInstanceSelectionMode = Some(selectionMode)))
+          .text("Indicates whether the command should run on any single instance")
       )
 
     checkConfig { args =>
