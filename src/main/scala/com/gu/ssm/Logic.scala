@@ -34,22 +34,22 @@ object Logic {
   }
 
   def getSSHInstance(instances: List[Instance], sism: SingleInstanceSelectionMode): Either[FailedAttempt, Instance] = {
-    val validInstances = instances
-      .filter(_.publicIpAddressOpt.isDefined)
     if (instances.isEmpty) {
       Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Could not find any instance", UnhandledError, None, None)))
     } else {
-      validInstances match {
+      val validInstances = instances
+        .filter(_.publicIpAddressOpt.isDefined)
+      val validInstanceOrdered = sism match {
+        case SismUnspecified => validInstances
+        case SismAny => validInstances.sortBy(_.id.id)
+        case SismNewest => validInstances.sortBy(_.launchDateTime).reverse
+        case SismOldest => validInstances.sortBy(_.launchDateTime)
+      }
+      validInstanceOrdered match {
         case Nil => Left(FailedAttempt(Failure(s"Instances with no IPs", s"Found ${instances.map(_.id.id).mkString(", ")} but none are valid targets (instances need public IP addresses)", UnhandledError, None, None)))
         case instance :: Nil => Right(instance)
-        case _ :: _ :: _  => {
-          sism match {
-            case SismUnspecified => Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${validInstances.map(_.id.id).mkString(", ")}", UnhandledError, None, None)))
-            case SismAny => Right(validInstances.sortBy(_.id.id).head)             // safe .head
-            case SismNewest => Right(validInstances.sortBy(_.launchDateTime).last) // safe .last
-            case SismOldest => Right(validInstances.sortBy(_.launchDateTime).head) // safe .head
-          }
-        }
+        case _ :: _ :: _ if sism == SismUnspecified => Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${validInstances.map(_.id.id).mkString(", ")}", UnhandledError, None, None)))
+        case instance :: _ :: _ => Right(instance)
       }
     }
   }
