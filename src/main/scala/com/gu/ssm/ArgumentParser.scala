@@ -68,7 +68,12 @@ object ArgumentParser {
       .children(
         opt[String]('s', "selection").optional()
           .action((selectionMode, args) => args.copy(singleInstanceSelectionMode = Some(selectionMode)))
-          .text("Indicates whether the command should run on any single instance")
+          .text("""
+                  |    Indicates that in the case of multiple valid instances one
+                  |    should be chosen to proceed and indicates which method to
+                  |    use. With 'any' selects any instance; with 'newest' selects
+                  |    the newest valid instance and with 'oldest' selects the
+                  |    oldest valid instance.""".stripMargin)
       )
 
     checkConfig { args =>

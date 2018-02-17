@@ -72,7 +72,7 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
       "Instance is well-formed, should return argument in all cases" - {
         val oneInstanceWithIP = List(instanceXWithIP)
 
-        "If single instance selection mode is None, returns argument" in {
+        "If single instance selection mode is SismUnspecified, returns argument" in {
           getSSHInstance(oneInstanceWithIP,  SismUnspecified).right.get shouldEqual instanceXWithIP
         }
 
@@ -94,6 +94,7 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
 
       "All instances are ill-formed" - {
         val twoInstancesWithoutIP = List(instanceYWithoutIP, instanceXWithoutIP)
+
         "should be Left" in {
           getSSHInstance(twoInstancesWithoutIP, SismUnspecified).isLeft shouldBe true
         }
