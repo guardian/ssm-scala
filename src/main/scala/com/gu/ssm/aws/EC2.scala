@@ -7,6 +7,7 @@ import com.amazonaws.services.ec2.{AmazonEC2Async, AmazonEC2AsyncClientBuilder}
 import com.gu.ssm.aws.AwsAsyncHandler.{awsToScala, handleAWSErrs}
 import com.gu.ssm.utils.attempt.Attempt
 import com.gu.ssm.{AppStackStage, Instance, InstanceId}
+import java.util.Date
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext

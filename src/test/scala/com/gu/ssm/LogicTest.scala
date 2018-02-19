@@ -1,5 +1,7 @@
 package com.gu.ssm
 
+import java.time.temporal.TemporalUnit
+
 import org.scalatest.{EitherValues, FreeSpec, Matchers}
 
 
@@ -43,13 +45,14 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
 
   "getRelevantInstance" - {
     import Logic.getSSHInstance
-    import java.text.SimpleDateFormat
+    import java.time.LocalDateTime
+    import java.util.Date
+    import java.time.ZoneId
 
     val sip = Some("127.0.0.1")
 
-    val formatter = new SimpleDateFormat("yyyy-MM-d HH:mm:ss")
-    val dateOld = formatter.parse("2018-02-17 13:00:14")
-    val dateNew = formatter.parse("2018-02-17 15:05:22")
+    val dateOld = Date.from(new LocalDateTime().minusDays(7).atZone(ZoneId.systemDefault()).toInstant())
+    val dateNew = new Date
 
     val instanceIdX = InstanceId("X")
     val instanceIdY = InstanceId("Y")
