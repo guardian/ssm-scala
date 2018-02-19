@@ -40,7 +40,6 @@ object Logic {
       val validInstances = instances
         .filter(_.publicIpAddressOpt.isDefined)
       val validInstanceOrdered = sism match {
-        case Some(SismAny) => validInstances.sortBy(_.id.id)
         case Some(SismNewest) => validInstances.sortBy(_.launchDateTime).reverse
         case Some(SismOldest) => validInstances.sortBy(_.launchDateTime)
         case None => validInstances
@@ -66,7 +65,7 @@ object Logic {
 
   def singleInstanceSelectionModeConversion(mode: String): Option[SingleInstanceSelectionMode] = {
     mode match {
-      case "any" => Some(SismAny)
+      case "any" => Some(SismNewest) // We make "any" act like "newest"
       case "newest" => Some(SismNewest)
       case "oldest" => Some(SismOldest)
       case _ => None

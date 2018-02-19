@@ -72,19 +72,15 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
       "Instance is well-formed, should return argument in all cases" - {
         val oneInstanceWithIP = List(instanceXWithIP)
 
-        "If single instance selection mode is SismUnspecified, returns argument" in {
+        "If single instance selection mode is None, returns argument" in {
           getSSHInstance(oneInstanceWithIP,  None).right.get shouldEqual instanceXWithIP
         }
 
-        "If single instance selection mode is SismAny, returns argument" in {
-          getSSHInstance(oneInstanceWithIP, Some(SismAny)).right.get shouldEqual instanceXWithIP
-        }
-
-        "If single instance selection mode is SismNewest, returns argument" in {
+        "If single instance selection mode is Some(SismNewest), returns argument" in {
           getSSHInstance(oneInstanceWithIP, Some(SismNewest)).right.get shouldEqual instanceXWithIP
         }
 
-        "If single instance selection mode is SismOldest, returns argument" in {
+        "If single instance selection mode is Some(SismOldest), returns argument" in {
           getSSHInstance(oneInstanceWithIP, Some(SismOldest)).right.get shouldEqual instanceXWithIP
         }
       }
@@ -103,19 +99,15 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
       "At least one instance is well formed" - {
         val twoMixedInstances = List(instanceYWithoutIP, instanceXWithIP)
 
-        "If single instance selection mode is SismUnspecified, should be Left" in {
+        "If single instance selection mode is None, should be Left" in {
           getSSHInstance(twoMixedInstances, None).right.get shouldEqual instanceXWithIP
         }
 
-        "If single instance selection mode is SismAny, selects the well-formed instance" in {
-          getSSHInstance(twoMixedInstances, Some(SismAny)).right.get shouldEqual instanceXWithIP
-        }
-
-        "If single instance selection mode is SismNewest, selects the well-formed instance" in {
+        "If single instance selection mode is Some(SismNewest), selects the well-formed instance" in {
           getSSHInstance(twoMixedInstances, Some(SismNewest)).right.get shouldEqual instanceXWithIP
         }
 
-        "If single instance selection mode is SismOldest, selects the well-formed instance" in {
+        "If single instance selection mode is Some(SismOldest), selects the well-formed instance" in {
           getSSHInstance(twoMixedInstances, Some(SismOldest)).right.get shouldEqual instanceXWithIP
         }
       }
@@ -123,19 +115,15 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
       "All instances are well formed" - {
         val twoInstancesWithIP = List(instanceYWithIP, instanceXWithIP)
 
-        "If single instance selection mode is SismUnspecified, should be Left" in {
+        "If single instance selection mode is none, should be Left" in {
           getSSHInstance(twoInstancesWithIP, None).isLeft shouldBe true
         }
 
-        "If single instance selection mode is SismAny, selects the first well-formed instance (in lexicographic order of InstanceId)" in {
-          getSSHInstance(twoInstancesWithIP, Some(SismAny)).right.get shouldEqual instanceXWithIP
-        }
-
-        "If single instance selection mode is SismNewest, selects the instance with the most recent launch DateTime" in {
+        "If single instance selection mode is Some(SismNewest), selects the instance with the most recent launch DateTime" in {
           getSSHInstance(twoInstancesWithIP, Some(SismNewest)).right.get shouldEqual instanceYWithIP
         }
 
-        "If single instance selection mode is SismOldest, selects the instance with the oldest launch DateTime" in {
+        "If single instance selection mode is Some(SismOldest), selects the instance with the oldest launch DateTime" in {
           getSSHInstance(twoInstancesWithIP, Some(SismOldest)).right.get shouldEqual instanceXWithIP
         }
       }
