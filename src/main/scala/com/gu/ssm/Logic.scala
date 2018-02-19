@@ -64,7 +64,7 @@ object Logic {
   def computeIncorrectInstances(executionTarget: ExecutionTarget, instanceIds: List[InstanceId]): List[InstanceId] =
     executionTarget.instances.getOrElse(List()).filterNot(instanceIds.toSet)
 
-  implicit def singleInstanceSelectionModeConversion(mode: String): Option[SingleInstanceSelectionMode] = {
+  def singleInstanceSelectionModeConversion(mode: String): Option[SingleInstanceSelectionMode] = {
     mode match {
       case "any" => Some(SismAny)
       case "newest" => Some(SismNewest)
