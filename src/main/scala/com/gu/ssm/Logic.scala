@@ -33,17 +33,19 @@ object Logic {
     case _ => Right(Unit)
   }
 
+  def instancesWithOrder(instances: List[Instance], sism: SingleInstanceSelectionMode): List[Instance] = sism match {
+    case SismNewest => instances.sortBy(_.launchDateTime).reverse
+    case SismOldest => instances.sortBy(_.launchDateTime)
+    case SismUnspecified => instances
+  }
+
   def getSSHInstance(instances: List[Instance], sism: SingleInstanceSelectionMode): Either[FailedAttempt, Instance] = {
     if (instances.isEmpty) {
       Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Could not find any instance", UnhandledError, None, None)))
     } else {
       val validInstances = instances
         .filter(_.publicIpAddressOpt.isDefined)
-      val validInstanceOrdered = sism match {
-        case SismNewest => validInstances.sortBy(_.launchDateTime).reverse
-        case SismOldest => validInstances.sortBy(_.launchDateTime)
-        case SismUnspecified => validInstances
-      }
+      val validInstanceOrdered = instancesWithOrder(validInstances, sism)
       validInstanceOrdered match {
         case Nil => Left(FailedAttempt(Failure(s"Instances with no IPs", s"Found ${instances.map(_.id.id).mkString(", ")} but none are valid targets (instances need public IP addresses)", UnhandledError, None, None)))
         case instance :: Nil => Right(instance)

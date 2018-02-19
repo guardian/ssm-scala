@@ -1,7 +1,8 @@
 package com.gu.ssm
 
 import org.scalatest.{EitherValues, FreeSpec, Matchers}
-
+import java.time.{LocalDateTime, ZoneId}
+import java.util.Date
 
 class LogicTest extends FreeSpec with Matchers with EitherValues {
   "extractSASTags" - {
@@ -41,23 +42,31 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
     }
   }
 
+  "instancesWithOrder" - {
+    import Logic.instancesWithOrder
+
+    val X = Instance(InstanceId("X"), None, Date.from(LocalDateTime.now().minusDays(7).atZone(ZoneId.systemDefault()).toInstant()))
+    val Y = Instance(InstanceId("Y"), None, Date.from(LocalDateTime.now().minusDays(4).atZone(ZoneId.systemDefault()).toInstant()))
+    val Z = Instance(InstanceId("Z"), None, Date.from(LocalDateTime.now().minusDays(5).atZone(ZoneId.systemDefault()).toInstant()))
+
+    "SismNewest orders in increasing creation time" in {
+      instancesWithOrder(List(X, Y, Z), SismNewest) shouldEqual List(Y, Z, X)
+    }
+
+    "SismNewest orders in decreasing creation time" in {
+      instancesWithOrder(List(X, Y, Z), SismOldest) shouldEqual List(X, Z, Y)
+    }
+
+    "SismUnspecified does not change order" in {
+      instancesWithOrder(List(X, Y, Z), SismUnspecified) shouldEqual List(X, Y, Z)
+    }
+  }
+
   "getRelevantInstance" - {
     import Logic.getSSHInstance
-    import java.time.LocalDateTime
-    import java.util.Date
-    import java.time.ZoneId
 
-    val sip = Some("127.0.0.1")
-
-    val dateOld = Date.from(LocalDateTime.now().minusDays(7).atZone(ZoneId.systemDefault()).toInstant())
-    val dateNew = new Date
-
-    val instanceIdX = InstanceId("X")
-    val instanceIdY = InstanceId("Y")
-    val instanceXWithoutIP = Instance(instanceIdX, None, dateOld)
-    val instanceYWithoutIP = Instance(instanceIdY, None, dateNew)
-    val instanceXWithIP = Instance(instanceIdX, sip, dateOld)
-    val instanceYWithIP = Instance(instanceIdY, sip, dateNew)
+    def makeInstance(id: String, ipOpt:Option[String], launchDateDayShift: Int) =
+      Instance(InstanceId(id), ipOpt, Date.from(LocalDateTime.now().plusDays(launchDateDayShift).atZone(ZoneId.systemDefault()).toInstant()))
 
     "if given no instances, should be Left" in {
       getSSHInstance(List(), SismUnspecified).isLeft shouldBe true
@@ -66,66 +75,52 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
     "Given one instance" - {
 
       "Instance is ill-formed should be Left" in {
-        val oneInstanceWithoutIP = List(instanceXWithoutIP)
-        getSSHInstance(oneInstanceWithoutIP, SismUnspecified).isLeft shouldBe true
+        val i = makeInstance("X", None, 0)
+        getSSHInstance(List(i), SismUnspecified).isLeft shouldBe true
       }
 
       "Instance is well-formed, should return argument in all cases" - {
-        val oneInstanceWithIP = List(instanceXWithIP)
 
         "If single instance selection mode is SismNewest, returns argument" in {
-          getSSHInstance(oneInstanceWithIP, SismNewest).right.get shouldEqual instanceXWithIP
+          val i = makeInstance("X", Some("127.0.0.1"), 0)
+          getSSHInstance(List(i), SismNewest).right.get shouldEqual i
         }
 
         "If single instance selection mode is SismOldest, returns argument" in {
-          getSSHInstance(oneInstanceWithIP, SismOldest).right.get shouldEqual instanceXWithIP
+          val i = makeInstance("X", Some("127.0.0.1"), 0)
+          getSSHInstance(List(i), SismOldest).right.get shouldEqual i
         }
 
         "If single instance selection mode is SismUnspecified, returns argument" in {
-          getSSHInstance(oneInstanceWithIP,  SismUnspecified).right.get shouldEqual instanceXWithIP
+          val i = makeInstance("X", Some("127.0.0.1"), 0)
+          getSSHInstance(List(i),  SismUnspecified).right.get shouldEqual i
         }
       }
     }
 
     "Given more than one instance" - {
 
-      "All instances are ill-formed" - {
-        val twoInstancesWithoutIP = List(instanceYWithoutIP, instanceXWithoutIP)
-
-        "should be Left" in {
-          getSSHInstance(twoInstancesWithoutIP, SismUnspecified).isLeft shouldBe true
-        }
+      "All instances are ill-formed, should be Left" in {
+        val i1 = makeInstance("X", None, -7)
+        val i2 = makeInstance("Y", None, 0)
+        getSSHInstance(List(i1, i2), SismUnspecified).isLeft shouldBe true
       }
 
       "At least one instance is well formed" - {
-        val twoMixedInstances = List(instanceYWithoutIP, instanceXWithIP)
+        val i1 = makeInstance("X", None, -7)
+        val i2 = makeInstance("Y", Some("127.0.0.1"), -1)
+        val i3 = makeInstance("Z", Some("127.0.0.1"), 0)
 
-        "If single instance selection mode is SismNewest, selects the well-formed instance" in {
-          getSSHInstance(twoMixedInstances, SismNewest).right.get shouldEqual instanceXWithIP
+        "If single instance selection mode is SismNewest, selects the newest well-formed instance" in {
+          getSSHInstance(List(i1, i2, i3), SismNewest).right.get shouldEqual i3
         }
 
-        "If single instance selection mode is SismOldest, selects the well-formed instance" in {
-          getSSHInstance(twoMixedInstances, SismOldest).right.get shouldEqual instanceXWithIP
-        }
-
-        "If single instance selection mode is SismUnspecified, should be Left" in {
-          getSSHInstance(twoMixedInstances, SismUnspecified).right.get shouldEqual instanceXWithIP
-        }
-      }
-
-      "All instances are well formed" - {
-        val twoInstancesWithIP = List(instanceYWithIP, instanceXWithIP)
-
-        "If single instance selection mode is SismNewest, selects the instance with the most recent launch DateTime" in {
-          getSSHInstance(twoInstancesWithIP, SismNewest).right.get shouldEqual instanceYWithIP
-        }
-
-        "If single instance selection mode is SismOldest, selects the instance with the oldest launch DateTime" in {
-          getSSHInstance(twoInstancesWithIP, SismOldest).right.get shouldEqual instanceXWithIP
+        "If single instance selection mode is SismOldest, selects the oldest well-formed instance" in {
+          getSSHInstance(List(i1, i2, i3), SismOldest).right.get shouldEqual i2
         }
 
         "If single instance selection mode is SismUnspecified, should be Left" in {
-          getSSHInstance(twoInstancesWithIP, SismUnspecified).isLeft shouldBe true
+          getSSHInstance(List(i1, i2, i3), SismUnspecified).isLeft shouldBe true
         }
       }
     }
