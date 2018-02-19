@@ -1,7 +1,5 @@
 package com.gu.ssm
 
-import java.time.temporal.TemporalUnit
-
 import org.scalatest.{EitherValues, FreeSpec, Matchers}
 
 
@@ -51,7 +49,7 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
 
     val sip = Some("127.0.0.1")
 
-    val dateOld = Date.from(new LocalDateTime().minusDays(7).atZone(ZoneId.systemDefault()).toInstant())
+    val dateOld = Date.from(LocalDateTime.now().minusDays(7).atZone(ZoneId.systemDefault()).toInstant())
     val dateNew = new Date
 
     val instanceIdX = InstanceId("X")
