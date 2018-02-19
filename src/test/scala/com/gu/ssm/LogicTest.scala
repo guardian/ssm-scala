@@ -45,7 +45,7 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
     import Logic.getSSHInstance
     import java.text.SimpleDateFormat
 
-    val sip = Some("1278.0.0.1")
+    val sip = Some("127.0.0.1")
 
     val formatter = new SimpleDateFormat("yyyy-MM-d HH:mm:ss")
     val dateOld = formatter.parse("2018-02-17 13:00:14")
