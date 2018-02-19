@@ -12,9 +12,9 @@ case class Instance(id: InstanceId, publicIpAddressOpt: Option[String], launchDa
 case class AppStackStage(app: String, stack: String, stage: String)
 case class ExecutionTarget(instances: Option[List[InstanceId]] = None, ass: Option[AppStackStage] = None)
 
-case class Arguments(executionTarget: Option[ExecutionTarget], toExecute: Option[String], profile: Option[String], region: Region, mode: Option[SsmMode], singleInstanceSelectionMode: Option[SingleInstanceSelectionMode])
+case class Arguments(executionTarget: Option[ExecutionTarget], toExecute: Option[String], profile: Option[String], region: Region, mode: Option[SsmMode], singleInstanceSelectionMode: SingleInstanceSelectionMode)
 object Arguments {
-  def empty(): Arguments = Arguments(None, None, None, Region.getRegion(Regions.EU_WEST_1), None, None)
+  def empty(): Arguments = Arguments(None, None, None, Region.getRegion(Regions.EU_WEST_1), None, SismUnspecified)
 }
 
 sealed trait CommandStatus
@@ -52,3 +52,4 @@ case class ResultsWithInstancesNotFound(results: List[(InstanceId, scala.Either[
 sealed trait SingleInstanceSelectionMode
 case object SismNewest extends SingleInstanceSelectionMode
 case object SismOldest extends SingleInstanceSelectionMode
+case object SismUnspecified extends SingleInstanceSelectionMode

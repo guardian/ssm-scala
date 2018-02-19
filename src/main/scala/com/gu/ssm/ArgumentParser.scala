@@ -71,8 +71,8 @@ object ArgumentParser {
             .validate(
               sism =>
                 singleInstanceSelectionModeConversion(sism) match {
-                  case None => Left("Unknown instance selection mode: $sism")
-                  case Some(_) => Right(Unit)
+                  case SismUnspecified => Left("Unknown instance selection mode: $sism")
+                  case _ => Right(Unit)
                 }
             )
           .action((selectionMode, args) => {

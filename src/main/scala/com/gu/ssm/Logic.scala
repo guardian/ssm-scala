@@ -33,21 +33,21 @@ object Logic {
     case _ => Right(Unit)
   }
 
-  def getSSHInstance(instances: List[Instance], sism: Option[SingleInstanceSelectionMode]): Either[FailedAttempt, Instance] = {
+  def getSSHInstance(instances: List[Instance], sism: SingleInstanceSelectionMode): Either[FailedAttempt, Instance] = {
     if (instances.isEmpty) {
       Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Could not find any instance", UnhandledError, None, None)))
     } else {
       val validInstances = instances
         .filter(_.publicIpAddressOpt.isDefined)
       val validInstanceOrdered = sism match {
-        case Some(SismNewest) => validInstances.sortBy(_.launchDateTime).reverse
-        case Some(SismOldest) => validInstances.sortBy(_.launchDateTime)
-        case None => validInstances
+        case SismNewest => validInstances.sortBy(_.launchDateTime).reverse
+        case SismOldest => validInstances.sortBy(_.launchDateTime)
+        case SismUnspecified => validInstances
       }
       validInstanceOrdered match {
         case Nil => Left(FailedAttempt(Failure(s"Instances with no IPs", s"Found ${instances.map(_.id.id).mkString(", ")} but none are valid targets (instances need public IP addresses)", UnhandledError, None, None)))
         case instance :: Nil => Right(instance)
-        case _ :: _ :: _ if sism == None => Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${validInstances.map(_.id.id).mkString(", ")}.  Use --selection [any|oldest|newest]?", UnhandledError, None, None)))
+        case _ :: _ :: _ if sism == SismUnspecified => Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${validInstances.map(_.id.id).mkString(", ")}.  Use --selection [any|oldest|newest]?", UnhandledError, None, None)))
         case instance :: _ :: _ => Right(instance)
       }
     }
@@ -63,12 +63,12 @@ object Logic {
   def computeIncorrectInstances(executionTarget: ExecutionTarget, instanceIds: List[InstanceId]): List[InstanceId] =
     executionTarget.instances.getOrElse(List()).filterNot(instanceIds.toSet)
 
-  def singleInstanceSelectionModeConversion(mode: String): Option[SingleInstanceSelectionMode] = {
+  def singleInstanceSelectionModeConversion(mode: String): SingleInstanceSelectionMode = {
     mode match {
-      case "any" => Some(SismNewest) // We make "any" act like "newest"
-      case "newest" => Some(SismNewest)
-      case "oldest" => Some(SismOldest)
-      case _ => None
+      case "any" => SismNewest // We make "any" act like "newest"
+      case "newest" => SismNewest
+      case "oldest" => SismOldest
+      case _ => SismUnspecified
     }
   }
 

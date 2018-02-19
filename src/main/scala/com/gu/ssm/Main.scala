@@ -13,7 +13,7 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     argParser.parse(args, Arguments.empty()) match {
-      case Some(Arguments(Some(executionTarget), toExecuteOpt, Some(profile), region, Some(mode), sismOpt)) =>
+      case Some(Arguments(Some(executionTarget), toExecuteOpt, Some(profile), region, Some(mode), sism)) =>
         val awsClients = Logic.getClients(profile, region)
         mode match {
           case SsmRepl =>
@@ -24,7 +24,7 @@ object Main {
               case _ => fail()
             }
           case SsmSsh =>
-            setUpSSH(awsClients, profile, region, executionTarget, sismOpt)
+            setUpSSH(awsClients, profile, region, executionTarget, sism)
         }
       case Some(_) => fail()
       case None => System.exit(ArgumentsError.code) // parsing cmd line args failed, help message will have been displayed
@@ -36,7 +36,7 @@ object Main {
     System.exit(UnhandledError.code)
   }
 
-  private def setUpSSH(awsClients: AWSClients, profile: String, region: Region, executionTarget: ExecutionTarget, sism: Option[SingleInstanceSelectionMode]): Unit = {
+  private def setUpSSH(awsClients: AWSClients, profile: String, region: Region, executionTarget: ExecutionTarget, sism: SingleInstanceSelectionMode): Unit = {
     val fProgramResult = for {
       config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, profile, region, executionTarget)
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
