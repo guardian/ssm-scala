@@ -103,7 +103,7 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
       "At least one instance is well formed" - {
         val twoMixedInstances = List(instanceYWithoutIP, instanceXWithIP)
 
-        "If single instance selection mode is SismUnspecified), should be Left" in {
+        "If single instance selection mode is SismUnspecified, should be Left" in {
           getSSHInstance(twoMixedInstances, None).right.get shouldEqual instanceXWithIP
         }
 
