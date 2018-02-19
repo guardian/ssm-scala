@@ -34,12 +34,7 @@ Run SSM in interactive/repl mode
 
 Command: ssh [options]
 Create and upload a temporary ssh key
-  -s, --selection <value>  
-    Indicates that in the case of multiple valid instances one
-    should be chosen to proceed and indicates which method to
-    use. With 'any' selects any instance; with 'newest' selects
-    the newest valid instance and with 'oldest' selects the
-    oldest valid instance.
+  -s, --selection <value>  Specifies the instance selection method. Valid values are 'newest' and 'oldest'.
 ```
 
 The mandatory options are: 

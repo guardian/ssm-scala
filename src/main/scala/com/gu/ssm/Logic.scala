@@ -65,7 +65,6 @@ object Logic {
 
   def singleInstanceSelectionModeConversion(mode: String): SingleInstanceSelectionMode = {
     mode match {
-      case "any" => SismNewest // We make "any" act like "newest"
       case "newest" => SismNewest
       case "oldest" => SismOldest
       case _ => SismUnspecified
