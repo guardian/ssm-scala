@@ -4,6 +4,7 @@ import java.io.File
 
 import com.amazonaws.regions.{Region, Regions}
 import scopt.OptionParser
+import com.gu.ssm.Logic.singleInstanceSelectionModeConversion
 
 
 object ArgumentParser {
@@ -67,7 +68,16 @@ object ArgumentParser {
       .text("Create and upload a temporary ssh key")
       .children(
         opt[String]('s', "selection").optional()
-          .action((selectionMode, args) => args.copy(singleInstanceSelectionMode = Some(selectionMode)))
+            .validate(
+              sism =>
+                singleInstanceSelectionModeConversion(sism) match {
+                  case None => Left("Unknown instance selection mode: $sism")
+                  case Some(_) => Right(Unit)
+                }
+            )
+          .action((selectionMode, args) => {
+            args.copy(singleInstanceSelectionMode = singleInstanceSelectionModeConversion(selectionMode))
+          })
           .text("""
                   |    Indicates that in the case of multiple valid instances one
                   |    should be chosen to proceed and indicates which method to

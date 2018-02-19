@@ -7,8 +7,6 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
 import com.gu.ssm.ArgumentParser.argParser
 
-import com.gu.ssm.Logic._
-
 object Main {
   implicit val ec: ExecutionContextExecutor = ExecutionContext.global
   private val maximumWaitTime = 25.seconds
@@ -38,7 +36,7 @@ object Main {
     System.exit(UnhandledError.code)
   }
 
-  private def setUpSSH(awsClients: AWSClients, profile: String, region: Region, executionTarget: ExecutionTarget, sism: SingleInstanceSelectionMode): Unit = {
+  private def setUpSSH(awsClients: AWSClients, profile: String, region: Region, executionTarget: ExecutionTarget, sism: Option[SingleInstanceSelectionMode]): Unit = {
     val fProgramResult = for {
       config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, profile, region, executionTarget)
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
