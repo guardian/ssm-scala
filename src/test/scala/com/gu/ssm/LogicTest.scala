@@ -1,8 +1,7 @@
 package com.gu.ssm
 
 import org.scalatest.{EitherValues, FreeSpec, Matchers}
-import java.time.{LocalDate, LocalDateTime, ZoneId}
-import java.util.Date
+import java.time.{LocalDateTime, ZoneId}
 
 class LogicTest extends FreeSpec with Matchers with EitherValues {
   "extractSASTags" - {
@@ -46,7 +45,7 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
     import Logic.instancesWithOrder
 
     def makeInstance(id: String, ipOpt:Option[String], launchDateDayShift: Int): Instance =
-      Instance(InstanceId(id), ipOpt, Date.from(LocalDateTime.now().plusDays(launchDateDayShift).atZone(ZoneId.systemDefault()).toInstant()))
+      Instance(InstanceId(id), ipOpt, LocalDateTime.now().plusDays(launchDateDayShift).atZone(ZoneId.systemDefault()).toInstant())
 
     val X = makeInstance("X", None, -7)
     val Y = makeInstance("X", None, -4)
@@ -69,7 +68,7 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
     import Logic.getSSHInstance
 
     def makeInstance(id: String, ipOpt:Option[String], launchDateDayShift: Int): Instance =
-      Instance(InstanceId(id), ipOpt, Date.from(LocalDateTime.now().plusDays(launchDateDayShift).atZone(ZoneId.systemDefault()).toInstant()))
+      Instance(InstanceId(id), ipOpt, LocalDateTime.now().plusDays(launchDateDayShift).atZone(ZoneId.systemDefault()).toInstant())
 
     "if given no instances, should be Left" in {
       getSSHInstance(List(), SismUnspecified).isLeft shouldBe true

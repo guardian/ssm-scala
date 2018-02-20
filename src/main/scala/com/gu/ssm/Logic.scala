@@ -34,8 +34,8 @@ object Logic {
   }
 
   def instancesWithOrder(instances: List[Instance], sism: SingleInstanceSelectionMode): List[Instance] = sism match {
-    case SismNewest => instances.sortBy(_.launchDateTime).reverse
-    case SismOldest => instances.sortBy(_.launchDateTime)
+    case SismNewest => instances.sortBy(_.launchInstant).reverse
+    case SismOldest => instances.sortBy(_.launchInstant)
     case SismUnspecified => instances
   }
 

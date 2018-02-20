@@ -7,7 +7,6 @@ import com.amazonaws.services.ec2.{AmazonEC2Async, AmazonEC2AsyncClientBuilder}
 import com.gu.ssm.aws.AwsAsyncHandler.{awsToScala, handleAWSErrs}
 import com.gu.ssm.utils.attempt.Attempt
 import com.gu.ssm.{AppStackStage, Instance, InstanceId}
-import java.util.Date
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
@@ -46,7 +45,7 @@ object EC2 {
       reservation <- describeInstancesResult.getReservations.asScala
       awsInstance <- reservation.getInstances.asScala
       instanceId = awsInstance.getInstanceId
-      launchDateTime = awsInstance.getLaunchTime
+      launchDateTime = awsInstance.getLaunchTime.toInstant
     } yield Instance(InstanceId(instanceId), Option(awsInstance.getPublicIpAddress), launchDateTime)).toList
   }
 
