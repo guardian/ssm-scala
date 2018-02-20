@@ -43,7 +43,7 @@ object Logic {
       validInstancesWithOrder match {
         case Nil => Left(FailedAttempt(Failure(s"Instances with no IPs", s"Found ${instances.map(_.id.id).mkString(", ")} but none are valid targets (instances need public IP addresses)", UnhandledError, None, None)))
         case instance :: Nil => Right(instance)
-        case _ :: _ :: _ if sism == SismUnspecified => Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${validInstancesWithOrder.map(_.id.id).mkString(", ")}.  Use --selection [oldest|newest]?", UnhandledError, None, None)))
+        case _ :: _ :: _ if sism == SismUnspecified => Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${validInstancesWithOrder.map(_.id.id).mkString(", ")}.  Use --oldest or --newest to select single instance", UnhandledError, None, None)))
         case instances if sism == SismNewest && instances.nonEmpty => Right(instances.last)
         case instance :: _ if sism == SismOldest => Right(instance)
       }
