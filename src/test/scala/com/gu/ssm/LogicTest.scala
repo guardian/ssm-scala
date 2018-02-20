@@ -1,7 +1,7 @@
 package com.gu.ssm
 
 import org.scalatest.{EitherValues, FreeSpec, Matchers}
-import java.time.{LocalDateTime, ZoneId}
+import java.time.{LocalDate, LocalDateTime, ZoneId}
 import java.util.Date
 
 class LogicTest extends FreeSpec with Matchers with EitherValues {
@@ -45,9 +45,12 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
   "instancesWithOrder" - {
     import Logic.instancesWithOrder
 
-    val X = Instance(InstanceId("X"), None, Date.from(LocalDateTime.now().minusDays(7).atZone(ZoneId.systemDefault()).toInstant()))
-    val Y = Instance(InstanceId("Y"), None, Date.from(LocalDateTime.now().minusDays(4).atZone(ZoneId.systemDefault()).toInstant()))
-    val Z = Instance(InstanceId("Z"), None, Date.from(LocalDateTime.now().minusDays(5).atZone(ZoneId.systemDefault()).toInstant()))
+    def makeInstance(id: String, ipOpt:Option[String], launchDateDayShift: Int): Instance =
+      Instance(InstanceId(id), ipOpt, Date.from(LocalDateTime.now().plusDays(launchDateDayShift).atZone(ZoneId.systemDefault()).toInstant()))
+
+    val X = makeInstance("X", None, -7)
+    val Y = makeInstance("X", None, -4)
+    val Z = makeInstance("X", None, -5)
 
     "SismNewest orders in increasing creation time" in {
       instancesWithOrder(List(X, Y, Z), SismNewest) shouldEqual List(Y, Z, X)
@@ -65,7 +68,7 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
   "getRelevantInstance" - {
     import Logic.getSSHInstance
 
-    def makeInstance(id: String, ipOpt:Option[String], launchDateDayShift: Int) =
+    def makeInstance(id: String, ipOpt:Option[String], launchDateDayShift: Int): Instance =
       Instance(InstanceId(id), ipOpt, Date.from(LocalDateTime.now().plusDays(launchDateDayShift).atZone(ZoneId.systemDefault()).toInstant()))
 
     "if given no instances, should be Left" in {
