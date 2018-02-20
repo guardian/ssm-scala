@@ -14,13 +14,13 @@ object ArgumentParser {
     opt[String]('p', "profile").required()
       .action { (profile, args) =>
         args.copy(profile = Some(profile))
-      } text "The AWS profile name to use for authenticating this execution."
+      } text "The AWS profile name to use for authenticating this execution"
 
     opt[Seq[String]]('i', "instances")
       .action { (instanceIds, args) =>
         val instances = instanceIds.map(i => InstanceId(i)).toList
         args.copy(executionTarget = Some(ExecutionTarget(instances = Some(instances))))
-      } text "Specify the instance ID(s) on which the specified command(s) should execute."
+      } text "Specify the instance ID(s) on which the specified command(s) should execute"
 
     opt[String]('t', "tags")
       .validate { tagsStr =>
@@ -32,7 +32,7 @@ object ArgumentParser {
             _ => args,
             ass => args.copy(executionTarget = Some(ExecutionTarget(ass = Some(ass))))
           )
-      } text "Search for instances by tag e.g. '--tags app,stack,stage'."
+      } text "Search for instances by tag e.g. '--tags app,stack,stage'"
 
     opt[String]('r', "region").optional()
       .validate { region =>
@@ -49,14 +49,14 @@ object ArgumentParser {
 
     cmd("cmd")
       .action((_, c) => c.copy(mode = Some(SsmCmd)))
-      .text("Execute a single (bash) command, or a file containing bash commands.")
+      .text("Execute a single (bash) command, or a file containing bash commands")
       .children(
         opt[String]('c', "cmd").optional()
           .action((cmd, args) => args.copy(toExecute = Some(cmd)))
           .text("A bash command to execute."),
         opt[File]('f', "file").optional()
           .action((file, args) => args.copy(toExecute = Some(Logic.generateScript(Right(file)))))
-          .text("A file containing bash commands to execute.")
+          .text("A file containing bash commands to execute")
       )
 
     cmd("repl")
@@ -78,7 +78,7 @@ object ArgumentParser {
           .action((selectionMode, args) => {
             args.copy(singleInstanceSelectionMode = singleInstanceSelectionModeConversion(selectionMode))
           })
-          .text("Specifies the instance selection method. Valid values are 'newest' and 'oldest'.")
+          .text("Specifies the instance selection method. Valid values are 'newest' and 'oldest'")
       )
 
     checkConfig { args =>
