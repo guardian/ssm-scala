@@ -34,42 +34,64 @@ Run SSM in interactive/repl mode
 
 Command: ssh [options]
 Create and upload a temporary ssh key
-  -a, --any <value>        Indicates whether the command should run on any single instance
+  --newest                 Selects the newest instance if more than one instance was specified
+  --oldest                 Selects the oldest instance if more than one instance was specified
 ```
 
-The general syntax is 
+The mandatory options are: 
+
+- `--profile`, where you specify your Janus profile (for more information see [AWS profiles](https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html)),
+
+- and either: 
+	
+	- `-i`, where you specify one or more instance ids, or 
+	- `-t`, where you specify the app name, the stack and the stage. 
+
+### Execution targets
+
+`ssm` needs to be told which 
+instances should execute the provided
+command(s). You can do this by specifying instance IDs, or by
+specifying App, Stack, and Stage tags.
 
 ```
-./ssm [cmd|repl|ssh] [options]
+# by instance ids
+	--instances i-0123456,i-9876543
+	-i i-0123456,i-9876543
+
+# by tag
+	--tags <app>,<stack>,<stage>
+	-t <app>,<stack>,<stage>
 ```
 
-An example of `cmd` is 
+If you provide tags, `ssm` will search for running instances that are
+have those tags.
+
+### Examples
+
+An example of using `cmd` is 
 
 ```
-./ssm cmd -c ls --profile security -t security-hq,security,PROD
+./ssm cmd -c date --profile security -t security-hq,security,PROD
 ```
 
-For more information about `--profile` see [AWS profiles](https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html).
+where the `date` command will be ran on all matching instances.
 
-The general syntax for the `-t` switch is `-t <app>,<stack>,<stage>`. 
-
-For convenience, all subsequent examples will use the wrapper syntax.
-
-The syntax for using the `repl` command is:
+An example of using `repl` is:
 
 ```
-./ssm repl --profile <aws-profile> -t <app>,<stack>,<stage>
+./ssm repl --profile <aws-profile> -t security-hq,security,PROD
 ```
 
-This causes `ssm` to generate a list of
+The REPL mode causes `ssm` to generate a list of
 instances and then wait for commands to be specified.  Each command
 will be executed on all instances and the user can select the instance
 to display.
 
-The syntax for using the `ssh` command is:
+An example of using `ssh` command is:
 
 ```
-./ssm ssh --profile <aws-profile> -t <app>,<stack>,<stage> 
+./ssm ssh --profile <aws-profile> -t security-hq,security,PROD
 ```
 
 This causes `ssm` to generate a temporary ssh
@@ -78,64 +100,16 @@ output the command to `ssh` directly to that instance.
 The instance must already have both a public IP address _and_
 appropriate security groups.
 
-Note that if the argument `-t <app>,<stack>,<stage>` resolves to more than one instance, the command will stop with an error message. You can circumvent this behaviour and instruct `ssm` to process with one single instance with the argument `-a true`.
-
-### More usage examples
-
-Execute a command on all matching instances:
-
-```
-./ssm cmd -c <command> --profile <aws-profile> --ass-tags <app>,<stack>,<stage>
-```
-
-Execute the contents of a script file on matching instances:
-
-```
-./ssm --file <path-to-script> --profile <aws-profile> --ass-tags <app>,<stack>,<stage>
-```
-
-Execute `ls` on the specified instance:
-
-```
-./ssm cmd -c ls --profile <aws-profile> --instances i-01234567
-```
-
-Execute `ls` on multiple specified instances (using the short form of
-the arguments):
-
-```
-./ssm cmd -f <path-to-script> --profile <aws-profile> -i i-01234567,i-98765432
-```
-
-### Execution targets
-
-As seen in the previous section, `ssm` needs to be told which 
-instances should execute the provided
-command(s). You can do this by specifying instance IDs, or by
-specifying App, Stack, and Stage tags.
-
-```
-# by ID
-... --instances i-0123456,i-9876543
-... -i i-0123456,i-9876543
-
-# by tag
-... --asset-tags <app>,<stack>,<stage>
-... -t <app>,<stack>,<stage>
-```
-
-If you provide tags, `ssm` will search for running instances that are
-have those tags.
-
+Note that if the argument `-t <app>,<stack>,<stage>` resolves to more than one instance, the command will stop with an error message. You can circumvent this behaviour and instruct `ssm` to proceed with one single instance using the command line flags `--oldest` and `--newest`, which select either the oldest or newest instances.
 
 ## Development
 
 During development, the program can be run using sbt, either from an
 sbt shell or from the CLI in that project.
 
-    $ sbt "run --instances i-0123456 --profile xxx --region xxx --cmd pwd"
+    $ sbt "run --c pwd --instances i-0123456 --profile xxx --region xxx"
 
-    sbt:ssm-scala> run --instances i-0123456 --profile xxx --region xxx --cmd pwd
+    sbt:ssm-scala> run --c pwd --instances i-0123456 --profile xxx --region xxx 
 
 However, `sbt` traps the program exit so in REPL mode you may find it
 easier to create and run an executable instead, for this just run 
