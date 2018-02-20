@@ -34,7 +34,8 @@ Run SSM in interactive/repl mode
 
 Command: ssh [options]
 Create and upload a temporary ssh key
-  -s, --selection <value>  Specifies the instance selection method. Valid values are 'newest' and 'oldest'.
+  --newest                 Selects the newest instance if more than one instance was specified
+  --oldest                 Selects the oldest instance if more than one instance was specified
 ```
 
 The mandatory options are: 
@@ -99,13 +100,7 @@ output the command to `ssh` directly to that instance.
 The instance must already have both a public IP address _and_
 appropriate security groups.
 
-Note that if the argument `-t <app>,<stack>,<stage>` resolves to more than one instance, the command will stop with an error message. You can circumvent this behaviour and instruct `ssm` to proceed with one single instance. There are three selections methods:
-
-- `-s any`, where ssm will simply selects one valid instance and runs with it.
-
-- `-s newest`, where ssm selects the newest of all valid instances.
-
-- `-s oldest`, where ssm selects the oldest of all valid instances. 
+Note that if the argument `-t <app>,<stack>,<stage>` resolves to more than one instance, the command will stop with an error message. You can circumvent this behaviour and instruct `ssm` to proceed with one single instance using the command line flags `--oldest` and `--newest`, which select either the oldest or newest instances.
 
 ## Development
 

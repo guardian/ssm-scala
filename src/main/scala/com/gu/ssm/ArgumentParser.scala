@@ -44,7 +44,7 @@ object ArgumentParser {
         }
       } action { (region, args) =>
       args.copy(region = Region.getRegion(Regions.fromName(region)))
-    } text "AWS region name (defaults to eu-west-1)."
+    } text "AWS region name (defaults to eu-west-1)"
 
     cmd("cmd")
       .action((_, c) => c.copy(mode = Some(SsmCmd)))
@@ -52,7 +52,7 @@ object ArgumentParser {
       .children(
         opt[String]('c', "cmd").optional()
           .action((cmd, args) => args.copy(toExecute = Some(cmd)))
-          .text("A bash command to execute."),
+          .text("A bash command to execute"),
         opt[File]('f', "file").optional()
           .action((file, args) => args.copy(toExecute = Some(Logic.generateScript(Right(file)))))
           .text("A file containing bash commands to execute")
@@ -60,7 +60,7 @@ object ArgumentParser {
 
     cmd("repl")
       .action((_, c) => c.copy(mode = Some(SsmRepl)))
-      .text("Run SSM in interactive/repl mode.")
+      .text("Run SSM in interactive/repl mode")
 
     cmd("ssh")
       .action((_, c) => c.copy(mode = Some(SsmSsh)))
