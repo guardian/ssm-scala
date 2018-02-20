@@ -24,7 +24,7 @@ object Logic {
       case app :: stack :: stage :: Nil =>
         Right(AppStackStage(app, stack, stage))
       case _ =>
-        Left("You should provide Stack, App and Stage tags in the format \"stack,app,stage\"")
+        Left("You should provide app, stack and stage tags in the format \"app,stack,stage\"")
     }
   }
 
