@@ -41,29 +41,6 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
     }
   }
 
-  "instancesWithOrder" - {
-    import Logic.instancesWithOrder
-
-    def makeInstance(id: String, ipOpt:Option[String], launchDateDayShift: Int): Instance =
-      Instance(InstanceId(id), ipOpt, LocalDateTime.now().plusDays(launchDateDayShift).atZone(ZoneId.systemDefault()).toInstant())
-
-    val X = makeInstance("X", None, -7)
-    val Y = makeInstance("X", None, -4)
-    val Z = makeInstance("X", None, -5)
-
-    "SismNewest orders in increasing creation time" in {
-      instancesWithOrder(List(X, Y, Z), SismNewest) shouldEqual List(Y, Z, X)
-    }
-
-    "SismNewest orders in decreasing creation time" in {
-      instancesWithOrder(List(X, Y, Z), SismOldest) shouldEqual List(X, Z, Y)
-    }
-
-    "SismUnspecified does not change order" in {
-      instancesWithOrder(List(X, Y, Z), SismUnspecified) shouldEqual List(X, Y, Z)
-    }
-  }
-
   "getRelevantInstance" - {
     import Logic.getSSHInstance
 
@@ -108,7 +85,7 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
         getSSHInstance(List(i1, i2), SismUnspecified).isLeft shouldBe true
       }
 
-      "At least one instance is well formed" - {
+      "Multiple instances are well formed" - {
         val i1 = makeInstance("X", None, -7)
         val i2 = makeInstance("Y", Some("127.0.0.1"), -1)
         val i3 = makeInstance("Z", Some("127.0.0.1"), 0)

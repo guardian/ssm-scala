@@ -67,18 +67,16 @@ object ArgumentParser {
       .action((_, c) => c.copy(mode = Some(SsmSsh)))
       .text("Create and upload a temporary ssh key")
       .children(
-        opt[String]('s', "selection").optional()
-            .validate(
-              sism =>
-                singleInstanceSelectionModeConversion(sism) match {
-                  case SismUnspecified => Left("Unknown instance selection mode: $sism")
-                  case _ => Right(Unit)
-                }
-            )
-          .action((selectionMode, args) => {
-            args.copy(singleInstanceSelectionMode = singleInstanceSelectionModeConversion(selectionMode))
+        opt[Unit]("newest").optional()
+          .action((_, args) => {
+            args.copy(singleInstanceSelectionMode = SismNewest)
           })
-          .text("Specifies the instance selection method. Valid values are 'newest' and 'oldest'")
+          .text("Selects the newest instance if more than one instance was specified"),
+        opt[Unit]("oldest").optional()
+          .action((_, args) => {
+            args.copy(singleInstanceSelectionMode = SismOldest)
+          })
+          .text("Selects the oldest instance if more than one instance was specified")
       )
 
     checkConfig { args =>
