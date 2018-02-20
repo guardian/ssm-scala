@@ -13,7 +13,7 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     argParser.parse(args, Arguments.empty()) match {
-      case Some(Arguments(Some(executionTarget), toExecuteOpt, Some(profile), region, Some(mode), sism)) =>
+      case Some(Arguments(Some(executionTarget), toExecuteOpt, Some(profile), region, Some(mode), sism, false, false)) =>
         val awsClients = Logic.getClients(profile, region)
         mode match {
           case SsmRepl =>

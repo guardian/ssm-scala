@@ -4,7 +4,6 @@ import java.io.File
 
 import com.amazonaws.regions.{Region, Regions}
 import scopt.OptionParser
-import com.gu.ssm.Logic.singleInstanceSelectionModeConversion
 
 
 object ArgumentParser {
@@ -69,14 +68,21 @@ object ArgumentParser {
       .children(
         opt[Unit]("newest").optional()
           .action((_, args) => {
-            args.copy(singleInstanceSelectionMode = SismNewest)
+            args.copy(
+              singleInstanceSelectionMode = SismNewest,
+              isSelectionModeNewest = true)
           })
           .text("Selects the newest instance if more than one instance was specified"),
         opt[Unit]("oldest").optional()
           .action((_, args) => {
-            args.copy(singleInstanceSelectionMode = SismOldest)
+            args.copy(
+              singleInstanceSelectionMode = SismOldest,
+              isSelectionModeOldest = true)
           })
-          .text("Selects the oldest instance if more than one instance was specified")
+          .text("Selects the oldest instance if more than one instance was specified"),
+        checkConfig( c =>
+          if (c.isSelectionModeOldest && c.isSelectionModeNewest) failure("You cannot both specify --newest and --oldest")
+          else success )
       )
 
     checkConfig { args =>
