@@ -4,17 +4,16 @@ import com.amazonaws.regions.{Region, Regions}
 import com.amazonaws.services.ec2.AmazonEC2Async
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceAsync
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
-import com.gu.ssm.aws.SSM
-
+import java.time.Instant
 
 case class InstanceId(id: String) extends AnyVal
-case class Instance(id: InstanceId, publicIpAddressOpt: Option[String])
+case class Instance(id: InstanceId, publicIpAddressOpt: Option[String], launchInstant: Instant)
 case class AppStackStage(app: String, stack: String, stage: String)
 case class ExecutionTarget(instances: Option[List[InstanceId]] = None, ass: Option[AppStackStage] = None)
 
-case class Arguments(executionTarget: Option[ExecutionTarget], toExecute: Option[String], profile: Option[String], region: Region, mode: Option[SsmMode], takeAnySingleInstance: Option[Boolean])
+case class Arguments(executionTarget: Option[ExecutionTarget], toExecute: Option[String], profile: Option[String], region: Region, mode: Option[SsmMode], singleInstanceSelectionMode: SingleInstanceSelectionMode, isSelectionModeNewest: Boolean, isSelectionModeOldest: Boolean)
 object Arguments {
-  def empty(): Arguments = Arguments(None, None, None, Region.getRegion(Regions.EU_WEST_1), None, Some(false))
+  def empty(): Arguments = Arguments(None, None, None, Region.getRegion(Regions.EU_WEST_1), None, SismUnspecified, false, false)
 }
 
 sealed trait CommandStatus
@@ -48,3 +47,8 @@ case class AWSClients (
 )
 
 case class ResultsWithInstancesNotFound(results: List[(InstanceId, scala.Either[CommandStatus, CommandResult])], instancesNotFound: List[InstanceId])
+
+sealed trait SingleInstanceSelectionMode
+case object SismNewest extends SingleInstanceSelectionMode
+case object SismOldest extends SingleInstanceSelectionMode
+case object SismUnspecified extends SingleInstanceSelectionMode

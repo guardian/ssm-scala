@@ -66,9 +66,23 @@ object ArgumentParser {
       .action((_, c) => c.copy(mode = Some(SsmSsh)))
       .text("Create and upload a temporary ssh key")
       .children(
-        opt[Boolean]('a', "any").optional()
-          .action((flag, args) => args.copy(takeAnySingleInstance = Some(flag)))
-          .text("Indicates whether the command should run on any single instance"),
+        opt[Unit]("newest").optional()
+          .action((_, args) => {
+            args.copy(
+              singleInstanceSelectionMode = SismNewest,
+              isSelectionModeNewest = true)
+          })
+          .text("Selects the newest instance if more than one instance was specified"),
+        opt[Unit]("oldest").optional()
+          .action((_, args) => {
+            args.copy(
+              singleInstanceSelectionMode = SismOldest,
+              isSelectionModeOldest = true)
+          })
+          .text("Selects the oldest instance if more than one instance was specified"),
+        checkConfig( c =>
+          if (c.isSelectionModeOldest && c.isSelectionModeNewest) failure("You cannot both specify --newest and --oldest")
+          else success )
       )
 
     checkConfig { args =>
