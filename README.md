@@ -6,7 +6,11 @@ using EC2 Run Command, written in Scala. This can be used as an
 alternative to `ssh` for servers in AWS accounts to which you have
 [IAM](https://aws.amazon.com/iam/) access.
 
+Note: SSM needs the target server to have its port 443 open (to poll, over HTTPS, instructions from AWS). 
+
 Instructions for using SSM Scala in your own project can be found [below](#How-to-use-SSM-Scala-with-your-own-project).
+
+
 
 ## Installation
 
