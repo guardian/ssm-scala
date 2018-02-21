@@ -2,7 +2,7 @@ package com.gu.ssm
 
 import org.scalatest.{EitherValues, FreeSpec, Matchers}
 import java.io.File
-import java.time.{LocalDate, LocalDateTime, ZoneId}
+import java.time.Instant
 
 class SSHTest extends FreeSpec with Matchers with EitherValues {
 
@@ -53,7 +53,7 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
 
     "create ssh command" in {
       val file = new File("/banana")
-      val instance = Instance(InstanceId("raspberry"), Some("127.0.0.1"), LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant())
+      val instance = Instance(InstanceId("raspberry"), Some("127.0.0.1"), Instant.now())
       val cmd = sshCmd(file, instance)
       cmd._1.id shouldEqual "raspberry"
       cmd._2 should include ("ssh -i /banana ubuntu@127.0.0.1")
