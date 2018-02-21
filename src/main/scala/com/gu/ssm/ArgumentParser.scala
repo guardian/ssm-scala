@@ -80,6 +80,12 @@ object ArgumentParser {
               isSelectionModeOldest = true)
           })
           .text("Selects the oldest instance if more than one instance was specified"),
+        opt[Unit]('p', "private").optional()
+          .action((_, args) => {
+            args.copy(
+              usePrivateIpAddress = true)
+          })
+          .text("Use private IP address"),
         checkConfig( c =>
           if (c.isSelectionModeOldest && c.isSelectionModeNewest) failure("You cannot both specify --newest and --oldest")
           else success )

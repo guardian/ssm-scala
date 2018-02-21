@@ -11,9 +11,29 @@ case class Instance(id: InstanceId, publicIpAddressOpt: Option[String], privateI
 case class AppStackStage(app: String, stack: String, stage: String)
 case class ExecutionTarget(instances: Option[List[InstanceId]] = None, ass: Option[AppStackStage] = None)
 
-case class Arguments(executionTarget: Option[ExecutionTarget], toExecute: Option[String], profile: Option[String], region: Region, mode: Option[SsmMode], singleInstanceSelectionMode: SingleInstanceSelectionMode, isSelectionModeNewest: Boolean, isSelectionModeOldest: Boolean)
+case class Arguments(
+  executionTarget: Option[ExecutionTarget],
+  toExecute: Option[String],
+  profile: Option[String],
+  region: Region,
+  mode: Option[SsmMode],
+  singleInstanceSelectionMode: SingleInstanceSelectionMode,
+  isSelectionModeNewest: Boolean,
+  isSelectionModeOldest: Boolean,
+  usePrivateIpAddress: Boolean
+)
 object Arguments {
-  def empty(): Arguments = Arguments(None, None, None, Region.getRegion(Regions.EU_WEST_1), None, SismUnspecified, false, false)
+  def empty(): Arguments = Arguments(
+    executionTarget = None,
+    toExecute = None,
+    profile = None,
+    region = Region.getRegion(Regions.EU_WEST_1),
+    mode = None,
+    singleInstanceSelectionMode = SismUnspecified,
+    isSelectionModeNewest = false,
+    isSelectionModeOldest = false,
+    usePrivateIpAddress = false
+  )
 }
 
 sealed trait CommandStatus

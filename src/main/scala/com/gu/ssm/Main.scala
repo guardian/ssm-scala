@@ -13,7 +13,7 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     argParser.parse(args, Arguments.empty()) match {
-      case Some(Arguments(Some(executionTarget), toExecuteOpt, Some(profile), region, Some(mode), sism, _, _)) =>
+      case Some(Arguments(Some(executionTarget), toExecuteOpt, Some(profile), region, Some(mode), sism, _, _, usePrivate)) =>
         val awsClients = Logic.getClients(profile, region)
         mode match {
           case SsmRepl =>
@@ -24,7 +24,7 @@ object Main {
               case _ => fail()
             }
           case SsmSsh =>
-            setUpSSH(awsClients, profile, region, executionTarget, sism)
+            setUpSSH(awsClients, profile, region, executionTarget, sism, usePrivate)
         }
       case Some(_) => fail()
       case None => System.exit(ArgumentsError.code) // parsing cmd line args failed, help message will have been displayed
@@ -36,7 +36,7 @@ object Main {
     System.exit(UnhandledError.code)
   }
 
-  private def setUpSSH(awsClients: AWSClients, profile: String, region: Region, executionTarget: ExecutionTarget, sism: SingleInstanceSelectionMode): Unit = {
+  private def setUpSSH(awsClients: AWSClients, profile: String, region: Region, executionTarget: ExecutionTarget, sism: SingleInstanceSelectionMode, usePrivate: Boolean): Unit = {
     val fProgramResult = for {
       config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, profile, region, executionTarget)
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
@@ -45,13 +45,19 @@ object Main {
       instance <- Attempt.fromEither(Logic.getSSHInstance(config.targets, sism))
       _ <- IO.tagAsTainted(instance.id, config.name, awsClients.ec2Client)
       _ <- IO.installSshKey(instance.id, config.name, addAndRemoveKeyCommand, awsClients.ssmClient)
-      publicOrPrivateIp = (instance.publicIpAddressOpt ++ instance.privateIpAddressOpt).headOption
-      ipAddress <- Attempt.fromOption(publicOrPrivateIp, FailedAttempt(Failure("No IP for instance", "No IP for instance", NoIpAddress, None, None)))
+      ipAddress <- Attempt.fromEither(getIpAddress(instance, usePrivate))
     } yield SSH.sshCmd(authFile, instance, ipAddress)
 
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
     programResult.fold(UI.outputFailure, UI.sshOutput)
     System.exit(programResult.fold(_.exitCode, _ => 0))
+  }
+
+  private def getIpAddress(instance: Instance, usePrivate: Boolean): Either[FailedAttempt, String] = (instance.publicIpAddressOpt, instance.privateIpAddressOpt) match {
+    case (Some(pub), _) if !usePrivate => Right(pub)
+    case (_, Some(priv)) if usePrivate => Right(priv)
+    case (_, None) if usePrivate => Left(FailedAttempt(Failure("No private IP address", "No private IP address and '--private' option used", NoIpAddress, None, None)))
+    case (_, _) => Left(FailedAttempt(Failure("No public IP address", "No public IP address", NoIpAddress, None, None)))
   }
 
   private def execute(awsClients: AWSClients, profile: String, region: Region, executionTarget: ExecutionTarget, toExecute: String): Unit = {

@@ -38,7 +38,7 @@ object Logic {
       Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Could not find any instance", UnhandledError, None, None)))
     } else {
       val validInstancesWithOrder = instances
-        .filter(x => x.publicIpAddressOpt.isDefined || x.privateIpAddressOpt.isDefined)
+        .filter(i => i.publicIpAddressOpt.isDefined || i.privateIpAddressOpt.isDefined)
         .sortBy(_.launchInstant)
       validInstancesWithOrder match {
         case Nil => Left(FailedAttempt(Failure(s"Instances with no IPs", s"Found ${instances.map(_.id.id).mkString(", ")} but none are valid targets (instances need public IP addresses)", UnhandledError, None, None)))
