@@ -1,10 +1,10 @@
 SSM-Scala
 =========
 
-SSM-Scala is a command-line tool, written in Scala, for executing commands on EC2 servers using AWS's EC2 Run command. It provides the user with 
+SSM-Scala is a command-line tool, written in Scala, for executing commands on EC2 servers using AWS's EC2 Run command. It provides the user with: 
 
-- standard `ssh` access using short lived RSA keys, and
-- an _alternative_ to `ssh` for running commands on the target.
+1. standard `ssh` access using short lived RSA keys
+2. an _alternative_ to `ssh` for running commands on the target
 
 Both modes apply to servers in AWS accounts to which you have [IAM](https://aws.amazon.com/iam/) access.
 
