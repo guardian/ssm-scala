@@ -138,4 +138,4 @@ To use ssm-scala against the instances of your project, three things need to hap
 
 3. Download the executable from the [project release page](https://github.com/guardian/ssm-scala/releases). Instructions on usage can be found in the above sections.
 
-Note: SSM needs the target server to have its port 443 open (to poll, over HTTPS, instructions from AWS). 
+Note: SSM needs the target server to have outbound port 443 (ssm-agent's communication with AWS's SSM and EC2 Messages endpoints). 
