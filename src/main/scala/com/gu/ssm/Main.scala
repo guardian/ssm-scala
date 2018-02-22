@@ -42,22 +42,15 @@ object Main {
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
       (authFile, authKey) = sshArtifacts
       addAndRemoveKeyCommand = SSH.addTaintedCommand(config.name) + SSH.addKeyCommand(authKey) + SSH.removeKeyCommand(authKey)
-      instance <- Attempt.fromEither(Logic.getSSHInstance(config.targets, sism))
+      instance <- Attempt.fromEither(Logic.getSSHInstance(config.targets, sism, usePrivate))
       _ <- IO.tagAsTainted(instance.id, config.name, awsClients.ec2Client)
       _ <- IO.installSshKey(instance.id, config.name, addAndRemoveKeyCommand, awsClients.ssmClient)
-      ipAddress <- Attempt.fromEither(getIpAddress(instance, usePrivate))
+      ipAddress <- Attempt.fromEither(Logic.getIpAddress(instance, usePrivate))
     } yield SSH.sshCmd(authFile, instance, ipAddress)
 
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
     programResult.fold(UI.outputFailure, UI.sshOutput)
     System.exit(programResult.fold(_.exitCode, _ => 0))
-  }
-
-  private def getIpAddress(instance: Instance, usePrivate: Boolean): Either[FailedAttempt, String] = (instance.publicIpAddressOpt, instance.privateIpAddressOpt) match {
-    case (Some(pub), _) if !usePrivate => Right(pub)
-    case (_, Some(priv)) if usePrivate => Right(priv)
-    case (_, None) if usePrivate => Left(FailedAttempt(Failure("No private IP address", "No private IP address and '--private' option used", NoIpAddress, None, None)))
-    case (_, _) => Left(FailedAttempt(Failure("No public IP address", "No public IP address", NoIpAddress, None, None)))
   }
 
   private def execute(awsClients: AWSClients, profile: String, region: Region, executionTarget: ExecutionTarget, toExecute: String): Unit = {

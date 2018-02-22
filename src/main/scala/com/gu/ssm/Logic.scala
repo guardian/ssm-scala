@@ -7,7 +7,7 @@ import com.amazonaws.services.ec2.AmazonEC2Async
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceAsync
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
 import com.gu.ssm.aws.{EC2, SSM, STS}
-import com.gu.ssm.utils.attempt.{ErrorCode, FailedAttempt, Failure, UnhandledError}
+import com.gu.ssm.utils.attempt._
 
 import scala.io.Source
 
@@ -33,12 +33,12 @@ object Logic {
     case _ => Right(Unit)
   }
 
-  def getSSHInstance(instances: List[Instance], sism: SingleInstanceSelectionMode): Either[FailedAttempt, Instance] = {
+  def getSSHInstance(instances: List[Instance], sism: SingleInstanceSelectionMode, usePrivate: Boolean): Either[FailedAttempt, Instance] = {
     if (instances.isEmpty) {
       Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Could not find any instance", UnhandledError, None, None)))
     } else {
       val validInstancesWithOrder = instances
-        .filter(i => i.publicIpAddressOpt.isDefined || i.privateIpAddressOpt.isDefined)
+        .filter(i => if (usePrivate) i.privateIpAddressOpt.isDefined else i.publicIpAddressOpt.isDefined)
         .sortBy(_.launchInstant)
       validInstancesWithOrder match {
         case Nil => Left(FailedAttempt(Failure(s"Instances with no IPs", s"Found ${instances.map(_.id.id).mkString(", ")} but none are valid targets (instances need public IP addresses)", UnhandledError, None, None)))
@@ -59,5 +59,13 @@ object Logic {
 
   def computeIncorrectInstances(executionTarget: ExecutionTarget, instanceIds: List[InstanceId]): List[InstanceId] =
     executionTarget.instances.getOrElse(List()).filterNot(instanceIds.toSet)
+
+  def getIpAddress(instance: Instance, usePrivate: Boolean): Either[FailedAttempt, String] = {
+    if (usePrivate) {
+      instance.privateIpAddressOpt.toRight(FailedAttempt(Failure("No private IP address", "No private IP address and '--private' option used", NoIpAddress, None, None)))
+    } else {
+      instance.publicIpAddressOpt.toRight(FailedAttempt(Failure("No public IP address", "No public IP address", NoIpAddress, None, None)))
+    }
+  }
 
 }
