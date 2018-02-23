@@ -2,6 +2,7 @@
 
 if [[ $# -lt 2 ]]; then
    echo 'Usage: ssh-reports <profile> <start-offset> [<stop-offset>]'
+   echo '       offsets are of the form support by mac date eg -1H, -3H'
    exit 1
 fi
 
