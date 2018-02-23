@@ -33,15 +33,15 @@ object Logic {
     case _ => Right(Unit)
   }
 
-  def getSSHInstance(instances: List[Instance], sism: SingleInstanceSelectionMode, usePrivate: Boolean = false): Either[FailedAttempt, Instance] = {
+  def getSSHInstance(instances: List[Instance], sism: SingleInstanceSelectionMode, usePrivate: Boolean): Either[FailedAttempt, Instance] = {
     if (instances.isEmpty) {
       Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Could not find any instance", UnhandledError, None, None)))
     } else {
       val validInstancesWithOrder = instances
-        .filter(i => usePrivate || (!usePrivate && i.publicIpAddressOpt.isDefined))
+        .filter(i => usePrivate || i.publicIpAddressOpt.isDefined)
         .sortBy(_.launchInstant)
       validInstancesWithOrder match {
-        case Nil => Left(FailedAttempt(Failure(s"Instances with no IPs", s"Found ${instances.map(_.id.id).mkString(", ")} but none are valid targets", UnhandledError, None, None)))
+        case Nil => Left(FailedAttempt(Failure(s"Instances with no IPs matching filter", s"Found ${instances.map(_.id.id).mkString(", ")} but no instances have public IPs (use '--private' if internal address is routable)", UnhandledError, None, None)))
         case instance :: Nil => Right(instance)
         case _ :: _ :: _ if sism == SismUnspecified => Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${validInstancesWithOrder.map(_.id.id).mkString(", ")}.  Use --oldest or --newest to select single instance", UnhandledError, None, None)))
         case instances if sism == SismNewest && instances.nonEmpty => Right(instances.last)
