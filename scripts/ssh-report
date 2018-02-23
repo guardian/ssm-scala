@@ -1,0 +1,26 @@
+#!/bin/bash
+
+if [[ $# -lt 2 ]]; then
+   echo 'Usage: ssh-reports <profile> <start-offset> [<stop-offset>]'
+   exit 1
+fi
+
+which jq > /dev/null 
+if [[ $? -ne 0 ]]; then
+   echo 'This script requires jq'
+   exit 1
+fi
+
+PROFILE=$1; shift
+START_OFFSET="-v $1"; shift
+[[ $1 ]] && STOP_OFFSET="-v $1" && shift
+
+ISO8601_FORMAT="%Y-%m-%dT%H:%M:%SZ"
+AFTER="$(date $START_OFFSET +"$ISO8601_FORMAT")"
+BEFORE="$(date $STOP_OFFSET +"$ISO8601_FORMAT")"
+
+FILTER="[ { \"key\": \"InvokedAfter\", \"value\": \"$AFTER\" }, { \"key\": \"InvokedBefore\", \"value\": \"$BEFORE\" } ]" 
+
+aws --profile $PROFILE --region eu-west-1 ssm list-commands --filters "$FILTER" \
+  | jq '.Commands[]|[select(.Parameters.commands[0]|contains("authorized_keys"))|{Comment, InstanceIds, RequestedDateTime}]'
+
