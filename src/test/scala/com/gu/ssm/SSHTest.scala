@@ -53,10 +53,10 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
 
     "create ssh command" in {
       val file = new File("/banana")
-      val instance = Instance(InstanceId("raspberry"), Some("127.0.0.1"), Instant.now())
-      val cmd = sshCmd(file, instance)
+      val instance = Instance(InstanceId("raspberry"), Some("34.1.1.10"), "10.1.1.10", Instant.now())
+      val cmd = sshCmd(file, instance, "34.1.1.10")
       cmd._1.id shouldEqual "raspberry"
-      cmd._2 should include ("ssh -i /banana ubuntu@127.0.0.1")
+      cmd._2 should include ("ssh -i /banana ubuntu@34.1.1.10")
     }
   }
 }

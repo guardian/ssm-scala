@@ -7,7 +7,7 @@ import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagement
 import java.time.Instant
 
 case class InstanceId(id: String) extends AnyVal
-case class Instance(id: InstanceId, publicIpAddressOpt: Option[String], privateIpAddressOpt: Option[String], launchInstant: Instant)
+case class Instance(id: InstanceId, publicIpAddressOpt: Option[String], privateIpAddress: String, launchInstant: Instant)
 case class AppStackStage(app: String, stack: String, stage: String)
 case class ExecutionTarget(instances: Option[List[InstanceId]] = None, ass: Option[AppStackStage] = None)
 

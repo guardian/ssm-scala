@@ -33,15 +33,15 @@ object Logic {
     case _ => Right(Unit)
   }
 
-  def getSSHInstance(instances: List[Instance], sism: SingleInstanceSelectionMode, usePrivate: Boolean): Either[FailedAttempt, Instance] = {
+  def getSSHInstance(instances: List[Instance], sism: SingleInstanceSelectionMode, usePrivate: Boolean = false): Either[FailedAttempt, Instance] = {
     if (instances.isEmpty) {
       Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Could not find any instance", UnhandledError, None, None)))
     } else {
       val validInstancesWithOrder = instances
-        .filter(i => if (usePrivate) i.privateIpAddressOpt.isDefined else i.publicIpAddressOpt.isDefined)
+        .filter(i => usePrivate || (!usePrivate && i.publicIpAddressOpt.isDefined))
         .sortBy(_.launchInstant)
       validInstancesWithOrder match {
-        case Nil => Left(FailedAttempt(Failure(s"Instances with no IPs", s"Found ${instances.map(_.id.id).mkString(", ")} but none are valid targets (instances need public IP addresses)", UnhandledError, None, None)))
+        case Nil => Left(FailedAttempt(Failure(s"Instances with no IPs", s"Found ${instances.map(_.id.id).mkString(", ")} but none are valid targets", UnhandledError, None, None)))
         case instance :: Nil => Right(instance)
         case _ :: _ :: _ if sism == SismUnspecified => Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${validInstancesWithOrder.map(_.id.id).mkString(", ")}.  Use --oldest or --newest to select single instance", UnhandledError, None, None)))
         case instances if sism == SismNewest && instances.nonEmpty => Right(instances.last)
@@ -62,7 +62,7 @@ object Logic {
 
   def getIpAddress(instance: Instance, usePrivate: Boolean): Either[FailedAttempt, String] = {
     if (usePrivate) {
-      instance.privateIpAddressOpt.toRight(FailedAttempt(Failure("No private IP address", "No private IP address and '--private' option used", NoIpAddress, None, None)))
+      Right(instance.privateIpAddress)
     } else {
       instance.publicIpAddressOpt.toRight(FailedAttempt(Failure("No public IP address", "No public IP address", NoIpAddress, None, None)))
     }
