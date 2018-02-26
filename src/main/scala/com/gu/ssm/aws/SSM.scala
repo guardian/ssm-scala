@@ -39,7 +39,11 @@ object SSM {
     val request = new GetCommandInvocationRequest()
       .withCommandId(commandId)
       .withInstanceId(instance.id)
-    handleAWSErrs(awsToScala(client.getCommandInvocationAsync)(request).map(extractCommandResult))
+    handleAWSErrs(
+      awsToScala(client.getCommandInvocationAsync)(request)
+        .map(extractCommandResult)
+        .recover { case e if e.getMessage.contains("InvocationDoesNotExist") => Left(InvocationDoesNotExist) }
+    )
   }
 
   def extractCommandResult(getCommandInvocationResult: GetCommandInvocationResult): Either[CommandStatus, CommandResult] = {
@@ -55,7 +59,6 @@ object SSM {
 
   def getCmdOutput(instance: InstanceId, commandId: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[(InstanceId, Either[CommandStatus, CommandResult])] = {
     for {
-      _ <- Attempt.delay(500.millis)
       cmdResult <- Attempt.retryUntil(30, 500.millis, () => getCommandInvocation(instance, commandId, client))(_.isRight)
     } yield instance -> cmdResult
   }

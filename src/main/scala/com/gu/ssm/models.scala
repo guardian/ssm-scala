@@ -27,6 +27,7 @@ case object Failed extends CommandStatus
 case object Canceled extends CommandStatus
 case object Undeliverable extends CommandStatus
 case object Terminated extends CommandStatus
+case object InvocationDoesNotExist extends CommandStatus
 
 sealed trait SsmMode
 case object SsmCmd extends SsmMode
