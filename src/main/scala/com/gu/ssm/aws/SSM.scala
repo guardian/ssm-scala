@@ -39,7 +39,11 @@ object SSM {
     val request = new GetCommandInvocationRequest()
       .withCommandId(commandId)
       .withInstanceId(instance.id)
-    handleAWSErrs(awsToScala(client.getCommandInvocationAsync)(request).map(extractCommandResult))
+    handleAWSErrs(
+      awsToScala(client.getCommandInvocationAsync)(request)
+        .map(extractCommandResult)
+        .recover { case e if e.getMessage.contains("InvocationDoesNotExist") => Left(InvocationDoesNotExist) }
+    )
   }
 
   def extractCommandResult(getCommandInvocationResult: GetCommandInvocationResult): Either[CommandStatus, CommandResult] = {
