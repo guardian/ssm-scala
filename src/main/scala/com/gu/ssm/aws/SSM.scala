@@ -6,7 +6,8 @@ import com.amazonaws.services.simplesystemsmanagement.model._
 import com.amazonaws.services.simplesystemsmanagement.{AWSSimpleSystemsManagementAsync, AWSSimpleSystemsManagementAsyncClientBuilder}
 import com.gu.ssm.{CommandStatus, _}
 import com.gu.ssm.aws.AwsAsyncHandler.{awsToScala, handleAWSErrs}
-import com.gu.ssm.utils.attempt.{Attempt}
+import com.gu.ssm.model.InstanceId
+import com.gu.ssm.utils.attempt.Attempt
 
 import collection.JavaConverters._
 import scala.concurrent.ExecutionContext

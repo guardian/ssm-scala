@@ -4,9 +4,11 @@ import java.io.File
 
 import com.amazonaws.regions.Region
 import com.amazonaws.services.ec2.AmazonEC2Async
+import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceAsync
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceAsync
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
-import com.gu.ssm.aws.{EC2, SSM, STS}
+import com.gu.ssm.aws.{EC2, EMR, SSM, STS}
+import com.gu.ssm.model._
 import com.gu.ssm.utils.attempt.{ErrorCode, FailedAttempt, Failure, UnhandledError}
 
 import scala.io.Source
@@ -54,10 +56,18 @@ object Logic {
     val ssmClient: AWSSimpleSystemsManagementAsync = SSM.client(profile, region)
     val stsClient: AWSSecurityTokenServiceAsync = STS.client(profile, region)
     val ec2Client: AmazonEC2Async = EC2.client(profile, region)
-    AWSClients(ssmClient, stsClient, ec2Client)
+    val emrClient: AmazonElasticMapReduceAsync = EMR.client(profile, region)
+
+    AWSClients(ssmClient, stsClient, ec2Client, emrClient)
   }
 
-  def computeIncorrectInstances(executionTarget: ExecutionTarget, instanceIds: List[InstanceId]): List[InstanceId] =
-    executionTarget.instances.getOrElse(List()).filterNot(instanceIds.toSet)
+  def computeIncorrectInstances(executionTarget: ExecutionTarget, instanceIds: List[InstanceId]): List[InstanceId] = {
+    executionTarget match {
+      case InstanceIds(ids) =>
+        ids.filterNot(instanceIds.toSet)
 
+      case _ =>
+        Nil
+    }
+  }
 }

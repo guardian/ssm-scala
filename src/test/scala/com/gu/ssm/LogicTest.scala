@@ -3,6 +3,8 @@ package com.gu.ssm
 import org.scalatest.{EitherValues, FreeSpec, Matchers}
 import java.time.{LocalDateTime, ZoneId}
 
+import com.gu.ssm.model.{AppStackStage, Instance, InstanceId}
+
 class LogicTest extends FreeSpec with Matchers with EitherValues {
   "extractSASTags" - {
     import Logic.extractSASTags

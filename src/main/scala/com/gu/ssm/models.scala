@@ -6,12 +6,21 @@ import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceAsync
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
 import java.time.Instant
 
-case class InstanceId(id: String) extends AnyVal
-case class Instance(id: InstanceId, publicIpAddressOpt: Option[String], launchInstant: Instant)
-case class AppStackStage(app: String, stack: String, stage: String)
-case class ExecutionTarget(instances: Option[List[InstanceId]] = None, ass: Option[AppStackStage] = None)
+import com.amazonaws.services.elasticmapreduce.AmazonElasticMapReduceAsync
+import com.gu.ssm.model.{ExecutionTarget, Instance, InstanceId}
 
-case class Arguments(executionTarget: Option[ExecutionTarget], toExecute: Option[String], profile: Option[String], region: Region, mode: Option[SsmMode], singleInstanceSelectionMode: SingleInstanceSelectionMode, isSelectionModeNewest: Boolean, isSelectionModeOldest: Boolean)
+
+case class Arguments(
+  executionTarget: Option[ExecutionTarget],
+  toExecute: Option[String],
+  profile: Option[String],
+  region: Region,
+  mode: Option[SsmMode],
+  singleInstanceSelectionMode: SingleInstanceSelectionMode,
+  isSelectionModeNewest: Boolean,
+  isSelectionModeOldest: Boolean
+)
+
 object Arguments {
   def empty(): Arguments = Arguments(None, None, None, Region.getRegion(Regions.EU_WEST_1), None, SismUnspecified, false, false)
 }
@@ -41,9 +50,10 @@ case class SSMConfig (
 )
 
 case class AWSClients (
-  ssmClient: AWSSimpleSystemsManagementAsync,
-  stsClient: AWSSecurityTokenServiceAsync,
-  ec2Client: AmazonEC2Async
+  ssm: AWSSimpleSystemsManagementAsync,
+  sts: AWSSecurityTokenServiceAsync,
+  ec2: AmazonEC2Async,
+  emr: AmazonElasticMapReduceAsync
 )
 
 case class ResultsWithInstancesNotFound(results: List[(InstanceId, scala.Either[CommandStatus, CommandResult])], instancesNotFound: List[InstanceId])

@@ -4,8 +4,9 @@ import java.io.{File, IOException}
 import java.security.{NoSuchAlgorithmException, NoSuchProviderException}
 import java.util.Calendar
 
+import com.gu.ssm.model.{Instance, InstanceId}
 import com.gu.ssm.utils.attempt._
-import com.gu.ssm.utils.{KeyMaker, FilePermissions}
+import com.gu.ssm.utils.{FilePermissions, KeyMaker}
 
 object SSH {
 

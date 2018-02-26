@@ -3,6 +3,7 @@ package com.gu.ssm
 import java.io.File
 
 import com.amazonaws.regions.{Region, Regions}
+import com.gu.ssm.model.{AppStackStage, EMRClusterId, InstanceId, InstanceIds}
 import scopt.OptionParser
 
 
@@ -18,8 +19,13 @@ object ArgumentParser {
     opt[Seq[String]]('i', "instances")
       .action { (instanceIds, args) =>
         val instances = instanceIds.map(i => InstanceId(i)).toList
-        args.copy(executionTarget = Some(ExecutionTarget(instances = Some(instances))))
+        args.copy(executionTarget = Some(InstanceIds(instances)))
       } text "Specify the instance ID(s) on which the specified command(s) should execute"
+
+    opt[String]("cluster-id")
+      .action { (clusterId, args) =>
+        args.copy(executionTarget = Some(EMRClusterId(clusterId)))
+      } text "An EMR cluster ID – the command will be executed on its master node"
 
     opt[String]('t', "tags")
       .validate { tagsStr =>
@@ -29,7 +35,7 @@ object ArgumentParser {
         Logic.extractSASTags(tagsStr)
           .fold(
             _ => args,
-            ass => args.copy(executionTarget = Some(ExecutionTarget(ass = Some(ass))))
+            ass => args.copy(executionTarget = Some(ass))
           )
       } text "Search for instances by tag e.g. '--tags app,stack,stage'"
 
