@@ -6,6 +6,7 @@ import com.gu.ssm.utils.attempt._
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
 import com.gu.ssm.ArgumentParser.argParser
+import com.gu.ssm.model.ExecutionTarget
 
 object Main {
   implicit val ec: ExecutionContextExecutor = ExecutionContext.global
@@ -38,13 +39,13 @@ object Main {
 
   private def setUpSSH(awsClients: AWSClients, profile: String, region: Region, executionTarget: ExecutionTarget, sism: SingleInstanceSelectionMode): Unit = {
     val fProgramResult = for {
-      config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, profile, region, executionTarget)
+      config <- IO.getSSMConfig(awsClients, profile, region, executionTarget)
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
       (authFile, authKey) = sshArtifacts
       addAndRemoveKeyCommand = SSH.addTaintedCommand(config.name) + SSH.addKeyCommand(authKey) + SSH.removeKeyCommand(authKey)
       instance <- Attempt.fromEither(Logic.getSSHInstance(config.targets, sism))
-      _ <- IO.tagAsTainted(instance.id, config.name, awsClients.ec2Client)
-      _ <- IO.installSshKey(instance.id, config.name, addAndRemoveKeyCommand, awsClients.ssmClient)
+      _ <- IO.tagAsTainted(instance.id, config.name, awsClients.ec2)
+      _ <- IO.installSshKey(instance.id, config.name, addAndRemoveKeyCommand, awsClients.ssm)
     } yield SSH.sshCmd(authFile, instance)
 
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
@@ -54,9 +55,9 @@ object Main {
 
   private def execute(awsClients: AWSClients, profile: String, region: Region, executionTarget: ExecutionTarget, toExecute: String): Unit = {
     val fProgramResult = for {
-      config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, profile, region, executionTarget)
+      config <- IO.getSSMConfig(awsClients, profile, region, executionTarget)
       _ <- Attempt.fromEither(Logic.checkInstancesList(config))
-      results <- IO.executeOnInstances(config.targets.map(i => i.id), config.name, toExecute, awsClients.ssmClient)
+      results <- IO.executeOnInstances(config.targets.map(i => i.id), config.name, toExecute, awsClients.ssm)
       incorrectInstancesFromInstancesTag = Logic.computeIncorrectInstances(executionTarget, results.map(_._1))
     } yield ResultsWithInstancesNotFound(results,incorrectInstancesFromInstancesTag)
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)

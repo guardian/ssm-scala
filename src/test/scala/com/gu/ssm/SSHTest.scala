@@ -4,6 +4,8 @@ import org.scalatest.{EitherValues, FreeSpec, Matchers}
 import java.io.File
 import java.time.Instant
 
+import com.gu.ssm.model.{Instance, InstanceId}
+
 class SSHTest extends FreeSpec with Matchers with EitherValues {
 
   "create add key command" - {

@@ -5,14 +5,15 @@ import com.amazonaws.regions.Region
 import com.amazonaws.services.ec2.model._
 import com.amazonaws.services.ec2.{AmazonEC2Async, AmazonEC2AsyncClientBuilder}
 import com.gu.ssm.aws.AwsAsyncHandler.{awsToScala, handleAWSErrs}
+import com.gu.ssm.model.{AppStackStage, Instance, InstanceId}
 import com.gu.ssm.utils.attempt.Attempt
-import com.gu.ssm.{AppStackStage, Instance, InstanceId}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 
 
 object EC2 {
+
   def client(profileName: String, region: Region): AmazonEC2Async = {
     AmazonEC2AsyncClientBuilder.standard()
       .withCredentials(new ProfileCredentialsProvider(profileName))

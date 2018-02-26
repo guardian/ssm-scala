@@ -7,6 +7,7 @@ import com.googlecode.lanterna.gui2._
 import com.googlecode.lanterna.gui2.dialogs.{MessageDialog, WaitingDialog}
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 import com.googlecode.lanterna.terminal.{DefaultTerminalFactory, Terminal, TerminalResizeListener}
+import com.gu.ssm.model.{ExecutionTarget, InstanceId}
 import com.gu.ssm.utils.attempt.{Attempt, ErrorCode, FailedAttempt, Failure}
 import com.typesafe.scalalogging.LazyLogging
 
@@ -21,7 +22,7 @@ class InteractiveProgram(val awsClients: AWSClients)(implicit ec: ExecutionConte
       ui.start()
     }
     val configAttempt = for {
-      config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, profile, region, executionTarget)
+      config <- IO.getSSMConfig(awsClients, profile, region, executionTarget)
       _ <- Attempt.fromEither(Logic.checkInstancesList(config))
     } yield config
 
@@ -40,7 +41,7 @@ class InteractiveProgram(val awsClients: AWSClients)(implicit ec: ExecutionConte
     * Kick off execution of a new command and update UI when it returns
     */
   def executeCommand(command: String, instances: List[InstanceId], username: String, instancesNotFound: List[InstanceId]): Unit = {
-    IO.executeOnInstances(instances, username, command, awsClients.ssmClient).onComplete {
+    IO.executeOnInstances(instances, username, command, awsClients.ssm).onComplete {
       case Right(results) =>
         ui.displayResults(instances, username, ResultsWithInstancesNotFound(results, instancesNotFound))
       case Left(fa) =>

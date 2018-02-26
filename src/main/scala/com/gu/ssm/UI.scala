@@ -1,5 +1,6 @@
 package com.gu.ssm
 
+import com.gu.ssm.model.InstanceId
 import com.gu.ssm.utils.attempt.FailedAttempt
 
 
