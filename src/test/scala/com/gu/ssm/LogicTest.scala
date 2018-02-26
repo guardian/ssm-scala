@@ -41,7 +41,7 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
     }
   }
 
-  "getRelevantInstance" - {
+  "getSSHInstance" - {
     import Logic.getSSHInstance
 
     def makeInstance(id: String, publicIpOpt: Option[String], privateIp: String, launchDateDayShift: Int): Instance =
@@ -106,10 +106,6 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
 
     "Given one instance and want private IP" - {
 
-      "Instance is ill-formed should be Left" in {
-        getSSHInstance(List(), SismUnspecified, usePrivate = true).isLeft shouldBe true
-      }
-
       "Instance is well-formed, should return argument in all cases" - {
 
         "If single instance selection mode is SismNewest, returns argument" in {
@@ -130,12 +126,6 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
     }
 
     "Given more than one instance and want private IP" - {
-
-      "All instances are ill-formed, should be Left" in {
-        val i1 = makeInstance("X", None, "", -7)
-        val i2 = makeInstance("Y", None, "", 0)
-        getSSHInstance(List(i1, i2), SismUnspecified, usePrivate = true).isLeft shouldBe true
-      }
 
       "Multiple instances are well formed" - {
         val i1 = makeInstance("X", None, "10.1.1.10", -7)
