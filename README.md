@@ -109,9 +109,9 @@ Note that if the argument `-t <app>,<stack>,<stage>` resolves to more than one i
 During development, the program can be run using sbt, either from an
 sbt shell or from the CLI in that project.
 
-    $ sbt "run --c pwd --instances i-0123456 --profile xxx --region xxx"
+    $ sbt "run cmd -c pwd --instances i-0123456 --profile xxx --region xxx"
 
-    sbt:ssm-scala> run --c pwd --instances i-0123456 --profile xxx --region xxx 
+    sbt:ssm-scala> run cmd -c pwd --instances i-0123456 --profile xxx --region xxx 
 
 However, `sbt` traps the program exit so in REPL mode you may find it
 easier to create and run an executable instead, for this just run 
