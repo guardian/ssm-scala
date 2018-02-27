@@ -46,7 +46,7 @@ object EC2 {
       awsInstance <- reservation.getInstances.asScala
       instanceId = awsInstance.getInstanceId
       launchDateTime = awsInstance.getLaunchTime.toInstant
-    } yield Instance(InstanceId(instanceId), Option(awsInstance.getPublicIpAddress), launchDateTime)).toList
+    } yield Instance(InstanceId(instanceId), Option(awsInstance.getPublicIpAddress), awsInstance.getPrivateIpAddress, launchDateTime)).toList
   }
 
   def tagInstance(id: InstanceId, key: String, value: String, client: AmazonEC2Async)(implicit ec: ExecutionContext): Attempt[Unit] = {
