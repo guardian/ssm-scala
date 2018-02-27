@@ -42,7 +42,7 @@ object SSM {
     handleAWSErrs(
       awsToScala(client.getCommandInvocationAsync)(request)
         .map(extractCommandResult)
-        .recover { case e if e.getMessage.contains("InvocationDoesNotExist") => Left(InvocationDoesNotExist) }
+        .recover { case _:InvocationDoesNotExistException => Left(InvocationDoesNotExist) }
     )
   }
 
