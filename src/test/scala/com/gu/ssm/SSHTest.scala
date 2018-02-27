@@ -10,15 +10,15 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
     import SSH.addKeyCommand
 
     "make ssh directory" in {
-      addKeyCommand("XXX") should include ("/bin/mkdir -p /home/ubuntu/.ssh;")
+      addKeyCommand("user1", "XXX") should include ("/bin/mkdir -p /home/user1/.ssh;")
     }
 
     "make authorised keys" in {
-      addKeyCommand("XXX") should include ("/bin/echo 'XXX' >> /home/ubuntu/.ssh/authorized_keys;")
+      addKeyCommand("user2", "XXX") should include ("/bin/echo 'XXX' >> /home/user2/.ssh/authorized_keys;")
     }
 
     "ensure authorised key file permissions are correct" in {
-      addKeyCommand("XXX") should include ("/bin/chmod 0600 /home/ubuntu/.ssh/authorized_keys;")
+      addKeyCommand("user3", "XXX") should include ("/bin/chmod 0600 /home/user3/.ssh/authorized_keys;")
     }
 
   }
@@ -54,9 +54,9 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
     "create ssh command" in {
       val file = new File("/banana")
       val instance = Instance(InstanceId("raspberry"), Some("34.1.1.10"), "10.1.1.10", Instant.now())
-      val cmd = sshCmd(file, instance, "34.1.1.10")
+      val cmd = sshCmd(file, instance, "user4", "34.1.1.10")
       cmd._1.id shouldEqual "raspberry"
-      cmd._2 should include ("ssh -i /banana ubuntu@34.1.1.10")
+      cmd._2 should include ("ssh -i /banana user4@34.1.1.10")
     }
   }
 }
