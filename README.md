@@ -12,7 +12,9 @@ Instructions for using SSM Scala in your own project can be found [below](#How-t
 
 ## Installation
 
-Fetch the most recently released version of the program from the [Github releases page](https://github.com/guardian/ssm-scala/releases/latest) and make sure it is executable (`chmod +x ssm`). You may then want to put it somewhere in your PATH.
+```
+brew install guardian/devtools/ssm
+```
 
 ## Usage
 
@@ -126,6 +128,14 @@ The result of this script is an executable called `ssm` in the target folder. If
 ```
 java -jar <path-to-jar>/ssm.jar [arguments]
 ```
+
+## Release a new version
+
+To release a new version of `ssm` perform the two following tasks:
+
+1. Increase the version number accordingly and release a new tag at [ssm-scala releases](https://github.com/guardian/ssm-scala/releases). Upload the raw executable (**file**: `ssm`) as well as a **tar.gz** version (**file**: `ssm.tar.gz`).
+
+2. Make a PR to [https://github.com/guardian/homebrew-devtools/blob/master/Formula/ssm.rb](https://github.com/guardian/homebrew-devtools/blob/master/Formula/ssm.rb) to update the new version's details.
 
 ## How to use SSM Scala with your own project
 
