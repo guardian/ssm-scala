@@ -36,7 +36,7 @@ Run SSM in interactive/repl mode
 
 Command: ssh [options]
 Create and upload a temporary ssh key
-  -U, --user <user>        Connect to remote host as user (default: ubuntu)
+  -u, --user <user>        Connect to remote host as user (default: ubuntu)
   --newest                 Selects the newest instance if more than one instance was specified
   --oldest                 Selects the oldest instance if more than one instance was specified
   --private                Use private IP address (must be routable via VPN Gateway)
