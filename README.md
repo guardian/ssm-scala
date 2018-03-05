@@ -143,22 +143,12 @@ To release a new version of `ssm` perform the two following tasks:
 	```
 	./generate-executable.sh
 	```
+	
+	Note that this script generates the **tar.gz** file needed for the github release as well as outputting the sha256 hash of that file needed for the homebrew-devtools' update.
 
-2. Generate the **tar.gz** file. Run the following at `target/scala-2.12`
+2. Increase the version number accordingly and release a new tag at [ssm-scala releases](https://github.com/guardian/ssm-scala/releases). Upload the raw executable (**file**: `ssm`) as well as a **tar.gz** version (**file**: `ssm.tar.gz`).
 
-	```
-	tar -cvzf ssm.tar.gz ssm
-	```
-
-3. Increase the version number accordingly and release a new tag at [ssm-scala releases](https://github.com/guardian/ssm-scala/releases). Upload the raw executable (**file**: `ssm`) as well as a **tar.gz** version (**file**: `ssm.tar.gz`).
-
-4. Make a note of the **sha256** hash of the **tar.gz** file
-
-	```
-	shasum -a 256 ssm.tar.gz
-	```
-
-5. Make a PR to [https://github.com/guardian/homebrew-devtools/blob/master/Formula/ssm.rb](https://github.com/guardian/homebrew-devtools/blob/master/Formula/ssm.rb) to update the new version's details.
+3. Make a PR to [https://github.com/guardian/homebrew-devtools/blob/master/Formula/ssm.rb](https://github.com/guardian/homebrew-devtools/blob/master/Formula/ssm.rb) to update the new version's details.
 
 ## How to use SSM Scala with your own project
 
