@@ -3,6 +3,7 @@ package com.gu.ssm
 import java.io.File
 
 import com.amazonaws.regions.{Region, Regions}
+import com.gu.ssm.Arguments.DefaultUser
 import scopt.OptionParser
 
 
@@ -66,6 +67,9 @@ object ArgumentParser {
       .action((_, c) => c.copy(mode = Some(SsmSsh)))
       .text("Create and upload a temporary ssh key")
       .children(
+        opt[String]('u', "user").optional()
+          .action((user, args) => args.copy(user = Some(user)))
+          .text(s"Connect to remote host as user (default: $DefaultUser)"),
         opt[Unit]("newest").optional()
           .action((_, args) => {
             args.copy(

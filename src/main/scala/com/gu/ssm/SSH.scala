@@ -47,23 +47,23 @@ object SSH {
        | """.stripMargin
   }
 
-  def addKeyCommand(authKey: String): String =
+  def addKeyCommand(user: String, authKey: String): String =
     s"""
-      | /bin/mkdir -p /home/ubuntu/.ssh;
-      | /bin/echo '$authKey' >> /home/ubuntu/.ssh/authorized_keys;
-      | /bin/chmod 0600 /home/ubuntu/.ssh/authorized_keys;
+      | /bin/mkdir -p /home/$user/.ssh;
+      | /bin/echo '$authKey' >> /home/$user/.ssh/authorized_keys;
+      | /bin/chmod 0600 /home/$user/.ssh/authorized_keys;
       |""".stripMargin
 
-  def removeKeyCommand(authKey: String): String =
+  def removeKeyCommand(user: String, authKey: String): String =
     s"""
       | /bin/sleep $sshCredentialsLifetimeSeconds;
-      | /bin/sed -i '/${authKey.replaceAll("/", "\\\\/")}/d' /home/ubuntu/.ssh/authorized_keys;
+      | /bin/sed -i '/${authKey.replaceAll("/", "\\\\/")}/d' /home/$user/.ssh/authorized_keys;
       |""".stripMargin
 
-  def sshCmd(tempFile: File, instance: Instance, ipAddress: String): (InstanceId, String) = {
+  def sshCmd(tempFile: File, instance: Instance, user: String, ipAddress: String): (InstanceId, String) = {
     val cmd = s"""
       | # Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:
-      | ssh -i ${tempFile.getCanonicalFile.toString} ubuntu@$ipAddress;
+      | ssh -i ${tempFile.getCanonicalFile.toString} $user@$ipAddress;
       |""".stripMargin
     (instance.id, cmd)
   }

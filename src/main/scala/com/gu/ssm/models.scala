@@ -17,18 +17,22 @@ case class Arguments(
   profile: Option[String],
   region: Region,
   mode: Option[SsmMode],
+  user: Option[String],
   singleInstanceSelectionMode: SingleInstanceSelectionMode,
   isSelectionModeNewest: Boolean,
   isSelectionModeOldest: Boolean,
   usePrivateIpAddress: Boolean
 )
 object Arguments {
+  val DefaultUser = "ubuntu"
+
   def empty(): Arguments = Arguments(
     executionTarget = None,
     toExecute = None,
     profile = None,
     region = Region.getRegion(Regions.EU_WEST_1),
     mode = None,
+    user = Some(DefaultUser),
     singleInstanceSelectionMode = SismUnspecified,
     isSelectionModeNewest = false,
     isSelectionModeOldest = false,
