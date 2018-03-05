@@ -138,9 +138,17 @@ java -jar <path-to-jar>/ssm.jar [arguments]
 
 To release a new version of `ssm` perform the two following tasks:
 
-1. Increase the version number accordingly and release a new tag at [ssm-scala releases](https://github.com/guardian/ssm-scala/releases). Upload the raw executable (**file**: `ssm`) as well as a **tar.gz** version (**file**: `ssm.tar.gz`).
+1. Generate a new executable. Run the following at the top of the repository
+ 
+	```
+	./generate-executable.sh
+	```
+	
+	Note that this script generates the **tar.gz** file needed for the github release as well as outputting the sha256 hash of that file needed for the homebrew-devtools' update.
 
-2. Make a PR to [https://github.com/guardian/homebrew-devtools/blob/master/Formula/ssm.rb](https://github.com/guardian/homebrew-devtools/blob/master/Formula/ssm.rb) to update the new version's details.
+2. Increase the version number accordingly and release a new tag at [ssm-scala releases](https://github.com/guardian/ssm-scala/releases). Upload the raw executable (**file**: `ssm`) as well as a **tar.gz** version (**file**: `ssm.tar.gz`).
+
+3. Make a PR to [https://github.com/guardian/homebrew-devtools/blob/master/Formula/ssm.rb](https://github.com/guardian/homebrew-devtools/blob/master/Formula/ssm.rb) to update the new version's details.
 
 ## How to use SSM Scala with your own project
 
