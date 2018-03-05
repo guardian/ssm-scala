@@ -155,7 +155,7 @@ To release a new version of `ssm` perform the two following tasks:
 4. Make a note of the **sha256** hash of the **tar.gz** file
 
 	```
-	openssl sha256 ssm.tar.gz
+	shasum -a 256 ssm.tar.gz
 	```
 
 5. Make a PR to [https://github.com/guardian/homebrew-devtools/blob/master/Formula/ssm.rb](https://github.com/guardian/homebrew-devtools/blob/master/Formula/ssm.rb) to update the new version's details.
