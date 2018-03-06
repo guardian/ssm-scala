@@ -89,6 +89,12 @@ object ArgumentParser {
             args.copy(
               usePrivateIpAddress = true)
           })
+          .text("unix pipe-able ssh connection string"),
+        opt[Unit]("raw").optional()
+          .action((_, args) => {
+            args.copy(
+              rawOutput = true)
+          })
           .text("Use private IP address (must be routable via VPN Gateway)"),
         checkConfig( c =>
           if (c.isSelectionModeOldest && c.isSelectionModeNewest) failure("You cannot both specify --newest and --oldest")

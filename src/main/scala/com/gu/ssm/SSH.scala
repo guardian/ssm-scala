@@ -60,12 +60,16 @@ object SSH {
       | /bin/sed -i '/${authKey.replaceAll("/", "\\\\/")}/d' /home/$user/.ssh/authorized_keys;
       |""".stripMargin
 
-  def sshCmd(tempFile: File, instance: Instance, user: String, ipAddress: String): (InstanceId, String) = {
-    val cmd = s"""
-      | # Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:
-      | ssh -i ${tempFile.getCanonicalFile.toString} $user@$ipAddress;
-      |""".stripMargin
+  def sshCmd(rawOutput: Boolean)(tempFile: File, instance: Instance, user: String, ipAddress: String): (InstanceId, String) = {
+    val connectionString = s"ssh -i ${tempFile.getCanonicalFile.toString} $user@$ipAddress"
+    val cmd = if(rawOutput) {
+      connectionString
+    }else{
+      s"""
+         | # Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:
+         | ${connectionString};
+         |""".stripMargin
+    }
     (instance.id, cmd)
   }
-
 }
