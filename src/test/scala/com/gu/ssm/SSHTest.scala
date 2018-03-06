@@ -66,6 +66,7 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
         cmd._1.id shouldEqual "raspberry"
         cmd._2 should include ("ssh -i /banana user4@34.1.1.10")
       }
+
     }
   }
 }

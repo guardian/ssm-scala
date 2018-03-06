@@ -35,7 +35,7 @@ object Main {
     System.exit(UnhandledError.code)
   }
 
-  private def setUpSSH(awsClients: AWSClients, executionTarget: ExecutionTarget, user: String, sism: SingleInstanceSelectionMode, usePrivate: Boolean, machineOutput: Boolean): Unit = {
+  private def setUpSSH(awsClients: AWSClients, executionTarget: ExecutionTarget, user: String, sism: SingleInstanceSelectionMode, usePrivate: Boolean, rawOutput: Boolean): Unit = {
     val fProgramResult = for {
       config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, executionTarget)
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
@@ -45,10 +45,10 @@ object Main {
       _ <- IO.tagAsTainted(instance.id, config.name, awsClients.ec2Client)
       _ <- IO.installSshKey(instance.id, config.name, addAndRemoveKeyCommand, awsClients.ssmClient)
       ipAddress <- Attempt.fromEither(Logic.getIpAddress(instance, usePrivate))
-    } yield SSH.sshCmd(machineOutput)(authFile, instance, user, ipAddress)
+    } yield SSH.sshCmd(rawOutput)(authFile, instance, user, ipAddress)
 
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
-    programResult.fold(UI.outputFailure, UI.sshOutput(machineOutput))
+    programResult.fold(UI.outputFailure, UI.sshOutput(rawOutput))
     System.exit(programResult.fold(_.exitCode, _ => 0))
   }
 

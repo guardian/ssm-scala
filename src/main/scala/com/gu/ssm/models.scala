@@ -22,7 +22,7 @@ case class Arguments(
   isSelectionModeNewest: Boolean,
   isSelectionModeOldest: Boolean,
   usePrivateIpAddress: Boolean,
-  machineOutput: Boolean
+  rawOutput: Boolean
 )
 object Arguments {
   val DefaultUser = "ubuntu"
@@ -38,7 +38,7 @@ object Arguments {
     isSelectionModeNewest = false,
     isSelectionModeOldest = false,
     usePrivateIpAddress = false,
-    machineOutput = false
+    rawOutput = false
   )
 }
 

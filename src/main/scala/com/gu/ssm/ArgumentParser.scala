@@ -90,10 +90,10 @@ object ArgumentParser {
               usePrivateIpAddress = true)
           })
           .text("unix pipe-able ssh connection string"),
-        opt[Unit]("machine").optional()
+        opt[Unit]("raw").optional()
           .action((_, args) => {
             args.copy(
-              machineOutput = true)
+              rawOutput = true)
           })
           .text("Use private IP address (must be routable via VPN Gateway)"),
         checkConfig( c =>
