@@ -14,9 +14,14 @@ import scala.concurrent.duration._
 
 
 object SSM {
-  def client(profileName: String, region: Region): AWSSimpleSystemsManagementAsync = {
+  def client(profileName: Option[String], region: Region): AWSSimpleSystemsManagementAsync = {
+    val profileCredentialsProvider = profileName match {
+      case Some(profile) => new ProfileCredentialsProvider(profile)
+      case _ => new ProfileCredentialsProvider()
+    }
+
     AWSSimpleSystemsManagementAsyncClientBuilder.standard()
-      .withCredentials(new ProfileCredentialsProvider(profileName))
+      .withCredentials(profileCredentialsProvider)
       .withRegion(region.getName)
       .build()
   }

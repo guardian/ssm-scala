@@ -15,13 +15,13 @@ import scala.concurrent.{ExecutionContext, Future}
 class InteractiveProgram(val awsClients: AWSClients)(implicit ec: ExecutionContext) extends LazyLogging {
   val ui = new InteractiveUI(this)
 
-  def main(profile: String, region: Region, executionTarget: ExecutionTarget): Unit = {
+  def main(profile: Option[String], region: Region, executionTarget: ExecutionTarget): Unit = {
     // start UI on a new thread (it blocks while it listens for keyboard input)
     Future {
       ui.start()
     }
     val configAttempt = for {
-      config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, profile, region, executionTarget)
+      config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, executionTarget)
       _ <- Attempt.fromEither(Logic.checkInstancesList(config))
     } yield config
 
