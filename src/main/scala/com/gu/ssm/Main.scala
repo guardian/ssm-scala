@@ -23,7 +23,7 @@ object Main {
               case _ => fail()
             }
           case SsmSsh =>
-            setUpSSH(awsClients, executionTarget, user, sism, usePrivate)
+            setUpSSH(awsClients, executionTarget, user, sism, usePrivate, machineOutput)
         }
       case Some(_) => fail()
       case None => System.exit(ArgumentsError.code) // parsing cmd line args failed, help message will have been displayed
@@ -35,7 +35,7 @@ object Main {
     System.exit(UnhandledError.code)
   }
 
-  private def setUpSSH(awsClients: AWSClients, executionTarget: ExecutionTarget, user: String, sism: SingleInstanceSelectionMode, usePrivate: Boolean): Unit = {
+  private def setUpSSH(awsClients: AWSClients, executionTarget: ExecutionTarget, user: String, sism: SingleInstanceSelectionMode, usePrivate: Boolean, machineOutput: Boolean): Unit = {
     val fProgramResult = for {
       config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, executionTarget)
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
@@ -45,10 +45,10 @@ object Main {
       _ <- IO.tagAsTainted(instance.id, config.name, awsClients.ec2Client)
       _ <- IO.installSshKey(instance.id, config.name, addAndRemoveKeyCommand, awsClients.ssmClient)
       ipAddress <- Attempt.fromEither(Logic.getIpAddress(instance, usePrivate))
-    } yield SSH.sshCmd(authFile, instance, user, ipAddress)
+    } yield SSH.sshCmd(authFile, instance, user, ipAddress, machineOutput)
 
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
-    programResult.fold(UI.outputFailure, UI.sshOutput)
+    programResult.fold(UI.outputFailure, UI.sshOutput(machineOutput))
     System.exit(programResult.fold(_.exitCode, _ => 0))
   }
 
