@@ -48,11 +48,14 @@ Create and upload a temporary ssh key
   --private                Use private IP address (must be routable via VPN Gateway)
 ```
 
-The mandatory options are: 
+There are two mandatory configuration items.
 
-- `--profile`, where you specify your Janus profile (for more information see [AWS profiles](https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html)),
+To specify your AWS profile (for more information see [AWS profiles](https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html)), either of:
 
-- and either: 
+	- `--profile`, 
+	- AWS_PROFILE environment variable
+
+To target the command, either of: 
 	
 	- `-i`, where you specify one or more instance ids, or 
 	- `-t`, where you specify the app name, the stack and the stage. 
