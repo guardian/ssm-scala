@@ -46,7 +46,7 @@ Create and upload a temporary ssh key
   --newest                 Selects the newest instance if more than one instance was specified
   --oldest                 Selects the oldest instance if more than one instance was specified
   --private                Use private IP address (must be routable via VPN Gateway)
-  --raw                    Use private IP address (must be routable via VPN Gateway)
+  --raw                    Unix pipe-able ssh connection string
 ```
 
 There are two mandatory configuration items.
