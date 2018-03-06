@@ -12,7 +12,7 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     argParser.parse(args, Arguments.empty()) match {
-      case Some(Arguments(Some(executionTarget), toExecuteOpt, profile, region, Some(mode), Some(user), sism, _, _, usePrivate, machineOutput)) =>
+      case Some(Arguments(Some(executionTarget), toExecuteOpt, profile, region, Some(mode), Some(user), sism, _, _, usePrivate, rawOutput)) =>
         val awsClients = Logic.getClients(profile, region)
         mode match {
           case SsmRepl =>
@@ -23,7 +23,7 @@ object Main {
               case _ => fail()
             }
           case SsmSsh =>
-            setUpSSH(awsClients, executionTarget, user, sism, usePrivate, machineOutput)
+            setUpSSH(awsClients, executionTarget, user, sism, usePrivate, rawOutput)
         }
       case Some(_) => fail()
       case None => System.exit(ArgumentsError.code) // parsing cmd line args failed, help message will have been displayed
