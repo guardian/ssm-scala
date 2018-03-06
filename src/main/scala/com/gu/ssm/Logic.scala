@@ -50,7 +50,7 @@ object Logic {
     }
   }
 
-  def getClients(profile: String, region: Region): AWSClients = {
+  def getClients(profile: Option[String], region: Region): AWSClients = {
     val ssmClient: AWSSimpleSystemsManagementAsync = SSM.client(profile, region)
     val stsClient: AWSSecurityTokenServiceAsync = STS.client(profile, region)
     val ec2Client: AmazonEC2Async = EC2.client(profile, region)

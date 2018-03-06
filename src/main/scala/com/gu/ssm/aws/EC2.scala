@@ -13,9 +13,15 @@ import scala.concurrent.ExecutionContext
 
 
 object EC2 {
-  def client(profileName: String, region: Region): AmazonEC2Async = {
+  def client(profileName: Option[String], region: Region): AmazonEC2Async = {
+
+    val profileCredentialsProvider = profileName match {
+      case Some(profile) => new ProfileCredentialsProvider(profile)
+      case _ => new ProfileCredentialsProvider()
+    }
+
     AmazonEC2AsyncClientBuilder.standard()
-      .withCredentials(new ProfileCredentialsProvider(profileName))
+      .withCredentials(profileCredentialsProvider)
       .withRegion(region.getName)
       .build()
   }

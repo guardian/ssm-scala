@@ -37,7 +37,7 @@ object IO {
   def tagAsTainted(instanceId: InstanceId, username: String,ec2Client: AmazonEC2Async)(implicit ec: ExecutionContext): Attempt[Unit] =
     EC2.tagInstance(instanceId, "taintedBy", username, ec2Client)
 
-  def getSSMConfig(ec2Client: AmazonEC2Async, stsClient: AWSSecurityTokenServiceAsync, profile: String, region: Region, executionTarget: ExecutionTarget)(implicit ec: ExecutionContext): Attempt[SSMConfig] = {
+  def getSSMConfig(ec2Client: AmazonEC2Async, stsClient: AWSSecurityTokenServiceAsync, executionTarget: ExecutionTarget)(implicit ec: ExecutionContext): Attempt[SSMConfig] = {
     for {
       instances <- IO.resolveInstances(executionTarget, ec2Client)
       name <- STS.getCallerIdentity(stsClient)
