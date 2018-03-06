@@ -21,7 +21,8 @@ case class Arguments(
   singleInstanceSelectionMode: SingleInstanceSelectionMode,
   isSelectionModeNewest: Boolean,
   isSelectionModeOldest: Boolean,
-  usePrivateIpAddress: Boolean
+  usePrivateIpAddress: Boolean,
+  machineOutput: Boolean
 )
 object Arguments {
   val DefaultUser = "ubuntu"
@@ -36,7 +37,8 @@ object Arguments {
     singleInstanceSelectionMode = SismUnspecified,
     isSelectionModeNewest = false,
     isSelectionModeOldest = false,
-    usePrivateIpAddress = false
+    usePrivateIpAddress = false,
+    machineOutput = false
   )
 }
 
