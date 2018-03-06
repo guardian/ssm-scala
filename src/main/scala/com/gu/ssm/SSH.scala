@@ -60,7 +60,7 @@ object SSH {
       | /bin/sed -i '/${authKey.replaceAll("/", "\\\\/")}/d' /home/$user/.ssh/authorized_keys;
       |""".stripMargin
 
-  def sshCmd(tempFile: File, instance: Instance, user: String, ipAddress: String, machineOutput: Boolean): (InstanceId, String) = {
+  def sshCmd(machineOutput: Boolean)(tempFile: File, instance: Instance, user: String, ipAddress: String): (InstanceId, String) = {
     val connectionString = s"ssh -i ${tempFile.getCanonicalFile.toString} $user@$ipAddress"
     val cmd = if(machineOutput) {
       connectionString

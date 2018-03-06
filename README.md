@@ -46,6 +46,7 @@ Create and upload a temporary ssh key
   --newest                 Selects the newest instance if more than one instance was specified
   --oldest                 Selects the oldest instance if more than one instance was specified
   --private                Use private IP address (must be routable via VPN Gateway)
+  --machine                Use private IP address (must be routable via VPN Gateway)
 ```
 
 There are two mandatory configuration items.
@@ -119,6 +120,16 @@ The instance must already have both a public IP address _and_
 appropriate security groups.
 
 Note that if the argument `-t <app>,<stack>,<stage>` resolves to more than one instance, the command will stop with an error message. You can circumvent this behaviour and instruct `ssm` to proceed with one single instance using the command line flags `--oldest` and `--newest`, which select either the oldest or newest instances.
+
+### --machine
+
+This flag allows for a pipe-able ssh connection string. For instance
+
+```
+ssm ssh --profile security -t security-hq,security,PROD --newest --machine | bash
+```
+
+Will automatically ssh you to the newest instance running security-hq. Note that you still have to manually accept the new ECDSA key fingerprint.
 
 ## Development
 
