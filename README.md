@@ -82,10 +82,15 @@ have those tags.
 
 ### Examples
 
-An example of using `cmd` is 
+Examples of using `cmd` are
 
 ```
 ./ssm cmd -c date --profile security -t security-hq,security,PROD
+```
+or
+```
+export AWS_PROFILE=security
+./ssm cmd -c date -t security-hq,security,PROD
 ```
 
 where the `date` command will be ran on all matching instances.
