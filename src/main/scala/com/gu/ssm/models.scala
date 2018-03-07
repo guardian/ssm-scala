@@ -25,7 +25,7 @@ case class Arguments(
   rawOutput: Boolean
 )
 object Arguments {
-  val DefaultUser = "ubuntu"
+  val defaultUser = "ubuntu"
 
   def empty(): Arguments = Arguments(
     executionTarget = None,
@@ -33,7 +33,7 @@ object Arguments {
     profile = None,
     region = Region.getRegion(Regions.EU_WEST_1),
     mode = None,
-    user = Some(DefaultUser),
+    user = Some(defaultUser),
     singleInstanceSelectionMode = SismUnspecified,
     isSelectionModeNewest = false,
     isSelectionModeOldest = false,

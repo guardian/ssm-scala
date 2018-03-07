@@ -3,7 +3,7 @@ package com.gu.ssm
 import java.io.File
 
 import com.amazonaws.regions.{Region, Regions}
-import com.gu.ssm.Arguments.DefaultUser
+import com.gu.ssm.Arguments.defaultUser
 import scopt.OptionParser
 
 
@@ -69,7 +69,7 @@ object ArgumentParser {
       .children(
         opt[String]('u', "user").optional()
           .action((user, args) => args.copy(user = Some(user)))
-          .text(s"Connect to remote host as user (default: $DefaultUser)"),
+          .text(s"Connect to remote host as user (default: $defaultUser)"),
         opt[Unit]("newest").optional()
           .action((_, args) => {
             args.copy(
