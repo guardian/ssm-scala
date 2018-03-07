@@ -24,6 +24,7 @@ object UI {
 
   def sshOutput(rawOutput: Boolean)(result: (InstanceId, String)): Unit = {
     if (rawOutput){
+      Thread.sleep(1000)
       print(result._2)
     } else {
       UI.printMetadata(s"========= ${result._1.id} =========")

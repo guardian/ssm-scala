@@ -27,7 +27,7 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
 
     "ensure motd command file is present" in {
       import SSH.addTaintedCommand
-      addTaintedCommand("XXX") should include ("[[ -f /etc/update-motd.d/99-tainted ]] || /bin/echo -e '#!/bin/bash' | /usr/bin/sudo /usr/bin/tee -a /etc/update-motd.d/99-tainted >> /dev/null;")
+      addTaintedCommand("XXX") should include ("test -f /etc/update-motd.d/99-tainted || /bin/echo -e '#!/bin/bash' | /usr/bin/sudo /usr/bin/tee -a /etc/update-motd.d/99-tainted >> /dev/null;")
     }
     "ensure motd command file contains tainted message" in {
       import SSH.addTaintedCommand
