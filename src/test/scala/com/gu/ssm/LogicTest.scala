@@ -45,7 +45,7 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
     import Logic.getSSHInstance
 
     def makeInstance(id: String, publicIpOpt: Option[String], privateIp: String, launchDateDayShift: Int): Instance =
-      Instance(InstanceId(id), publicIpOpt, privateIp, LocalDateTime.now().plusDays(launchDateDayShift).atZone(ZoneId.systemDefault()).toInstant())
+      Instance(InstanceId(id), None, publicIpOpt, privateIp, LocalDateTime.now().plusDays(launchDateDayShift).atZone(ZoneId.systemDefault()).toInstant())
 
     "if given no instances, should be Left" in {
       getSSHInstance(List(), SismUnspecified, usePrivate = false).isLeft shouldBe true
@@ -148,35 +148,43 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
   }
 
   "getIpAddress" - {
-    import Logic.getIpAddress
+    import Logic.getAddress
 
-    def makeInstance(id: String, publicIpOpt: Option[String], privateIp: String): Instance =
-      Instance(InstanceId(id), publicIpOpt, privateIp, Instant.now())
+    def makeInstance(id: String, publicDnsOpt: Option[String], publicIpOpt: Option[String], privateIp: String): Instance =
+      Instance(InstanceId(id), publicDnsOpt, publicIpOpt, privateIp, Instant.now())
 
-    val instanceWithPrivateIpOnly = makeInstance("id-e32cb1c9d09d", None, "10.1.1.10")
-    val instanceWithPublicAndPrivateIp = makeInstance("id-a78414cb9b14", Some("34.1.1.10"), "10.1.1.10")
+    val instanceWithPrivateIpOnly = makeInstance("id-e32cb1c9d09d", None, None, "10.1.1.10")
+    val instanceWithPublicIpAndPrivateIp = makeInstance("id-a78414cb9b14", None, Some("34.1.1.10"), "10.1.1.10")
+    val instanceWithPublicDnsAndPublicIPAndPrivateIp = makeInstance("id-a78414cb9b14", Some("ec2-dnsname"), Some("34.1.1.10"), "10.1.1.10")
 
     "given want private IP" - {
       "return private as only private exists" in {
-        val result = getIpAddress(instanceWithPrivateIpOnly, usePrivate = true)
+        val result = getAddress(instanceWithPrivateIpOnly, usePrivate = true)
         result.right.value shouldEqual "10.1.1.10"
       }
 
       "return private if public and private exists" in {
-        val result = getIpAddress(instanceWithPublicAndPrivateIp, usePrivate = true)
+        val result = getAddress(instanceWithPublicIpAndPrivateIp, usePrivate = true)
         result.right.value shouldEqual "10.1.1.10"
       }
     }
 
     "given want public IP" - {
       "return public if it exists" in {
-        val result = getIpAddress(instanceWithPublicAndPrivateIp, usePrivate = false)
+        val result = getAddress(instanceWithPublicIpAndPrivateIp, usePrivate = false)
         result.right.value shouldEqual "34.1.1.10"
       }
 
       "return error if only private exists" in {
-        val result = getIpAddress(instanceWithPrivateIpOnly, usePrivate = false)
+        val result = getAddress(instanceWithPrivateIpOnly, usePrivate = false)
         result.isLeft shouldBe true
+      }
+    }
+
+    "given want public DNS" - {
+      "return public if it exists" in {
+        val result = getAddress(instanceWithPublicDnsAndPublicIPAndPrivateIp, usePrivate = false)
+        result.right.value shouldEqual "ec2-dnsname"
       }
     }
   }
