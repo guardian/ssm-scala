@@ -63,7 +63,7 @@ object SSH {
   def sshCmd(rawOutput: Boolean)(tempFile: File, instance: Instance, user: String, ipAddress: String): (InstanceId, String) = {
     val connectionString = s"ssh -i ${tempFile.getCanonicalFile.toString} $user@$ipAddress"
     val cmd = if(rawOutput) {
-      connectionString
+      s"$connectionString -t -t"
     }else{
       s"""
          | # Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:
