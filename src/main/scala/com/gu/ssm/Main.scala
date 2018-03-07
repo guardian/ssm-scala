@@ -44,8 +44,8 @@ object Main {
       instance <- Attempt.fromEither(Logic.getSSHInstance(config.targets, sism, usePrivate))
       _ <- IO.tagAsTainted(instance.id, config.name, awsClients.ec2Client)
       _ <- IO.installSshKey(instance.id, config.name, addAndRemoveKeyCommand, awsClients.ssmClient)
-      ipAddress <- Attempt.fromEither(Logic.getIpAddress(instance, usePrivate))
-    } yield SSH.sshCmd(rawOutput)(authFile, instance, user, ipAddress)
+      address <- Attempt.fromEither(Logic.getAddress(instance, usePrivate))
+    } yield SSH.sshCmd(rawOutput)(authFile, instance, user, address)
 
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
     programResult.fold(UI.outputFailure, UI.sshOutput(rawOutput))

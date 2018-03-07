@@ -116,8 +116,10 @@ An example of using `ssh` command is:
 This causes `ssm` to generate a temporary ssh
 key, and install the public key on a specific instance.  It will then
 output the command to `ssh` directly to that instance. 
-The instance must already have both a public IP address _and_
-appropriate security groups.
+The instance must already have appropriate security groups.
+
+The target for the ssh command will be the first available of: public domain name, 
+then public ip address or private ip address if the --private options was specified.
 
 Note that if the argument `-t <app>,<stack>,<stage>` resolves to more than one instance, the command will stop with an error message. You can circumvent this behaviour and instruct `ssm` to proceed with one single instance using the command line flags `--oldest` and `--newest`, which select either the oldest or newest instances.
 

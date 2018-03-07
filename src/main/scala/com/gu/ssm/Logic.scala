@@ -60,11 +60,15 @@ object Logic {
   def computeIncorrectInstances(executionTarget: ExecutionTarget, instanceIds: List[InstanceId]): List[InstanceId] =
     executionTarget.instances.getOrElse(List()).filterNot(instanceIds.toSet)
 
-  def getIpAddress(instance: Instance, usePrivate: Boolean): Either[FailedAttempt, String] = {
+  def getAddress(instance: Instance, usePrivate: Boolean): Either[FailedAttempt, String] = {
     if (usePrivate) {
       Right(instance.privateIpAddress)
     } else {
-      instance.publicIpAddressOpt.toRight(FailedAttempt(Failure("No public IP address", "No public IP address", NoIpAddress, None, None)))
+      instance.publicDomainNameOpt match {
+        case Some(domainName) => Right(domainName)
+        case None =>
+          instance.publicIpAddressOpt.toRight(FailedAttempt(Failure("No public IP address", "No public IP address", NoIpAddress, None, None)))
+      }
     }
   }
 
