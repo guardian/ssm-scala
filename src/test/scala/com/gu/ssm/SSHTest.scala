@@ -7,18 +7,18 @@ import java.time.Instant
 class SSHTest extends FreeSpec with Matchers with EitherValues {
 
   "create add key command" - {
-    import SSH.addKeyCommand
+    import SSH.addPublicKeyCommand
 
     "make ssh directory" in {
-      addKeyCommand("user1", "XXX") should include ("/bin/mkdir -p /home/user1/.ssh;")
+      addPublicKeyCommand("user1", "XXX") should include ("/bin/mkdir -p /home/user1/.ssh;")
     }
 
     "make authorised keys" in {
-      addKeyCommand("user2", "XXX") should include ("/bin/echo 'XXX' >> /home/user2/.ssh/authorized_keys;")
+      addPublicKeyCommand("user2", "XXX") should include ("/bin/echo 'XXX' >> /home/user2/.ssh/authorized_keys;")
     }
 
     "ensure authorised key file permissions are correct" in {
-      addKeyCommand("user3", "XXX") should include ("/bin/chmod 0600 /home/user3/.ssh/authorized_keys;")
+      addPublicKeyCommand("user3", "XXX") should include ("/bin/chmod 0600 /home/user3/.ssh/authorized_keys;")
     }
 
   }

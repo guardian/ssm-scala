@@ -20,10 +20,10 @@ object SSH {
     val keyProvider = "BC"
 
     try {
-      val tempFile = File.createTempFile(prefix, suffix)
-      FilePermissions(tempFile, "0600")
-      val authKey = KeyMaker.makeKey(tempFile, keyAlgorithm, keyProvider)
-      Right((tempFile, authKey))
+      val privateKeyFile = File.createTempFile(prefix, suffix)
+      FilePermissions(privateKeyFile, "0600")
+      val publicKey = KeyMaker.makeKey(privateKeyFile, keyAlgorithm, keyProvider)
+      Right((privateKeyFile, publicKey))
     } catch {
       case e:IOException => Left(FailedAttempt(
         Failure(s"Unable to create private key file", "Error creating key on disk", UnhandledError, None, Some(e))
@@ -48,21 +48,21 @@ object SSH {
        | ) """.stripMargin
   }
 
-  def addKeyCommand(user: String, authKey: String): String =
+  def addPublicKeyCommand(user: String, authKey: String): String =
     s"""
       | /bin/mkdir -p /home/$user/.ssh;
       | /bin/echo '$authKey' >> /home/$user/.ssh/authorized_keys;
       | /bin/chmod 0600 /home/$user/.ssh/authorized_keys;
       |""".stripMargin
 
-  def removeKeyCommand(user: String, authKey: String): String =
+  def removePublicKeyCommand(user: String, authKey: String): String =
     s"""
       | /bin/sleep $sshCredentialsLifetimeSeconds;
       | /bin/sed -i '/${authKey.replaceAll("/", "\\\\/")}/d' /home/$user/.ssh/authorized_keys;
       |""".stripMargin
 
-  def sshCmd(rawOutput: Boolean)(tempFile: File, instance: Instance, user: String, ipAddress: String): (InstanceId, String) = {
-    val connectionString = s"ssh -i ${tempFile.getCanonicalFile.toString} $user@$ipAddress"
+  def sshCmd(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String): (InstanceId, String) = {
+    val connectionString = s"ssh -i ${privateKeyFile.getCanonicalFile.toString} $user@$ipAddress"
     val cmd = if(rawOutput) {
       s"$connectionString -t -t"
     }else{

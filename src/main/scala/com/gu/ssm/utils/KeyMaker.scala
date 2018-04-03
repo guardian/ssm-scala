@@ -14,12 +14,12 @@ import org.apache.commons.codec.binary.Base64
 
 object KeyMaker {
 
-  def makeKey (file: File, algorithm: String, provider: String): String = {
+  def makeKey (privateKeyFile: File, algorithm: String, provider: String): String = {
     Security.addProvider(new BouncyCastleProvider)
     val keyPair = generateKeyPair(algorithm, provider)
     val priv = keyPair.getPrivate
     val pub = keyPair.getPublic
-    writePemFile(priv, "RSA PRIVATE KEY", file)
+    writePemFile(priv, "RSA PRIVATE KEY", privateKeyFile)
     toAuthorizedKey(pub, "security_ssm-scala")
   }
 
