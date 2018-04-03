@@ -12,7 +12,7 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     argParser.parse(args, Arguments.empty()) match {
-      case Some(Arguments(Some(executionTarget), toExecuteOpt, profile, region, Some(mode), Some(user), sism, _, _, usePrivate, rawOutput)) =>
+      case Some(Arguments(Some(executionTarget), toExecuteOpt, profile, region, Some(mode), Some(user), sism, _, _, usePrivate, rawOutput, bastionInstanceIdOpt)) =>
         val awsClients = Logic.getClients(profile, region)
         mode match {
           case SsmRepl =>
@@ -23,7 +23,7 @@ object Main {
               case _ => fail()
             }
           case SsmSsh =>
-            setUpSSH(awsClients, executionTarget, user, sism, usePrivate, rawOutput)
+            setUpSSH(awsClients, executionTarget, user, sism, usePrivate, rawOutput, bastionInstanceIdOpt)
         }
       case Some(_) => fail()
       case None => System.exit(ArgumentsError.code) // parsing cmd line args failed, help message will have been displayed
@@ -35,8 +35,8 @@ object Main {
     System.exit(UnhandledError.code)
   }
 
-  private def setUpSSH(awsClients: AWSClients, executionTarget: ExecutionTarget, user: String, sism: SingleInstanceSelectionMode, usePrivate: Boolean, rawOutput: Boolean): Unit = {
-    val fProgramResult = for {
+  private def setUpSSHStandardFutureProgramResult(awsClients: AWSClients, executionTarget: ExecutionTarget, user: String, sism: SingleInstanceSelectionMode, usePrivate: Boolean, rawOutput: Boolean) = {
+    for {
       config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, executionTarget)
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
       (privateKeyFile, publicKey) = sshArtifacts
@@ -45,8 +45,38 @@ object Main {
       _ <- IO.tagAsTainted(instance.id, config.name, awsClients.ec2Client)
       _ <- IO.installSshKey(instance.id, config.name, addAndRemovePublicKeyCommand, awsClients.ssmClient)
       address <- Attempt.fromEither(Logic.getAddress(instance, usePrivate))
-    } yield SSH.sshCmd(rawOutput)(privateKeyFile, instance, user, address)
+    } yield SSH.sshCmdStandard(rawOutput)(privateKeyFile, instance, user, address)
+  }
 
+  private def setUpSSHBastionFutureProgramResult(awsClients: AWSClients, executionTarget: ExecutionTarget, user: String, sism: SingleInstanceSelectionMode, usePrivate: Boolean, rawOutput: Boolean, bastionInstanceId: String) = {
+    for {
+
+      sshArtifacts <- Attempt.fromEither(SSH.createKey())
+      (privateKeyFile, publicKey) = sshArtifacts
+
+      bastionConfig <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, ExecutionTarget(Some(List(InstanceId(bastionInstanceId)))))
+      bastionInstance <- Attempt.fromEither(Logic.getSSHInstance(bastionConfig.targets, SismUnspecified, false))
+      bastionAddAndRemovePublicKeyCommand = SSH.addTaintedCommand(bastionConfig.name) + SSH.addPrivateKeyCommand(privateKeyFile) + SSH.addPublicKeyCommand(user, publicKey) + SSH.removePublicKeyCommand(user, publicKey)
+      bastionAddress <- Attempt.fromEither(Logic.getAddress(bastionInstance, false))
+      _ <- IO.tagAsTainted(bastionInstance.id, bastionConfig.name, awsClients.ec2Client)
+      _ <- IO.installSshKey(bastionInstance.id, bastionConfig.name, bastionAddAndRemovePublicKeyCommand, awsClients.ssmClient)
+
+      targetConfig <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, executionTarget)
+      targetInstance <- Attempt.fromEither(Logic.getSSHInstance(targetConfig.targets, sism, usePrivate))
+      targetAddress <- Attempt.fromEither(Logic.getAddress(targetInstance, usePrivate))
+      targetAddAndRemovePublicKeyCommand = SSH.addTaintedCommand(targetConfig.name) + SSH.addPublicKeyCommand(user, publicKey) + SSH.removePublicKeyCommand(user, publicKey)
+      _ <- IO.tagAsTainted(targetInstance.id, targetConfig.name, awsClients.ec2Client)
+      _ <- IO.installSshKey(targetInstance.id, targetConfig.name, targetAddAndRemovePublicKeyCommand, awsClients.ssmClient)
+
+
+    } yield SSH.sshCmdBastion(rawOutput)(privateKeyFile, bastionInstance, targetInstance, user, bastionAddress, targetAddress)
+  }
+
+  private def setUpSSH(awsClients: AWSClients, executionTarget: ExecutionTarget, user: String, sism: SingleInstanceSelectionMode, usePrivate: Boolean, rawOutput: Boolean, bastionInstanceIdOpt: Option[String]): Unit = {
+    val fProgramResult = bastionInstanceIdOpt match {
+      case None => setUpSSHStandardFutureProgramResult(awsClients, executionTarget, user, sism, usePrivate, rawOutput)
+      case Some(bastionInstanceId) => setUpSSHBastionFutureProgramResult(awsClients, executionTarget, user, sism, usePrivate, rawOutput, bastionInstanceId)
+    }
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
     programResult.fold(UI.outputFailure, UI.sshOutput(rawOutput))
     System.exit(programResult.fold(_.exitCode, _ => 0))

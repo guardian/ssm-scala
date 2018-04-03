@@ -48,7 +48,7 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
   }
 
   "create ssh command" - {
-    import SSH.sshCmd
+    import SSH.sshCmdStandard
     import java.util.Date
 
     "create ssh command" - {
@@ -56,13 +56,13 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
       val instance = Instance(InstanceId("raspberry"), None, Some("34.1.1.10"), "10.1.1.10", Instant.now())
 
       "user command" in {
-        val cmd = sshCmd(false)(file, instance, "user4", "34.1.1.10")
+        val cmd = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10")
         cmd._1.id shouldEqual "raspberry"
         cmd._2 should include ("ssh -i /banana user4@34.1.1.10")
       }
 
       "machine command" in {
-        val cmd = sshCmd(true)(file, instance, "user4", "34.1.1.10")
+        val cmd = sshCmdStandard(true)(file, instance, "user4", "34.1.1.10")
         cmd._1.id shouldEqual "raspberry"
         cmd._2 should include ("ssh -i /banana user4@34.1.1.10 -t -t")
       }

@@ -7,6 +7,8 @@ import java.util.Calendar
 import com.gu.ssm.utils.attempt._
 import com.gu.ssm.utils.{KeyMaker, FilePermissions}
 
+import scala.io.Source
+
 object SSH {
 
   val sshCredentialsLifetimeSeconds = 30
@@ -48,20 +50,29 @@ object SSH {
        | ) """.stripMargin
   }
 
-  def addPublicKeyCommand(user: String, authKey: String): String =
+  def addPublicKeyCommand(user: String, publicKey: String): String =
     s"""
       | /bin/mkdir -p /home/$user/.ssh;
-      | /bin/echo '$authKey' >> /home/$user/.ssh/authorized_keys;
+      | /bin/echo '$publicKey' >> /home/$user/.ssh/authorized_keys;
       | /bin/chmod 0600 /home/$user/.ssh/authorized_keys;
       |""".stripMargin
 
-  def removePublicKeyCommand(user: String, authKey: String): String =
+  def addPrivateKeyCommand(privateKeyFile: File): String = {
+    val command = s"""
+                     | /bin/mkdir -p '${privateKeyFile.getCanonicalFile.getParent}';
+                     | /bin/echo '${Source.fromFile(privateKeyFile.getCanonicalFile.toString).getLines.mkString("\n")}' > '${privateKeyFile.getCanonicalFile.toString}';
+                     | /bin/chmod 0600 '${privateKeyFile.getCanonicalFile.toString}';
+                     |""".stripMargin
+    command
+  }
+
+  def removePublicKeyCommand(user: String, publicKey: String): String =
     s"""
       | /bin/sleep $sshCredentialsLifetimeSeconds;
-      | /bin/sed -i '/${authKey.replaceAll("/", "\\\\/")}/d' /home/$user/.ssh/authorized_keys;
+      | /bin/sed -i '/${publicKey.replaceAll("/", "\\\\/")}/d' /home/$user/.ssh/authorized_keys;
       |""".stripMargin
 
-  def sshCmd(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String): (InstanceId, String) = {
+  def sshCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String): (InstanceId, String) = {
     val connectionString = s"ssh -i ${privateKeyFile.getCanonicalFile.toString} $user@$ipAddress"
     val cmd = if(rawOutput) {
       s"$connectionString -t -t"
@@ -73,4 +84,17 @@ object SSH {
     }
     (instance.id, cmd)
   }
+
+  def sshCmdBastion(rawOutput: Boolean)(privateKeyFile: File, bastionInstance: Instance, targetInstance: Instance, user: String, bastionIpAddress: String, targetIpAddress: String): (InstanceId, String) = {
+    val connectionString1 = s"ssh -i ${privateKeyFile.getCanonicalFile.toString} $user@$bastionIpAddress"
+    val connectionString2 = s"sudo ssh -i ${privateKeyFile.getCanonicalFile.toString} $user@$targetIpAddress"
+    val cmd =       s"""
+                       | # Execute the following commands within the next $sshCredentialsLifetimeSeconds seconds:
+                       | # (First command from your localhost to access the bastion and second command from the bastion to access the target box).
+                       | ${connectionString1};
+                       | ${connectionString2};
+                       |""".stripMargin
+    (targetInstance.id, cmd)
+  }
+
 }

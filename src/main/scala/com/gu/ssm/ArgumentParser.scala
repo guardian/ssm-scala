@@ -96,6 +96,9 @@ object ArgumentParser {
               rawOutput = true)
           })
           .text("Unix pipe-able ssh connection string"),
+        opt[String]("bastion").optional()
+          .action((bastion, args) => args.copy(bastionInstanceId = Some(bastion)))
+          .text(s"connect through the given bastion specified by its instance id"),
         checkConfig( c =>
           if (c.isSelectionModeOldest && c.isSelectionModeNewest) failure("You cannot both specify --newest and --oldest")
           else success )
