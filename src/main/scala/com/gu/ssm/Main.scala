@@ -39,13 +39,13 @@ object Main {
     val fProgramResult = for {
       config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, executionTarget)
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
-      (authFile, authKey) = sshArtifacts
-      addAndRemoveKeyCommand = SSH.addTaintedCommand(config.name) + SSH.addKeyCommand(user, authKey) + SSH.removeKeyCommand(user, authKey)
+      (privateKeyFile, publicKey) = sshArtifacts
+      addAndRemovePublicKeyCommand = SSH.addTaintedCommand(config.name) + SSH.addPublicKeyCommand(user, publicKey) + SSH.removePublicKeyCommand(user, publicKey)
       instance <- Attempt.fromEither(Logic.getSSHInstance(config.targets, sism, usePrivate))
       _ <- IO.tagAsTainted(instance.id, config.name, awsClients.ec2Client)
-      _ <- IO.installSshKey(instance.id, config.name, addAndRemoveKeyCommand, awsClients.ssmClient)
+      _ <- IO.installSshKey(instance.id, config.name, addAndRemovePublicKeyCommand, awsClients.ssmClient)
       address <- Attempt.fromEither(Logic.getAddress(instance, usePrivate))
-    } yield SSH.sshCmd(rawOutput)(authFile, instance, user, address)
+    } yield SSH.sshCmd(rawOutput)(privateKeyFile, instance, user, address)
 
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
     programResult.fold(UI.outputFailure, UI.sshOutput(rawOutput))
