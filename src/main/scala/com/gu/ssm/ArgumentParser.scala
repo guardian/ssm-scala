@@ -99,6 +99,9 @@ object ArgumentParser {
         opt[String]("bastion").optional()
           .action((bastion, args) => args.copy(bastionInstanceId = Some(bastion)))
           .text(s"connect through the given bastion specified by its instance id"),
+        opt[Int]("bastion-port").optional()
+          .action((bastionPortNumber, args) => args.copy(bastionPortNumber = Some(bastionPortNumber)))
+          .text(s"connect through the given bastion at a given port"),
         checkConfig( c =>
           if (c.isSelectionModeOldest && c.isSelectionModeNewest) failure("You cannot both specify --newest and --oldest")
           else success )

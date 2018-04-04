@@ -85,8 +85,13 @@ object SSH {
     (instance.id, cmd)
   }
 
-  def sshCmdBastion(rawOutput: Boolean)(privateKeyFile: File, bastionInstance: Instance, targetInstance: Instance, user: String, bastionIpAddress: String, targetIpAddress: String): (InstanceId, String) = {
-    val connectionString1 = s"ssh -A -p 2022 -i ${privateKeyFile.getCanonicalFile.toString} $user@$bastionIpAddress"
+  def sshCmdBastion(rawOutput: Boolean)(privateKeyFile: File, bastionInstance: Instance, targetInstance: Instance, user: String, bastionIpAddress: String, targetIpAddress: String, bastionPortNumberOpt: Option[Int]): (InstanceId, String) = {
+    val portSpecifications = bastionPortNumberOpt match {
+      case Some(portNumber) => s"-p ${portNumber} " // trailing space is important
+      case _ => ""
+    }
+
+    val connectionString1 = s"ssh -A ${portSpecifications}-i ${privateKeyFile.getCanonicalFile.toString} $user@$bastionIpAddress"
     val connectionString2 = s"ssh $user@$targetIpAddress"
     val cmd =       s"""
                        | # Execute the following commands within the next $sshCredentialsLifetimeSeconds seconds:

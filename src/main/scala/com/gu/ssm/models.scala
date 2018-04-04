@@ -23,7 +23,8 @@ case class Arguments(
   isSelectionModeOldest: Boolean,
   usePrivateIpAddress: Boolean,
   rawOutput: Boolean,
-  bastionInstanceId: Option[String]
+  bastionInstanceId: Option[String],
+  bastionPortNumber: Option[Int]
 )
 object Arguments {
   val defaultUser = "ubuntu"
@@ -40,7 +41,8 @@ object Arguments {
     isSelectionModeOldest = false,
     usePrivateIpAddress = false,
     rawOutput = false,
-    bastionInstanceId = None
+    bastionInstanceId = None,
+    bastionPortNumber = None
   )
 }
 
