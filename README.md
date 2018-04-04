@@ -31,42 +31,38 @@ Usage: ssm [cmd|repl|ssh] [options]
   -i, --instances <value>  Specify the instance ID(s) on which the specified command(s) should execute
   -t, --tags <value>       Search for instances by tag e.g. '--tags app,stack,stage'
   -r, --region <value>     AWS region name (defaults to eu-west-1)
-
 Command: cmd [options]
 Execute a single (bash) command, or a file containing bash commands
   -c, --cmd <value>        A bash command to execute
   -f, --file <value>       A file containing bash commands to execute
-
 Command: repl
 Run SSM in interactive/repl mode
-
 Command: ssh [options]
 Create and upload a temporary ssh key
-  -u, --user <user>        Connect to remote host as user (default: ubuntu)
+  -u, --user <value>       Connect to remote host as user (default: ubuntu)
   --newest                 Selects the newest instance if more than one instance was specified
   --oldest                 Selects the oldest instance if more than one instance was specified
   --private                Use private IP address (must be routable via VPN Gateway)
   --raw                    Unix pipe-able ssh connection string
+  --bastion <value>        connect through the given bastion specified by its instance id
+  --bastion-port <value>   connect through the given bastion at a given port
 ```
 
 There are two mandatory configuration items.
 
 To specify your AWS profile (for more information see [AWS profiles](https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html)), either of:
 
-	- `--profile`, 
-	- AWS_PROFILE environment variable
+- `--profile`
+- AWS_PROFILE environment variable
 
 To target the command, either of: 
 	
-	- `-i`, where you specify one or more instance ids, or 
-	- `-t`, where you specify the app name, the stack and the stage. 
+- `-i`, where you specify one or more instance ids, or 
+- `-t`, where you specify the app name, the stack and the stage. 
 
 ### Execution targets
 
-`ssm` needs to be told which 
-instances should execute the provided
-command(s). You can do this by specifying instance IDs, or by
-specifying App, Stack, and Stage tags.
+`ssm` needs to be told which instances should execute the provided command(s). You can do this by specifying instance IDs, or by specifying App, Stack, and Stage tags.
 
 ```
 # by instance ids
@@ -78,8 +74,7 @@ specifying App, Stack, and Stage tags.
 	-t <app>,<stack>,<stage>
 ```
 
-If you provide tags, `ssm` will search for running instances that are
-have those tags.
+If you provide tags, `ssm` will search for running instances that are have those tags.
 
 ### Examples
 
@@ -103,9 +98,7 @@ An example of using `repl` is:
 ```
 
 The REPL mode causes `ssm` to generate a list of
-instances and then wait for commands to be specified.  Each command
-will be executed on all instances and the user can select the instance
-to display.
+instances and then wait for commands to be specified.  Each command will be executed on all instances and the user can select the instance to display.
 
 An example of using `ssh` command is:
 
@@ -114,12 +107,10 @@ An example of using `ssh` command is:
 ```
 
 This causes `ssm` to generate a temporary ssh
-key, and install the public key on a specific instance.  It will then
-output the command to `ssh` directly to that instance. 
+key, and install the public key on a specific instance.  It will then output the command to `ssh` directly to that instance. 
 The instance must already have appropriate security groups.
 
-The target for the ssh command will be the first available of: public domain name, 
-then public ip address or private ip address if the --private options was specified.
+The target for the ssh command will be the first available of: public domain name, then public ip address or private ip address if the --private options was specified.
 
 Note that if the argument `-t <app>,<stack>,<stage>` resolves to more than one instance, the command will stop with an error message. You can circumvent this behaviour and instruct `ssm` to proceed with one single instance using the command line flags `--oldest` and `--newest`, which select either the oldest or newest instances.
 
@@ -133,17 +124,49 @@ ssm ssh --profile security -t security-hq,security,PROD --newest --raw | bash
 
 Will automatically ssh you to the newest instance running security-hq. Note that you still have to manually accept the new ECDSA key fingerprint.
 
+## Bastions
+
+Bastion are proxy servers used as entry point to private networks and ssm scala supports their use. 
+
+In this example we assume that you have a bastion with a public IP address (even though the bastion Ingress rules may restrict it to some IP ranges), identified by aws instance id `i-bastion12345`, and an application server, on a private network with private IP address, and with instance id `i-application-12345`, you would then use ssm to connect to it using 
+
+```
+ssm ssh --profile <profile-name> --bastion i-bastion12345 --bastion-port 2022 -i i-application-12345
+```
+
+The outcome of this command is a one-liner of the form
+
+```
+ssh -A -i /path/to/private/key-file ubuntu@someting.example.com -t -t ssh ubuntu@10.123.123.123;
+```
+
+You can specify a port that the bastion runs ssh on, with the option `--bastion-port <port number>`, example
+
+```
+ssm ssh --profile <profile-name> --bastion i-bastion12345 --bastion-port 2345 -i i-application-12345
+``` 
+
+In the current version of bastion support you will need to specify the bastion using its aws instance id, but you can refer to the application instance using the tag system as in
+
+```
+ssm ssh --profile <profile-name> --bastion i-bastion12345 --bastion-port 2022 --tags app,stack,stage
+```
+
+together, if the tags may resolve to more than one instance, the `--oldest` and `--newest` flags
+
+```
+ssm ssh --profile <profile-name> --bastion i-bastion12345 --bastion-port 2022 --tags app,stack,stage --newest
+```
+
 ## Development
 
-During development, the program can be run using sbt, either from an
-sbt shell or from the CLI in that project.
+During development, the program can be run using sbt, either from an sbt shell or from the CLI in that project.
 
     $ sbt "run cmd -c pwd --instances i-0123456 --profile xxx --region xxx"
 
     sbt:ssm-scala> run cmd -c pwd --instances i-0123456 --profile xxx --region xxx 
 
-However, `sbt` traps the program exit so in REPL mode you may find it
-easier to create and run an executable instead, for this just run 
+However, `sbt` traps the program exit so in REPL mode you may find it easier to create and run an executable instead, for this just run 
 
 ```
 ./generate-executable.sh
