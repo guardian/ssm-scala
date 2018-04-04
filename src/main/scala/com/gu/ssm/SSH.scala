@@ -7,8 +7,6 @@ import java.util.Calendar
 import com.gu.ssm.utils.attempt._
 import com.gu.ssm.utils.{KeyMaker, FilePermissions}
 
-import scala.io.Source
-
 object SSH {
 
   val sshCredentialsLifetimeSeconds = 30
