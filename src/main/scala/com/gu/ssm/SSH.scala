@@ -86,11 +86,12 @@ object SSH {
   }
 
   def sshCmdBastion(rawOutput: Boolean)(privateKeyFile: File, bastionInstance: Instance, targetInstance: Instance, user: String, bastionIpAddress: String, targetIpAddress: String): (InstanceId, String) = {
-    val connectionString1 = s"ssh -i ${privateKeyFile.getCanonicalFile.toString} $user@$bastionIpAddress"
-    val connectionString2 = s"sudo ssh -i ${privateKeyFile.getCanonicalFile.toString} $user@$targetIpAddress"
+    val connectionString1 = s"ssh -A -p 2022 -i ${privateKeyFile.getCanonicalFile.toString} $user@$bastionIpAddress"
+    val connectionString2 = s"ssh $user@$targetIpAddress"
     val cmd =       s"""
                        | # Execute the following commands within the next $sshCredentialsLifetimeSeconds seconds:
                        | # (First command from your localhost to access the bastion and second command from the bastion to access the target box).
+                       |
                        | ${connectionString1};
                        | ${connectionString2};
                        |""".stripMargin
