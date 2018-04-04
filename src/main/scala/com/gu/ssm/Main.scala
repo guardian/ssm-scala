@@ -62,8 +62,8 @@ object Main {
       _ <- IO.installSshKey(bastionInstance.id, bastionConfig.name, bastionAddAndRemovePublicKeyCommand, awsClients.ssmClient)
 
       targetConfig <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, executionTarget)
-      targetInstance <- Attempt.fromEither(Logic.getSSHInstance(targetConfig.targets, sism, usePrivate))
-      targetAddress <- Attempt.fromEither(Logic.getAddress(targetInstance, usePrivate))
+      targetInstance <- Attempt.fromEither(Logic.getSSHInstance(targetConfig.targets, sism, true))
+      targetAddress <- Attempt.fromEither(Logic.getAddress(targetInstance, true))
       targetAddAndRemovePublicKeyCommand = SSH.addTaintedCommand(targetConfig.name) + SSH.addPublicKeyCommand(user, publicKey) + SSH.removePublicKeyCommand(user, publicKey)
       _ <- IO.tagAsTainted(targetInstance.id, targetConfig.name, awsClients.ec2Client)
       _ <- IO.installSshKey(targetInstance.id, targetConfig.name, targetAddAndRemovePublicKeyCommand, awsClients.ssmClient)
