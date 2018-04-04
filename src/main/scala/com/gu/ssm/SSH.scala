@@ -57,15 +57,6 @@ object SSH {
       | /bin/chmod 0600 /home/$user/.ssh/authorized_keys;
       |""".stripMargin
 
-  def addPrivateKeyCommand(privateKeyFile: File): String = {
-    val command = s"""
-                     | /bin/mkdir -p '${privateKeyFile.getCanonicalFile.getParent}';
-                     | /bin/echo '${Source.fromFile(privateKeyFile.getCanonicalFile.toString).getLines.mkString("\n")}' > '${privateKeyFile.getCanonicalFile.toString}';
-                     | /bin/chmod 0600 '${privateKeyFile.getCanonicalFile.toString}';
-                     |""".stripMargin
-    command
-  }
-
   def removePublicKeyCommand(user: String, publicKey: String): String =
     s"""
       | /bin/sleep $sshCredentialsLifetimeSeconds;
@@ -95,10 +86,7 @@ object SSH {
     val connectionString2 = s"ssh $user@$targetIpAddress"
     val cmd =       s"""
                        | # Execute the following commands within the next $sshCredentialsLifetimeSeconds seconds:
-                       | # (First command from your localhost to access the bastion and second command from the bastion to access the target box).
-                       |
-                       | ${connectionString1};
-                       | ${connectionString2};
+                       | ${connectionString1} -t -t ${connectionString2};
                        |""".stripMargin
     (targetInstance.id, cmd)
   }
