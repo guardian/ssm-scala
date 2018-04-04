@@ -3,7 +3,7 @@ package com.gu.ssm
 import java.io.File
 
 import com.amazonaws.regions.{Region, Regions}
-import com.gu.ssm.Arguments.defaultUser
+import com.gu.ssm.Arguments.{targetInstanceDefaultUser, bastionDefaultUser}
 import scopt.OptionParser
 
 
@@ -68,8 +68,8 @@ object ArgumentParser {
       .text("Create and upload a temporary ssh key")
       .children(
         opt[String]('u', "user").optional()
-          .action((user, args) => args.copy(user = Some(user)))
-          .text(s"Connect to remote host as user (default: $defaultUser)"),
+          .action((user, args) => args.copy(targetInstanceUser = Some(user)))
+          .text(s"Connect to remote host as this user (default: $targetInstanceDefaultUser)"),
         opt[Unit]("newest").optional()
           .action((_, args) => {
             args.copy(
@@ -98,10 +98,13 @@ object ArgumentParser {
           .text("Unix pipe-able ssh connection string"),
         opt[String]("bastion").optional()
           .action((bastion, args) => args.copy(bastionInstanceId = Some(bastion)))
-          .text(s"connect through the given bastion specified by its instance id"),
+          .text(s"Connect through the given bastion specified by its instance id"),
         opt[Int]("bastion-port").optional()
           .action((bastionPortNumber, args) => args.copy(bastionPortNumber = Some(bastionPortNumber)))
-          .text(s"connect through the given bastion at a given port"),
+          .text(s"Connect through the given bastion at a given port"),
+        opt[String]("bastion-user").optional()
+          .action((bastionUser, args) => args.copy(bastionUser = Some(bastionUser)))
+          .text(s"Connect to bastion as this user (default: $bastionDefaultUser)"),
         checkConfig( c =>
           if (c.isSelectionModeOldest && c.isSelectionModeNewest) failure("You cannot both specify --newest and --oldest")
           else success )

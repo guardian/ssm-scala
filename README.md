@@ -44,8 +44,9 @@ Create and upload a temporary ssh key
   --oldest                 Selects the oldest instance if more than one instance was specified
   --private                Use private IP address (must be routable via VPN Gateway)
   --raw                    Unix pipe-able ssh connection string
-  --bastion <value>        connect through the given bastion specified by its instance id
-  --bastion-port <value>   connect through the given bastion at a given port
+  --bastion <value>        Connect through the given bastion specified by its instance id
+  --bastion-port <value>   Connect through the given bastion at a given port
+  --bastion-user <value>   Connect to bastion as this user (default: ubuntu)
 ```
 
 There are two mandatory configuration items.
@@ -126,6 +127,8 @@ Will automatically ssh you to the newest instance running security-hq. Note that
 
 ## Bastions
 
+### Introduction
+
 Bastion are proxy servers used as entry point to private networks and ssm scala supports their use. 
 
 In this example we assume that you have a bastion with a public IP address (even though the bastion Ingress rules may restrict it to some IP ranges), identified by aws instance id `i-bastion12345`, and an application server, on a private network with private IP address, and with instance id `i-application-12345`, you would then use ssm to connect to it using 
@@ -140,11 +143,16 @@ The outcome of this command is a one-liner of the form
 ssh -A -i /path/to/private/key-file ubuntu@someting.example.com -t -t ssh ubuntu@10.123.123.123;
 ```
 
+### Handling Ports
+
 You can specify a port that the bastion runs ssh on, with the option `--bastion-port <port number>`, example
 
 ```
 ssm ssh --profile <profile-name> --bastion i-bastion12345 --bastion-port 2345 -i i-application-12345
 ``` 
+
+
+### Using tags to specify the target instance
 
 In the current version of bastion support you will need to specify the bastion using its aws instance id, but you can refer to the application instance using the tag system as in
 
@@ -157,6 +165,10 @@ together, if the tags may resolve to more than one instance, the `--oldest` and 
 ```
 ssm ssh --profile <profile-name> --bastion i-bastion12345 --bastion-port 2022 --tags app,stack,stage --newest
 ```
+
+### Bastion users
+
+It is possible to specify the user used for connecting to the bastion, this is done with the `--bastion-user <value>` command line argument.
 
 ## Development
 

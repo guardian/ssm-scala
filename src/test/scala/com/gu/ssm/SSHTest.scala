@@ -78,22 +78,22 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
       "user command" - {
 
         "default port" in {
-          val cmd = sshCmdBastion(false)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None)
+          val cmd = sshCmdBastion(false)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser")
           cmd._1.id shouldEqual "strawberry"
-          cmd._2 should include ("ssh -A -i /banana user5@34.1.1.10")
+          cmd._2 should include ("ssh -A -i /banana bastionuser@34.1.1.10")
           cmd._2 should include ("ssh user5@10.1.1.11")
         }
 
         "specified port" in {
-          val cmd = sshCmdBastion(false)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", Some(1234))
+          val cmd = sshCmdBastion(false)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", Some(1234), "bastionuser")
           cmd._1.id shouldEqual "strawberry"
-          cmd._2 should include ("ssh -A -p 1234 -i /banana user5@34.1.1.10")
+          cmd._2 should include ("ssh -A -p 1234 -i /banana bastionuser@34.1.1.10")
           cmd._2 should include ("ssh user5@10.1.1.11")
         }
       }
 
       "machine command" in {
-        val cmd = sshCmdBastion(true)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None)
+        val cmd = sshCmdBastion(true)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser")
         cmd._1.id shouldEqual "strawberry"
         cmd._2 should include ("ssh user5@10.1.1.11 -t -t")
       }
