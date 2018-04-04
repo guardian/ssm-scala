@@ -84,10 +84,15 @@ object SSH {
 
     val connectionString1 = s"ssh -A ${portSpecifications}-i ${privateKeyFile.getCanonicalFile.toString} $user@$bastionIpAddress"
     val connectionString2 = s"ssh $user@$targetIpAddress"
-    val cmd =       s"""
-                       | # Execute the following commands within the next $sshCredentialsLifetimeSeconds seconds:
-                       | ${connectionString1} -t -t ${connectionString2};
-                       |""".stripMargin
+    val connectionString = s"${connectionString1} -t -t ${connectionString2};"
+    val cmd = if(rawOutput) {
+      s"$connectionString -t -t"
+    }else{
+      s"""
+         | # Execute the following commands within the next $sshCredentialsLifetimeSeconds seconds:
+         | ${connectionString};
+         |""".stripMargin
+    }
     (targetInstance.id, cmd)
   }
 
