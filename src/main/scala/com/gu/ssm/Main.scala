@@ -22,11 +22,9 @@ object Main {
               case Some(toExecute) => execute(awsClients, executionTarget, toExecute)
               case _ => fail()
             }
-          case SsmSsh => {
-            bastionInstanceIdOpt match {
-              case None => setUpStandardSSH(awsClients, executionTarget, user, sism, usePrivate, rawOutput)
-              case Some(bastionInstanceId) => setUpBastionSSH(awsClients, executionTarget, user, sism, usePrivate, rawOutput, bastionInstanceId, bastionPortNumberOpt)
-            }
+          case SsmSsh => bastionInstanceIdOpt match {
+            case None => setUpStandardSSH(awsClients, executionTarget, user, sism, usePrivate, rawOutput)
+            case Some(bastionInstanceId) => setUpBastionSSH(awsClients, executionTarget, user, sism, usePrivate, rawOutput, bastionInstanceId, bastionPortNumberOpt)
           }
         }
       case Some(_) => fail()
