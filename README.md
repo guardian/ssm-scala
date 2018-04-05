@@ -176,6 +176,10 @@ ssm ssh --profile <profile-name> --bastion i-bastion12345 --bastion-port 2022 --
 
 It is possible to specify the user used for connecting to the bastion, this is done with the `--bastion-user <value>` command line argument.
 
+### Bastions with private IP addresses
+
+When using the standard `ssh` command, the `--private` flag can be used to indicate that the private IP of the target instance should be used for the connection. In the case of bastion connection the target instance is assumed to always be reacheable through a private IP and this flag indicates whether the private IP of the bastion should be used.
+
 ## Development
 
 During development, the program can be run using sbt, either from an sbt shell or from the CLI in that project.
