@@ -56,16 +56,19 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
       val file = new File("/banana")
       val instance = Instance(InstanceId("raspberry"), None, Some("34.1.1.10"), "10.1.1.10", Instant.now())
 
-      "user command" in {
-        val cmd = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10")
-        cmd._1.id shouldEqual "raspberry"
-        cmd._2 should include ("ssh -i /banana user4@34.1.1.10")
+      "instance id is correct" in {
+        val (instanceId, _) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10")
+        instanceId.id shouldEqual "raspberry"
       }
 
-      "machine command" in {
-        val cmd = sshCmdStandard(true)(file, instance, "user4", "34.1.1.10")
-        cmd._1.id shouldEqual "raspberry"
-        cmd._2 should include ("ssh -i /banana user4@34.1.1.10 -t -t")
+      "user command is correctly formed" in {
+        val (_, command) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10")
+        command should include ("ssh -i /banana user4@34.1.1.10")
+      }
+
+      "machine command is correctly formed" in {
+        val (_, command) = sshCmdStandard(true)(file, instance, "user4", "34.1.1.10")
+        command should include ("ssh -i /banana user4@34.1.1.10 -t -t")
       }
     }
 
@@ -75,27 +78,37 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
       val bastionInstance = Instance(InstanceId("raspberry"), None, Some("34.1.1.10"), "10.1.1.10", Instant.now())
       val targetInstance = Instance(InstanceId("strawberry"), None, Some("34.1.1.11"), "10.1.1.11", Instant.now())
 
+      "instance id is correct" in {
+        val (instanceId, _) = sshCmdBastion(false)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser")
+        instanceId.id shouldEqual "strawberry"
+      }
+
       "user command" - {
 
-        "default port" in {
-          val cmd = sshCmdBastion(false)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser")
-          cmd._1.id shouldEqual "strawberry"
-          cmd._2 should include ("ssh -A -i /banana bastionuser@34.1.1.10")
-          cmd._2 should include ("ssh user5@10.1.1.11")
+        "bastion ssh connection string is present and correctly formed" in {
+          val (_, command) = sshCmdBastion(false)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser")
+          command should include ("ssh -A -i /banana bastionuser@34.1.1.10")
         }
 
-        "specified port" in {
-          val cmd = sshCmdBastion(false)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", Some(1234), "bastionuser")
-          cmd._1.id shouldEqual "strawberry"
-          cmd._2 should include ("ssh -A -p 1234 -i /banana bastionuser@34.1.1.10")
-          cmd._2 should include ("ssh user5@10.1.1.11")
+        "target instance connection string is present and correctly formed" in {
+          val (_, command) = sshCmdBastion(false)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser")
+          command should include ("ssh user5@10.1.1.11")
+        }
+
+        "default port is used (-p does not appear)" in {
+          val (_, command) = sshCmdBastion(false)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser")
+          command should include ("ssh -A -i /banana bastionuser@34.1.1.10")
+        }
+
+        "specified port is correctly used" in {
+          val (_, command) = sshCmdBastion(false)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", Some(1234), "bastionuser")
+          command should include ("ssh -A -p 1234 -i /banana bastionuser@34.1.1.10")
         }
       }
 
-      "machine command" in {
-        val cmd = sshCmdBastion(true)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser")
-        cmd._1.id shouldEqual "strawberry"
-        cmd._2 should include ("ssh user5@10.1.1.11 -t -t")
+      "machine command has the correct trailing" in {
+        val (_, command) = sshCmdBastion(true)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser")
+        command should endWith ("-t -t")
       }
     }
   }
