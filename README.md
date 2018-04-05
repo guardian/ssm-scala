@@ -213,10 +213,41 @@ To use ssm-scala against the instances of your project, three things need to hap
 1. Update your base image in AMIgo with the **ssm-agent** role.
 
 2. Add the following declaration 
+
 	```
 	ManagedPolicyArns: [ "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM" ]
 	```
-	to your cloudformation. Example: the [Security-HQ cloudformation](https://github.com/guardian/security-hq/blob/master/cloudformation/security-hq.template.yaml#L86).
+
+	under the `AWS::IAM::Role`'s `Properties` to your cloudformation. 
+	
+	Alternatively, considering that this policy might not work for instances requiring limited set of permissions, you can add (an adaptation of) the following `AWS::IAM::Policy` to your cloudformation file
+	
+	```
+	  ExampleAppSSMRunCommandPolicy:
+	    Type: AWS::IAM::Policy
+	    Properties:
+	      PolicyName: example-app-ssm-run-command-policy
+	      PolicyDocument:
+	        Statement:
+	        # minimal policy to allow to (only) run commands via ssm
+	        - Effect: Allow
+	          Resource: "*"
+	          Action:
+	          - ec2messages:AcknowledgeMessage
+	          - ec2messages:DeleteMessage
+	          - ec2messages:FailMessage
+	          - ec2messages:GetEndpoint
+	          - ec2messages:GetMessages
+	          - ec2messages:SendReply
+	          - ssm:UpdateInstanceInformation
+	          - ssm:ListInstanceAssociations
+	          - ssm:DescribeInstanceProperties
+	          - ssm:DescribeDocumentParameters
+	      Roles: 
+	      - !Ref ExampleAppInstanceRole
+	```
+	
+	Example stolen from the [Security-HQ cloudformation](https://github.com/guardian/security-hq/blob/master/cloudformation/security-hq.template.yaml) file.
 
 3. Download the executable from the [project release page](https://github.com/guardian/ssm-scala/releases). Instructions on usage can be found in the above sections.
 
