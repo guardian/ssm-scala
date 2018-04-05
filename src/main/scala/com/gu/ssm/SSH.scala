@@ -48,20 +48,20 @@ object SSH {
        | ) """.stripMargin
   }
 
-  def addPublicKeyCommand(user: String, authKey: String): String =
+  def addPublicKeyCommand(user: String, publicKey: String): String =
     s"""
       | /bin/mkdir -p /home/$user/.ssh;
-      | /bin/echo '$authKey' >> /home/$user/.ssh/authorized_keys;
+      | /bin/echo '$publicKey' >> /home/$user/.ssh/authorized_keys;
       | /bin/chmod 0600 /home/$user/.ssh/authorized_keys;
       |""".stripMargin
 
-  def removePublicKeyCommand(user: String, authKey: String): String =
+  def removePublicKeyCommand(user: String, publicKey: String): String =
     s"""
       | /bin/sleep $sshCredentialsLifetimeSeconds;
-      | /bin/sed -i '/${authKey.replaceAll("/", "\\\\/")}/d' /home/$user/.ssh/authorized_keys;
+      | /bin/sed -i '/${publicKey.replaceAll("/", "\\\\/")}/d' /home/$user/.ssh/authorized_keys;
       |""".stripMargin
 
-  def sshCmd(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String): (InstanceId, String) = {
+  def sshCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String): (InstanceId, String) = {
     val connectionString = s"ssh -i ${privateKeyFile.getCanonicalFile.toString} $user@$ipAddress"
     val cmd = if(rawOutput) {
       s"$connectionString -t -t"
@@ -73,4 +73,25 @@ object SSH {
     }
     (instance.id, cmd)
   }
+
+  def sshCmdBastion(rawOutput: Boolean)(privateKeyFile: File, bastionInstance: Instance, targetInstance: Instance, targetInstanceUser: String, bastionIpAddress: String, targetIpAddress: String, bastionPortNumberOpt: Option[Int], bastionUser: String): (InstanceId, String) = {
+    val portSpecifications = bastionPortNumberOpt match {
+      case Some(portNumber) => s"-p ${portNumber} " // trailing space is important
+      case _ => ""
+    }
+
+    val connectionString1 = s"ssh -A ${portSpecifications}-i ${privateKeyFile.getCanonicalFile.toString} $bastionUser@$bastionIpAddress"
+    val connectionString2 = s"ssh $targetInstanceUser@$targetIpAddress"
+    val connectionString = s"${connectionString1} -t -t ${connectionString2}"
+    val cmd = if(rawOutput) {
+      s"$connectionString -t -t"
+    }else{
+      s"""
+         | # Execute the following commands within the next $sshCredentialsLifetimeSeconds seconds:
+         | ${connectionString};
+         |""".stripMargin
+    }
+    (targetInstance.id, cmd)
+  }
+
 }

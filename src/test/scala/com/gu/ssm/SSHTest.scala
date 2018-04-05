@@ -48,25 +48,55 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
   }
 
   "create ssh command" - {
-    import SSH.sshCmd
-    import java.util.Date
+    import SSH.sshCmdStandard
+    import SSH.sshCmdBastion
 
-    "create ssh command" - {
+    "create standard ssh command" - {
+
       val file = new File("/banana")
       val instance = Instance(InstanceId("raspberry"), None, Some("34.1.1.10"), "10.1.1.10", Instant.now())
 
       "user command" in {
-        val cmd = sshCmd(false)(file, instance, "user4", "34.1.1.10")
+        val cmd = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10")
         cmd._1.id shouldEqual "raspberry"
         cmd._2 should include ("ssh -i /banana user4@34.1.1.10")
       }
 
       "machine command" in {
-        val cmd = sshCmd(true)(file, instance, "user4", "34.1.1.10")
+        val cmd = sshCmdStandard(true)(file, instance, "user4", "34.1.1.10")
         cmd._1.id shouldEqual "raspberry"
         cmd._2 should include ("ssh -i /banana user4@34.1.1.10 -t -t")
       }
+    }
 
+    "create bastion ssh command" - {
+
+      val file = new File("/banana")
+      val bastionInstance = Instance(InstanceId("raspberry"), None, Some("34.1.1.10"), "10.1.1.10", Instant.now())
+      val targetInstance = Instance(InstanceId("strawberry"), None, Some("34.1.1.11"), "10.1.1.11", Instant.now())
+
+      "user command" - {
+
+        "default port" in {
+          val cmd = sshCmdBastion(false)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser")
+          cmd._1.id shouldEqual "strawberry"
+          cmd._2 should include ("ssh -A -i /banana bastionuser@34.1.1.10")
+          cmd._2 should include ("ssh user5@10.1.1.11")
+        }
+
+        "specified port" in {
+          val cmd = sshCmdBastion(false)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", Some(1234), "bastionuser")
+          cmd._1.id shouldEqual "strawberry"
+          cmd._2 should include ("ssh -A -p 1234 -i /banana bastionuser@34.1.1.10")
+          cmd._2 should include ("ssh user5@10.1.1.11")
+        }
+      }
+
+      "machine command" in {
+        val cmd = sshCmdBastion(true)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser")
+        cmd._1.id shouldEqual "strawberry"
+        cmd._2 should include ("ssh user5@10.1.1.11 -t -t")
+      }
     }
   }
 }

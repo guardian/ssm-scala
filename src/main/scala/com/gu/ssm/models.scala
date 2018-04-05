@@ -17,15 +17,20 @@ case class Arguments(
   profile: Option[String],
   region: Region,
   mode: Option[SsmMode],
-  user: Option[String],
+  targetInstanceUser: Option[String],
   singleInstanceSelectionMode: SingleInstanceSelectionMode,
   isSelectionModeNewest: Boolean,
   isSelectionModeOldest: Boolean,
   usePrivateIpAddress: Boolean,
-  rawOutput: Boolean
+  rawOutput: Boolean,
+  bastionInstanceId: Option[String],
+  bastionPortNumber: Option[Int],
+  bastionUser: Option[String]
 )
+
 object Arguments {
-  val defaultUser = "ubuntu"
+  val targetInstanceDefaultUser = "ubuntu"
+  val bastionDefaultUser = "ubuntu"
 
   def empty(): Arguments = Arguments(
     executionTarget = None,
@@ -33,12 +38,15 @@ object Arguments {
     profile = None,
     region = Region.getRegion(Regions.EU_WEST_1),
     mode = None,
-    user = Some(defaultUser),
+    targetInstanceUser = Some(targetInstanceDefaultUser),
     singleInstanceSelectionMode = SismUnspecified,
     isSelectionModeNewest = false,
     isSelectionModeOldest = false,
     usePrivateIpAddress = false,
-    rawOutput = false
+    rawOutput = false,
+    bastionInstanceId = None,
+    bastionPortNumber = None,
+    bastionUser = Some(bastionDefaultUser)
   )
 }
 
