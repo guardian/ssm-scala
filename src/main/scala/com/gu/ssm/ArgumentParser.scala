@@ -70,6 +70,9 @@ object ArgumentParser {
         opt[String]('u', "user").optional()
           .action((user, args) => args.copy(targetInstanceUser = Some(user)))
           .text(s"Connect to remote host as this user (default: $targetInstanceDefaultUser)"),
+        opt[Int]("port").optional()
+          .action((port, args) => args.copy(targetInstancePortNumber = Some(port)))
+          .text(s"Connect to remote host on this port"),
         opt[Unit]("newest").optional()
           .action((_, args) => {
             args.copy(
