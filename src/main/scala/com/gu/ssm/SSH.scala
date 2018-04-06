@@ -91,7 +91,7 @@ object SSH {
     val theTTOptions = if(rawOutput) { " -t -t" }else{ "" }
     val connectionString1 = s"ssh -A${bastionPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $bastionUser@$bastionIpAddress"
     val connectionString2 = s"ssh${targetPortSpecifications}${theTTOptions} $targetInstanceUser@$targetIpAddress"
-    val connectionString = s"${connectionString1} ${connectionString2}"
+    val connectionString = s"${connectionString1} -t -t ${connectionString2}"
     val cmd = if(rawOutput) {
       s"$connectionString"
     }else{
