@@ -68,7 +68,7 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
 
       "machine command is correctly formed" in {
         val (_, command) = sshCmdStandard(true)(file, instance, "user4", "34.1.1.10")
-        command should include ("ssh -i /banana user4@34.1.1.10 -t -t")
+        command should include ("ssh -i /banana -t -t user4@34.1.1.10")
       }
     }
 
@@ -106,9 +106,9 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
         }
       }
 
-      "machine command has the correct trailing" in {
+      "machine command is well formed" in {
         val (_, command) = sshCmdBastion(true)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser")
-        command should endWith ("-t -t")
+        command equals ("ssh -A -i /banana -t -t bastionuser@34.1.1.10 ssh -t -t user5@10.1.1.11")
       }
     }
   }

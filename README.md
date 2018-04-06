@@ -126,7 +126,7 @@ Note that if the argument `-t <app>,<stack>,<stage>` resolves to more than one i
 This flag allows for a pipe-able ssh connection string. For instance
 
 ```
-ssm ssh --profile security -t security-hq,security,PROD --newest --raw | bash
+ssm ssh --profile security -t security-hq,security,PROD --newest --raw | xargs -0 -o bash -c
 ```
 
 Will automatically ssh you to the newest instance running security-hq. Note that you still have to manually accept the new ECDSA key fingerprint.

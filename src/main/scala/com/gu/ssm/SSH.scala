@@ -62,9 +62,10 @@ object SSH {
       |""".stripMargin
 
   def sshCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String): (InstanceId, String) = {
-    val connectionString = s"ssh -i ${privateKeyFile.getCanonicalFile.toString} $user@$ipAddress"
+    val theTTOptions = if(rawOutput) { " -t -t" }else{ "" }
+    val connectionString = s"ssh -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $user@$ipAddress"
     val cmd = if(rawOutput) {
-      s"$connectionString -t -t"
+      s"$connectionString"
     }else{
       s"""
          | # Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:
@@ -79,12 +80,12 @@ object SSH {
       case Some(portNumber) => s"-p ${portNumber} " // trailing space is important
       case _ => ""
     }
-
-    val connectionString1 = s"ssh -A ${portSpecifications}-i ${privateKeyFile.getCanonicalFile.toString} $bastionUser@$bastionIpAddress"
-    val connectionString2 = s"ssh $targetInstanceUser@$targetIpAddress"
-    val connectionString = s"${connectionString1} -t -t ${connectionString2}"
+    val theTTOptions = if(rawOutput) { " -t -t" }else{ "" }
+    val connectionString1 = s"ssh -A ${portSpecifications}-i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $bastionUser@$bastionIpAddress"
+    val connectionString2 = s"ssh${theTTOptions} $targetInstanceUser@$targetIpAddress"
+    val connectionString = s"${connectionString1} ${connectionString2}"
     val cmd = if(rawOutput) {
-      s"$connectionString -t -t"
+      s"$connectionString"
     }else{
       s"""
          | # Execute the following commands within the next $sshCredentialsLifetimeSeconds seconds:
