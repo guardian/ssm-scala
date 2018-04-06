@@ -25,7 +25,8 @@ case class Arguments(
   rawOutput: Boolean,
   bastionInstanceId: Option[String],
   bastionPortNumber: Option[Int],
-  bastionUser: Option[String]
+  bastionUser: Option[String],
+  targetInstancePortNumber: Option[Int]
 )
 
 object Arguments {
@@ -46,7 +47,8 @@ object Arguments {
     rawOutput = false,
     bastionInstanceId = None,
     bastionPortNumber = None,
-    bastionUser = Some(bastionDefaultUser)
+    bastionUser = Some(bastionDefaultUser),
+    targetInstancePortNumber = None
   )
 }
 
