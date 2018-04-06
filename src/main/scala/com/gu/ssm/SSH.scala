@@ -61,9 +61,13 @@ object SSH {
       | /bin/sed -i '/${publicKey.replaceAll("/", "\\\\/")}/d' /home/$user/.ssh/authorized_keys;
       |""".stripMargin
 
-  def sshCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String): (InstanceId, String) = {
+  def sshCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int]): (InstanceId, String) = {
+    val targetPortSpecifications = targetInstancePortNumberOpt match {
+      case Some(portNumber) => s" -p ${portNumber}" // trailing space is important
+      case _ => ""
+    }
     val theTTOptions = if(rawOutput) { " -t -t" }else{ "" }
-    val connectionString = s"ssh -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $user@$ipAddress"
+    val connectionString = s"ssh${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $user@$ipAddress"
     val cmd = if(rawOutput) {
       s"$connectionString"
     }else{
@@ -75,15 +79,19 @@ object SSH {
     (instance.id, cmd)
   }
 
-  def sshCmdBastion(rawOutput: Boolean)(privateKeyFile: File, bastionInstance: Instance, targetInstance: Instance, targetInstanceUser: String, bastionIpAddress: String, targetIpAddress: String, bastionPortNumberOpt: Option[Int], bastionUser: String): (InstanceId, String) = {
-    val portSpecifications = bastionPortNumberOpt match {
-      case Some(portNumber) => s"-p ${portNumber} " // trailing space is important
+  def sshCmdBastion(rawOutput: Boolean)(privateKeyFile: File, bastionInstance: Instance, targetInstance: Instance, targetInstanceUser: String, bastionIpAddress: String, targetIpAddress: String, bastionPortNumberOpt: Option[Int], bastionUser: String, targetInstancePortNumberOpt: Option[Int]): (InstanceId, String) = {
+    val bastionPortSpecifications = bastionPortNumberOpt match {
+      case Some(portNumber) => s" -p ${portNumber}" // trailing space is important
+      case _ => ""
+    }
+    val targetPortSpecifications = targetInstancePortNumberOpt match {
+      case Some(portNumber) => s" -p ${portNumber}" // trailing space is important
       case _ => ""
     }
     val theTTOptions = if(rawOutput) { " -t -t" }else{ "" }
-    val connectionString1 = s"ssh -A ${portSpecifications}-i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $bastionUser@$bastionIpAddress"
-    val connectionString2 = s"ssh${theTTOptions} $targetInstanceUser@$targetIpAddress"
-    val connectionString = s"${connectionString1} ${connectionString2}"
+    val connectionString1 = s"ssh -A${bastionPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $bastionUser@$bastionIpAddress"
+    val connectionString2 = s"ssh${targetPortSpecifications}${theTTOptions} $targetInstanceUser@$targetIpAddress"
+    val connectionString = s"${connectionString1} -t -t ${connectionString2}"
     val cmd = if(rawOutput) {
       s"$connectionString"
     }else{
