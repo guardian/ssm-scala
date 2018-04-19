@@ -132,6 +132,16 @@ ssm ssh --profile security -t security-hq,security,PROD --newest --raw | xargs -
 
 Will automatically ssh you to the newest instance running security-hq. Note that you still have to manually accept the new ECDSA key fingerprint.
 
+### -x, --execute
+
+This flag makes ssm behave like ssh. The raw output is automatically piped to `xargs -0 -o bash -c`. You would then do
+
+```
+ssm ssh --profile security -t security-hq,security,PROD --newest --execute
+```
+
+instead of the example given in the previous `--raw` section.
+
 ## Bastions
 
 ### Introduction

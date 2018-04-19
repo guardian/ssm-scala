@@ -104,7 +104,7 @@ object ArgumentParser {
             args.copy(
               rawOutput = true)
           })
-          .text("Unix pipe-able ssh connection string; used to automatically execute the command via xargs/bash"),
+          .text("Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)"),
         opt[String]("bastion").optional()
           .action((bastion, args) => args.copy(bastionInstanceId = Some(bastion)))
           .text(s"Connect through the given bastion specified by its instance id"),
