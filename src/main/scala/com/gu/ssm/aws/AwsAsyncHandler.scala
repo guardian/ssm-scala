@@ -35,6 +35,7 @@ object AwsAsyncHandler {
         val message = serviceNameOpt.fold("You do not have sufficient AWS privileges")(serviceName => s"You do not have sufficient privileges to perform actions on $serviceName")
         Failure("insufficient permissions", message, AwsPermissionsError).attempt
       } else if (e.getMessage.contains("InvalidInstanceId")) {
+        e.printStackTrace()
         Failure("InvalidInstanceId from AWS", "The specified instance(s) are not eligible targets (AWS said InvalidInstanceId)", AwsError).attempt
       } else {
         val details = serviceNameOpt.fold("AWS unknown error, unknown service (check logs for stacktrace)") { serviceName =>
