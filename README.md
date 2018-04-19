@@ -215,6 +215,8 @@ java -jar <path-to-jar>/ssm.jar [arguments]
 
 To release a new version of `ssm` perform the two following tasks:
 
+1. Update the version number in `build.sbt`
+
 1. Generate a new executable. Run the following at the top of the repository
  
 	```
