@@ -99,6 +99,12 @@ object ArgumentParser {
               rawOutput = true)
           })
           .text("Unix pipe-able ssh connection string"),
+        opt[Unit]('x', "execute").optional()
+          .action((_, args) => {
+            args.copy(
+              rawOutput = true)
+          })
+          .text("Unix pipe-able ssh connection string; used to automatically execute the command via xargs/bash"),
         opt[String]("bastion").optional()
           .action((bastion, args) => args.copy(bastionInstanceId = Some(bastion)))
           .text(s"Connect through the given bastion specified by its instance id"),
@@ -108,12 +114,6 @@ object ArgumentParser {
         opt[String]("bastion-user").optional()
           .action((bastionUser, args) => args.copy(bastionUser = Some(bastionUser)))
           .text(s"Connect to bastion as this user (default: $bastionDefaultUser)"),
-        opt[Unit]('x', "execute").optional()
-          .action((_, args) => {
-            args.copy(
-              rawOutput = true)
-          })
-          .text("Unix pipe-able ssh connection string; used to automatically execute the command via xargs/bash"),
         checkConfig( c =>
           if (c.isSelectionModeOldest && c.isSelectionModeNewest) failure("You cannot both specify --newest and --oldest")
           else success )
