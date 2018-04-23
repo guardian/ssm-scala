@@ -51,6 +51,7 @@ Create and upload a temporary ssh key
   --oldest                 Selects the oldest instance if more than one instance was specified
   --private                Use private IP address (must be routable via VPN Gateway)
   --raw                    Unix pipe-able ssh connection string
+  -a, --agent              Use the local ssh agent to register the private key (and do not use -i)
   --bastion <value>        Connect through the given bastion specified by its instance id
   --bastion-port <value>   Connect through the given bastion at a given port
   --bastion-user <value>   Connect to bastion as this user (default: ubuntu)
@@ -190,6 +191,33 @@ It is possible to specify the user used for connecting to the bastion, this is d
 ### Bastions with private IP addresses
 
 When using the standard `ssh` command, the `--private` flag can be used to indicate that the private IP of the target instance should be used for the connection. In the case of bastion connection the target instance is assumed to always be reacheable through a private IP and this flag indicates whether the private IP of the bastion should be used.
+
+### Bastions with private keys problems
+
+There's been occurences of bastions connections strings of the form 
+
+```
+ssh -A -i /path/to/temp/private/key -t -t ubuntu@bastion-hostname \ 
+    -t -t ssh -t -t ubuntu@target-ip-address;
+```
+
+not working, because the private file was not found for the second ssh connection, leading to a "Permission denied (publickey)" error message. 
+
+When this happens the user can use the `-a`, `--agent` flag that performs a registration of the private key at the local ssh agent. With this flag, ssm command
+
+```
+ssm ssh --profile <account-name> --bastion <instanceId1> \
+    -i <instanceId2> --agent
+``` 
+
+returns
+
+```
+ssh-add /path/to/temp/private/key && \
+    ssh -A ubuntu@bastion-hostname \
+    -t -t ssh ubuntu@target-ip-address;
+```
+ 
 
 ## Development
 
