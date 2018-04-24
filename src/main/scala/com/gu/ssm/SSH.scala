@@ -90,8 +90,8 @@ object SSH {
     } else {
       s"ssh -A${bastionPortSpecifications}${stringFragmentMinusIOption}${stringFragmentTTOptions} $bastionUser@$bastionIpAddress"
     }
-    val stringFragmentTargetConnection = s"ssh${targetPortSpecifications}${stringFragmentTTOptions} $targetInstanceUser@$targetIpAddress"
-    val connectionString = s"${stringFragmentSshAdd}${stringFragmentBastionConnection} -t -t ${stringFragmentTargetConnection}"
+    val stringFragmentTargetConnection = s"-t -t ssh${targetPortSpecifications}${stringFragmentTTOptions} $targetInstanceUser@$targetIpAddress"
+    val connectionString = s"${stringFragmentSshAdd}${stringFragmentBastionConnection} ${stringFragmentTargetConnection}"
     val cmd = if(rawOutput) {
       s"$connectionString"
     }else{
