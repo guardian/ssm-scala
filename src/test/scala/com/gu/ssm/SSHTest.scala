@@ -50,6 +50,7 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
   "create ssh command" - {
     import SSH.sshCmdStandard
     import SSH.sshCmdBastion
+    import SSH.sshCredentialsLifetimeSeconds
 
     "create standard ssh command" - {
 
@@ -93,52 +94,69 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
       val targetInstance = Instance(InstanceId("strawberry"), None, Some("34.1.1.11"), "10.1.1.11", Instant.now())
 
       "instance id is correct" in {
-        val (instanceId, _) = sshCmdBastion(false)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser", None)
+        val (instanceId, _) = sshCmdBastion(false)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser", None, false)
         instanceId.id shouldEqual "strawberry"
       }
 
       "user command" - {
-
-        "is well formed without any port specification" in {
-          val (_, command) = sshCmdBastion(false)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser", None)
-          command should include ("ssh -A -i /banana bastionuser@34.1.1.10 -t -t ssh user5@10.1.1.11")
+        "contains the user instructions" in {
+          val (_, command) = sshCmdBastion(false)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser", None, false)
+          command should include (s"# Execute the following commands within the next $sshCredentialsLifetimeSeconds seconds")
         }
 
-        "is well formed with target instance port specification" in {
-          val (_, command) = sshCmdBastion(false)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser", Some(2345))
-          command should include ("ssh -A -i /banana bastionuser@34.1.1.10 -t -t ssh -p 2345 user5@10.1.1.11")
-        }
-
-        "is well formed with bastion port specification" in {
-          val (_, command) = sshCmdBastion(false)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", Some(1234), "bastionuser", None)
-          command should include ("ssh -A -p 1234 -i /banana bastionuser@34.1.1.10 -t -t ssh user5@10.1.1.11")
-        }
-
-        "is well formed with both bastion port and target instance port specifications" in {
-          val (_, command) = sshCmdBastion(false)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", Some(1234), "bastionuser", Some(2345))
-          command should include ("ssh -A -p 1234 -i /banana bastionuser@34.1.1.10 -t -t ssh -p 2345 user5@10.1.1.11")
+        "contains the ssh command" in {
+          val (_, command) = sshCmdBastion(false)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser", None, false)
+          command should include ("ssh")
         }
       }
 
       "machine command" - {
-        "is well formed without any port specification" in {
-          val (_, command) = sshCmdBastion(true)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser", None)
-          command should equal ("ssh -A -i /banana -t -t bastionuser@34.1.1.10 -t -t ssh -t -t user5@10.1.1.11")
+        "is well formed without any port specification" - {
+          "no agent" in {
+            val (_, command) = sshCmdBastion(true)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser", None, false)
+            command should equal ("ssh -A -i /banana -t -t bastionuser@34.1.1.10 -t -t ssh -t -t user5@10.1.1.11")
+          }
+
+          "with agent" in {
+            val (_, command) = sshCmdBastion(true)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser", None, true)
+            command should equal ("ssh-add /banana && ssh -A -t -t bastionuser@34.1.1.10 -t -t ssh -t -t user5@10.1.1.11")
+          }
         }
 
-        "is well formed with target instance port specification" in {
-          val (_, command) = sshCmdBastion(true)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser", Some(2345))
-          command should equal ("ssh -A -i /banana -t -t bastionuser@34.1.1.10 -t -t ssh -p 2345 -t -t user5@10.1.1.11")
+        "is well formed with target instance port specification" - {
+          "no agent" in {
+            val (_, command) = sshCmdBastion(true)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser", Some(2345), false)
+            command should equal ("ssh -A -i /banana -t -t bastionuser@34.1.1.10 -t -t ssh -p 2345 -t -t user5@10.1.1.11")
+          }
+
+          "with agent" in {
+            val (_, command) = sshCmdBastion(true)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser", Some(2345), true)
+            command should equal ("ssh-add /banana && ssh -A -t -t bastionuser@34.1.1.10 -t -t ssh -p 2345 -t -t user5@10.1.1.11")
+          }
         }
 
-        "is well formed with bastion port specification" in {
-          val (_, command) = sshCmdBastion(true)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", Some(1234), "bastionuser", None)
-          command should equal ("ssh -A -p 1234 -i /banana -t -t bastionuser@34.1.1.10 -t -t ssh -t -t user5@10.1.1.11")
+        "is well formed with bastion port specification" - {
+          "no agent" in {
+            val (_, command) = sshCmdBastion(true)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", Some(1234), "bastionuser", None, false)
+            command should equal ("ssh -A -p 1234 -i /banana -t -t bastionuser@34.1.1.10 -t -t ssh -t -t user5@10.1.1.11")
+          }
+
+          "with agent" in {
+            val (_, command) = sshCmdBastion(true)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", Some(1234), "bastionuser", None, true)
+            command should equal ("ssh-add /banana && ssh -A -p 1234 -t -t bastionuser@34.1.1.10 -t -t ssh -t -t user5@10.1.1.11")
+          }
         }
 
-        "is well formed with both bastion port and target instance port specifications" in {
-          val (_, command) = sshCmdBastion(true)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", Some(1234), "bastionuser", Some(2345))
-          command should equal ("ssh -A -p 1234 -i /banana -t -t bastionuser@34.1.1.10 -t -t ssh -p 2345 -t -t user5@10.1.1.11")
+        "is well formed with both bastion port and target instance port specifications" - {
+          "no agent" in {
+            val (_, command) = sshCmdBastion(true)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", Some(1234), "bastionuser", Some(2345), false)
+            command should equal ("ssh -A -p 1234 -i /banana -t -t bastionuser@34.1.1.10 -t -t ssh -p 2345 -t -t user5@10.1.1.11")
+          }
+
+          "with agent" in {
+            val (_, command) = sshCmdBastion(true)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", Some(1234), "bastionuser", Some(2345), true)
+            command should equal ("ssh-add /banana && ssh -A -p 1234 -t -t bastionuser@34.1.1.10 -t -t ssh -p 2345 -t -t user5@10.1.1.11")
+          }
         }
       }
     }

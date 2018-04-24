@@ -105,6 +105,12 @@ object ArgumentParser {
               rawOutput = true)
           })
           .text("Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)"),
+        opt[Unit]('a', "agent").optional()
+          .action((_, args) => {
+            args.copy(
+              useAgent = true)
+          })
+          .text("Use the local ssh agent to register the private key (and do not use -i); only bastion connections"),
         opt[String]("bastion").optional()
           .action((bastion, args) => args.copy(bastionInstanceId = Some(bastion)))
           .text(s"Connect through the given bastion specified by its instance id"),
