@@ -119,7 +119,7 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
 
           "with agent" in {
             val (_, command) = sshCmdBastion(true)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser", None, true)
-            command should equal ("ssh-add /banana && ssh -A -t -t bastionuser@34.1.1.10 -t -t ssh -t -t user5@10.1.1.11")
+            command should equal (s"ssh-add -t $sshCredentialsLifetimeSeconds /banana && ssh -A -t -t bastionuser@34.1.1.10 -t -t ssh -t -t user5@10.1.1.11")
           }
         }
 
@@ -131,7 +131,7 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
 
           "with agent" in {
             val (_, command) = sshCmdBastion(true)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser", Some(2345), true)
-            command should equal ("ssh-add /banana && ssh -A -t -t bastionuser@34.1.1.10 -t -t ssh -p 2345 -t -t user5@10.1.1.11")
+            command should equal (s"ssh-add -t $sshCredentialsLifetimeSeconds /banana && ssh -A -t -t bastionuser@34.1.1.10 -t -t ssh -p 2345 -t -t user5@10.1.1.11")
           }
         }
 
@@ -143,7 +143,7 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
 
           "with agent" in {
             val (_, command) = sshCmdBastion(true)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", Some(1234), "bastionuser", None, true)
-            command should equal ("ssh-add /banana && ssh -A -p 1234 -t -t bastionuser@34.1.1.10 -t -t ssh -t -t user5@10.1.1.11")
+            command should equal (s"ssh-add -t $sshCredentialsLifetimeSeconds /banana && ssh -A -p 1234 -t -t bastionuser@34.1.1.10 -t -t ssh -t -t user5@10.1.1.11")
           }
         }
 
@@ -155,7 +155,7 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
 
           "with agent" in {
             val (_, command) = sshCmdBastion(true)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", Some(1234), "bastionuser", Some(2345), true)
-            command should equal ("ssh-add /banana && ssh -A -p 1234 -t -t bastionuser@34.1.1.10 -t -t ssh -p 2345 -t -t user5@10.1.1.11")
+            command should equal (s"ssh-add -t $sshCredentialsLifetimeSeconds /banana && ssh -A -p 1234 -t -t bastionuser@34.1.1.10 -t -t ssh -p 2345 -t -t user5@10.1.1.11")
           }
         }
       }
