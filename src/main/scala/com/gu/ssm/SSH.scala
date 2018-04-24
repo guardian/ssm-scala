@@ -80,7 +80,7 @@ object SSH {
   }
 
   def sshCmdBastion(rawOutput: Boolean)(privateKeyFile: File, bastionInstance: Instance, targetInstance: Instance, targetInstanceUser: String, bastionIpAddress: String, targetIpAddress: String, bastionPortNumberOpt: Option[Int], bastionUser: String, targetInstancePortNumberOpt: Option[Int], useAgent: Boolean): (InstanceId, String) = {
-    val stringFragmentSshAdd = if(useAgent) { s"ssh-add ${privateKeyFile.getCanonicalFile.toString} && " } else { "" }
+    val stringFragmentSshAdd = if(useAgent) { s"ssh-add -t $sshCredentialsLifetimeSeconds ${privateKeyFile.getCanonicalFile.toString} && " } else { "" }
     val bastionPortSpecifications = bastionPortNumberOpt.map( port => s" -p ${port}" ).getOrElse("")
     val targetPortSpecifications = targetInstancePortNumberOpt.map( port => s" -p ${port}" ).getOrElse("")
     val stringFragmentTTOptions = if(rawOutput) { " -t -t" } else { "" }
