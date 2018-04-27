@@ -69,6 +69,17 @@ To target the command, either of:
 - `-i`, where you specify one or more instance ids, or 
 - `-t`, where you specify the app name, the stack and the stage. 
 
+### "Tainted" Instances
+
+When accessing to an intance the user is greeted with a message of the form 
+
+```
+This instance should be considered tainted.
+It was accessed by 1234567890:luke.skywalker at Fri Apr 27 08:36:58 BST 2018
+```
+
+This message highlights the fact that access is being logged and that the next person will see that the current user has been there. The current wording of **considered tainted** highlights the fact that the user has no idea what has happened during pervious ssh sessions and raises awareness of the implications of accessing a box.
+
 ### Execution targets
 
 `ssm` needs to be told which instances should execute the provided command(s). You can do this by specifying instance IDs, or by specifying App, Stack, and Stage tags.
