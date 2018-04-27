@@ -78,7 +78,7 @@ This instance should be considered tainted.
 It was accessed by 1234567890:alice.smith at Fri Apr 27 08:36:58 BST 2018
 ```
 
-This message highlights the fact that access is being logged and that the next person will see that the current user has been there. The current wording of **considered tainted** highlights the fact that the user has no idea what has happened during pervious ssh sessions and raises awareness of the implications of accessing a box.
+This message highlights the fact that access is being logged and that the next person will see that the current user has been there. The current wording of **considered tainted** highlights the fact that the user has no idea what has happened during previous ssh sessions and raises awareness of the implications of accessing a box.
 
 ### Execution targets
 
