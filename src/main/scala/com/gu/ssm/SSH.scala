@@ -52,6 +52,7 @@ object SSH {
     s"""
       | /bin/mkdir -p /home/$user/.ssh;
       | /bin/echo '$publicKey' >> /home/$user/.ssh/authorized_keys;
+      | /bin/chown $user /home/$user/.ssh/authorized_keys;
       | /bin/chmod 0600 /home/$user/.ssh/authorized_keys;
       |""".stripMargin
 

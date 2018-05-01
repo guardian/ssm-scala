@@ -17,8 +17,12 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
       addPublicKeyCommand("user2", "XXX") should include ("/bin/echo 'XXX' >> /home/user2/.ssh/authorized_keys;")
     }
 
+    "ensure authorised key file ownership is correct" in {
+      addPublicKeyCommand("user3", "XXX") should include ("/bin/chown user3 /home/user3/.ssh/authorized_keys;")
+    }
+
     "ensure authorised key file permissions are correct" in {
-      addPublicKeyCommand("user3", "XXX") should include ("/bin/chmod 0600 /home/user3/.ssh/authorized_keys;")
+      addPublicKeyCommand("user4", "XXX") should include ("/bin/chmod 0600 /home/user4/.ssh/authorized_keys;")
     }
 
   }
