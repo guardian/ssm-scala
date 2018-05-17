@@ -80,6 +80,10 @@ It was accessed by 1234567890:alice.smith at Fri Apr 27 08:36:58 BST 2018
 
 This message highlights the fact that access is being logged and that the next person will see that the current user has been there. The current wording of **considered tainted** highlights the fact that the user has no idea what has happened during previous ssh sessions and raises awareness of the implications of accessing a box.
 
+### "Too many authentication failures"
+
+If while using ssm you encounter the error message "Too many authentication failures", run `ssh-add -D` to reset your agent's counter. 
+
 ### Execution targets
 
 `ssm` needs to be told which instances should execute the provided command(s). You can do this by specifying instance IDs, or by specifying App, Stack, and Stage tags.
