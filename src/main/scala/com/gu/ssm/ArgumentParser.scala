@@ -111,9 +111,20 @@ object ArgumentParser {
               useAgent = true)
           })
           .text("Use the local ssh agent to register the private key (and do not use -i); only bastion connections"),
-        opt[String]("bastion").optional()
-          .action((bastion, args) => args.copy(bastionInstanceId = Some(bastion)))
+        opt[String]('b', "bastion").optional()
+          .action((bastion, args) => args.copy(bastionInstance = Some(ExecutionTarget(Some(List(InstanceId(bastion))), None))))
           .text(s"Connect through the given bastion specified by its instance id"),
+        opt[String]('B', "bastion-tags").optional()
+          .validate { tagsStr =>
+            Logic.extractSASTags(tagsStr).map(_ => ())
+          }
+          .action { (tagsStr, args) =>
+            Logic.extractSASTags(tagsStr)
+              .fold(
+                _ => args,
+                ass => args.copy(bastionInstance = Some(ExecutionTarget(None, Some(ass))))
+              )
+          } text(s"Connect through the given bastion identified by its tags"),
         opt[Int]("bastion-port").optional()
           .action((bastionPortNumber, args) => args.copy(bastionPortNumber = Some(bastionPortNumber)))
           .text(s"Connect through the given bastion at a given port"),
