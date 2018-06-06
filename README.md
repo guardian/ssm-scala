@@ -199,6 +199,17 @@ together, if the tags may resolve to more than one instance, the `--oldest` and 
 ssm ssh --profile <profile-name> --bastion i-bastion12345 --bastion-port 2022 --tags app,stack,stage --newest
 ```
 
+### Using tags to specify the bastion instance
+
+If you do not know the id of the current bastion, but it is tagged correctly, it is also possible to use:
+
+```
+ssm ssh --profile <profile-name> --bastion-tags <app,stack,stage> --bastion-port 2022 -i i-application-12345
+```
+
+This will respect any --newest / --oldest switches, although it is anticipated that there will usually only be one bastion.
+It will always use the public IP address of the bastion.
+
 ### Bastion users
 
 It is possible to specify the user used for connecting to the bastion, this is done with the `--bastion-user <value>` command line argument.
