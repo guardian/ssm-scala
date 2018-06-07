@@ -45,14 +45,18 @@ Command: repl
 Run SSM in interactive/repl mode
 Command: ssh [options]
 Create and upload a temporary ssh key
-  -u, --user <value>       Connect to remote host as user (default: ubuntu)
+  -u, --user <value>       Connect to remote host as this user (default: ubuntu)
   --port <value>           Connect to remote host on this port
   --newest                 Selects the newest instance if more than one instance was specified
   --oldest                 Selects the oldest instance if more than one instance was specified
   --private                Use private IP address (must be routable via VPN Gateway)
   --raw                    Unix pipe-able ssh connection string
-  -a, --agent              Use the local ssh agent to register the private key (and do not use -i)
-  --bastion <value>        Connect through the given bastion specified by its instance id
+  -x, --execute            Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)
+  -a, --agent              Use the local ssh agent to register the private key (and do not use -i); only bastion connections
+  -A, --no-agent           Do not use the local ssh agent
+  -b, --bastion <value>    Connect through the given bastion specified by its instance id; implies -a (use agent) unless followed by -A
+  -B, --bastion-tags <value>
+                           Connect through the given bastion identified by its tags; implies -a (use agent) unless followed by -A
   --bastion-port <value>   Connect through the given bastion at a given port
   --bastion-user <value>   Connect to bastion as this user (default: ubuntu)
 ```
