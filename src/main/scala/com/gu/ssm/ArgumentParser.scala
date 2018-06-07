@@ -111,9 +111,19 @@ object ArgumentParser {
               useAgent = true)
           })
           .text("Use the local ssh agent to register the private key (and do not use -i); only bastion connections"),
+        opt[Unit]('A', "no-agent").optional()
+          .action((_, args) => {
+            args.copy(
+              useAgent = false)
+          })
+          .text("Do not use the local ssh agent"),
         opt[String]('b', "bastion").optional()
-          .action((bastion, args) => args.copy(bastionInstance = Some(ExecutionTarget(Some(List(InstanceId(bastion))), None))))
-          .text(s"Connect through the given bastion specified by its instance id"),
+          .action((bastion, args) => {
+            args
+              .copy(bastionInstance = Some(ExecutionTarget(Some(List(InstanceId(bastion))), None)))
+              .copy(useAgent = true)
+          })
+          .text(s"Connect through the given bastion specified by its instance id; implies -a (use agent) unless followed by -A"),
         opt[String]('B', "bastion-tags").optional()
           .validate { tagsStr =>
             Logic.extractSASTags(tagsStr).map(_ => ())
@@ -122,9 +132,13 @@ object ArgumentParser {
             Logic.extractSASTags(tagsStr)
               .fold(
                 _ => args,
-                ass => args.copy(bastionInstance = Some(ExecutionTarget(None, Some(ass))))
+                ass => {
+                  args
+                    .copy(bastionInstance = Some(ExecutionTarget(None, Some(ass))))
+                    .copy(useAgent = true)
+                }
               )
-          } text(s"Connect through the given bastion identified by its tags"),
+          } text(s"Connect through the given bastion identified by its tags; implies -a (use agent) unless followed by -A"),
         opt[Int]("bastion-port").optional()
           .action((bastionPortNumber, args) => args.copy(bastionPortNumber = Some(bastionPortNumber)))
           .text(s"Connect through the given bastion at a given port"),
