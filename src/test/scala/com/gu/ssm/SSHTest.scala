@@ -62,31 +62,36 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
       val instance = Instance(InstanceId("raspberry"), None, Some("34.1.1.10"), "10.1.1.10", Instant.now())
 
       "instance id is correct" in {
-        val (instanceId, _) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", None)
+        val (instanceId, _) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", None, None)
         instanceId.id shouldEqual "raspberry"
       }
 
       "user command" - {
         "is correctly formed without port specification" in {
-          val (_, command) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", None)
-          command should include ("ssh -i /banana user4@34.1.1.10")
+          val (_, command) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", None, None)
+          command should include ("ssh -o 'IdentitiesOnly yes' -i /banana user4@34.1.1.10")
         }
 
         "is correctly formed with port specification" in {
-          val (_, command) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", Some(2345))
-          command should include ("ssh -p 2345 -i /banana user4@34.1.1.10")
+          val (_, command) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", Some(2345), None)
+          command should include ("ssh -o 'IdentitiesOnly yes' -p 2345 -i /banana user4@34.1.1.10")
+        }
+
+        "is correctly formed with a hosts file" in {
+          val (_, command) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", Some(2345), Some(new File("/tmp/hostsfile")))
+          command should include ("ssh -o 'IdentitiesOnly yes' -o 'UserKnownHostsFile /tmp/hostsfile' -p 2345 -i /banana user4@34.1.1.10")
         }
       }
 
       "machine command" - {
         "is correctly formed without port specification" in {
-          val (_, command) = sshCmdStandard(true)(file, instance, "user4", "34.1.1.10", None)
-          command should equal ("ssh -i /banana -t -t user4@34.1.1.10")
+          val (_, command) = sshCmdStandard(true)(file, instance, "user4", "34.1.1.10", None, None)
+          command should equal ("ssh -o 'IdentitiesOnly yes' -i /banana -t -t user4@34.1.1.10")
         }
 
         "is correctly formed with port specification" in {
-          val (_, command) = sshCmdStandard(true)(file, instance, "user4", "34.1.1.10", Some(2345))
-          command should equal ("ssh -p 2345 -i /banana -t -t user4@34.1.1.10")
+          val (_, command) = sshCmdStandard(true)(file, instance, "user4", "34.1.1.10", Some(2345), None)
+          command should equal ("ssh -o 'IdentitiesOnly yes' -p 2345 -i /banana -t -t user4@34.1.1.10")
         }
       }
     }

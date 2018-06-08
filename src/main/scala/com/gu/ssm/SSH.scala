@@ -1,11 +1,11 @@
 package com.gu.ssm
 
-import java.io.{File, IOException}
+import java.io._
 import java.security.{NoSuchAlgorithmException, NoSuchProviderException}
 import java.util.Calendar
 
 import com.gu.ssm.utils.attempt._
-import com.gu.ssm.utils.{KeyMaker, FilePermissions}
+import com.gu.ssm.utils.{FilePermissions, KeyMaker}
 
 object SSH {
 
@@ -37,6 +37,27 @@ object SSH {
     }
   }
 
+  def writeHostKey(address: String, hostKey: String): Attempt[File] = {
+    // Write key to file.
+    val prefix = "security_ssm-scala_temporary-host-key"
+    val suffix = ".tmp"
+
+    try {
+      val hostKeyFile = File.createTempFile(prefix, suffix)
+      val writer = new PrintWriter(new FileOutputStream(hostKeyFile))
+      try {
+        writer.println(s"$address $hostKey")
+      } finally {
+        writer.close()
+      }
+      Attempt.Right(hostKeyFile)
+    } catch {
+      case e:IOException => Attempt.Left(
+        Failure(s"Unable to create host key file", "Error creating host key on disk", UnhandledError, None, Some(e))
+      )
+    }
+  }
+
   def addTaintedCommand(name: String): String = {
     s"""
        | /usr/bin/test -d /etc/update-motd.d/ &&
@@ -62,13 +83,19 @@ object SSH {
       | /bin/sed -i '/${publicKey.replaceAll("/", "\\\\/")}/d' /home/$user/.ssh/authorized_keys;
       |""".stripMargin
 
-  def sshCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int]): (InstanceId, String) = {
+  def outputHostKeysCommand(sshd_config_path: String): String =
+    s"""
+       | for hostkey in $$(grep ^HostKey $sshd_config_path| cut -d' ' -f 2); do cat $${hostkey}.pub; done
+     """.stripMargin
+
+  def sshCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], hostsFile: Option[File]): (InstanceId, String) = {
     val targetPortSpecifications = targetInstancePortNumberOpt match {
       case Some(portNumber) => s" -p ${portNumber}" // trailing space is important
       case _ => ""
     }
     val theTTOptions = if(rawOutput) { " -t -t" }else{ "" }
-    val connectionString = s"ssh${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $user@$ipAddress"
+    val hostsFileString = hostsFile.map(file => s" -o 'UserKnownHostsFile $file'").getOrElse("")
+    val connectionString = s"ssh -o 'IdentitiesOnly yes'$hostsFileString$targetPortSpecifications -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $user@$ipAddress"
     val cmd = if(rawOutput) {
       s"$connectionString"
     }else{

@@ -27,12 +27,16 @@ case class Arguments(
   bastionPortNumber: Option[Int],
   bastionUser: Option[String],
   targetInstancePortNumber: Option[Int],
-  useAgent: Boolean
+  useAgent: Boolean,
+  sshdConfigPath: Option[String],
+  hostKeyAlgPreference: List[String]
 )
 
 object Arguments {
   val targetInstanceDefaultUser = "ubuntu"
   val bastionDefaultUser = "ubuntu"
+  val defaultSshdConfigPath = "/etc/ssh/sshd_config"
+  val defaultHostKeyAlgPreference = List("ecdsa-sha2-nistp256", "ssh-rsa")
 
   def empty(): Arguments = Arguments(
     executionTarget = None,
@@ -50,7 +54,9 @@ object Arguments {
     bastionPortNumber = None,
     bastionUser = Some(bastionDefaultUser),
     targetInstancePortNumber = None,
-    useAgent = false
+    useAgent = false,
+    sshdConfigPath = Some(defaultSshdConfigPath),
+    hostKeyAlgPreference = defaultHostKeyAlgPreference
   )
 }
 

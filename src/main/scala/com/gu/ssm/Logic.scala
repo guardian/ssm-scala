@@ -72,4 +72,15 @@ object Logic {
     }
   }
 
+  def getHostKeyEntry(ssmResult: Either[CommandStatus, CommandResult], preferredAlgs: List[String]): Attempt[String] = {
+    ssmResult match {
+      case Right(result) =>
+        val resultLines = result.stdOut.lines
+        val preferredKeys = resultLines.filter(hostKey => preferredAlgs.exists(hostKey.startsWith))
+        val preferenceOrderedKeys = preferredKeys.toList.sortBy(hostKey => preferredAlgs.indexWhere(hostKey.startsWith))
+        Attempt.fromOption(preferenceOrderedKeys.headOption, Failure("host key with preferred algorithm not found", s"The remote instance did not return a host key with any preferred algorithm (preferred: $preferredAlgs)", NoHostKey).attempt)
+      case Left(otherStatus) => Attempt.Left(Failure("host keys not returned", s"The remote instance failed to return the host keys within the timeout window (status: $otherStatus)", AwsError))
+    }
+  }
+
 }
