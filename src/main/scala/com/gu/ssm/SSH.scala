@@ -37,7 +37,7 @@ object SSH {
     }
   }
 
-  def writeHostKey(address: String, hostKey: String): Attempt[File] = {
+  def writeHostKey(addressHostKeyTuples: (String, String)*): Attempt[File] = {
     // Write key to file.
     val prefix = "security_ssm-scala_temporary-host-key"
     val suffix = ".tmp"
@@ -46,7 +46,9 @@ object SSH {
       val hostKeyFile = File.createTempFile(prefix, suffix)
       val writer = new PrintWriter(new FileOutputStream(hostKeyFile))
       try {
-        writer.println(s"$address $hostKey")
+        addressHostKeyTuples.foreach { case (address, hostKey) =>
+          writer.println(s"$address $hostKey")
+        }
       } finally {
         writer.close()
       }
@@ -88,14 +90,15 @@ object SSH {
        | for hostkey in $$(grep ^HostKey $sshd_config_path| cut -d' ' -f 2); do cat $${hostkey}.pub; done
      """.stripMargin
 
-  def sshCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], hostsFile: Option[File]): (InstanceId, String) = {
+  def sshCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], hostsFile: Option[File], useAgent: Boolean): (InstanceId, String) = {
     val targetPortSpecifications = targetInstancePortNumberOpt match {
-      case Some(portNumber) => s" -p ${portNumber}" // trailing space is important
+      case Some(portNumber) => s" -p $portNumber" // trailing space is important
       case _ => ""
     }
     val theTTOptions = if(rawOutput) { " -t -t" }else{ "" }
-    val hostsFileString = hostsFile.map(file => s" -o 'UserKnownHostsFile $file'").getOrElse("")
-    val connectionString = s"ssh -o 'IdentitiesOnly yes'$hostsFileString$targetPortSpecifications -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $user@$ipAddress"
+    val useAgentFragment = if(useAgent) " -A" else ""
+    val hostsFileString = hostsFile.map(file => s""" -o "UserKnownHostsFile $file" -o "StrictHostKeyChecking yes"""").getOrElse("")
+    val connectionString = s"""ssh -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString$targetPortSpecifications -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $user@$ipAddress"""
     val cmd = if(rawOutput) {
       s"$connectionString"
     }else{
@@ -107,25 +110,22 @@ object SSH {
     (instance.id, cmd)
   }
 
-  def sshCmdBastion(rawOutput: Boolean)(privateKeyFile: File, bastionInstance: Instance, targetInstance: Instance, targetInstanceUser: String, bastionIpAddress: String, targetIpAddress: String, bastionPortNumberOpt: Option[Int], bastionUser: String, targetInstancePortNumberOpt: Option[Int], useAgent: Boolean): (InstanceId, String) = {
-    val stringFragmentSshAdd = if(useAgent) { s"ssh-add -t $sshCredentialsLifetimeSeconds ${privateKeyFile.getCanonicalFile.toString} && " } else { "" }
-    val bastionPortSpecifications = bastionPortNumberOpt.map( port => s" -p ${port}" ).getOrElse("")
-    val targetPortSpecifications = targetInstancePortNumberOpt.map( port => s" -p ${port}" ).getOrElse("")
+  def sshCmdBastion(rawOutput: Boolean)(privateKeyFile: File, bastionInstance: Instance, targetInstance: Instance, targetInstanceUser: String, bastionIpAddress: String, targetIpAddress: String, bastionPortNumberOpt: Option[Int], bastionUser: String, targetInstancePortNumberOpt: Option[Int], useAgent: Boolean, hostsFile: Option[File]): (InstanceId, String) = {
+    val bastionPort = bastionPortNumberOpt.getOrElse(22)
+    val targetPort = targetInstancePortNumberOpt.getOrElse(22)
+    val hostsFileString = hostsFile.map(file => s""" -o "UserKnownHostsFile $file" -o "StrictHostKeyChecking yes"""").getOrElse("")
+    val identityFragment = s"-i ${privateKeyFile.getCanonicalFile.toString}"
+    val proxyFragment = s"""-o 'ProxyCommand ssh -o "IdentitiesOnly yes" $identityFragment$hostsFileString -p $bastionPort $bastionUser@$bastionIpAddress nc $targetIpAddress $targetPort'"""
     val stringFragmentTTOptions = if(rawOutput) { " -t -t" } else { "" }
-    val stringFragmentMinusIOption = if(useAgent) { "" } else { s" -i ${privateKeyFile.getCanonicalFile.toString}" }
-    val stringFragmentBastionConnection = if(useAgent) {
-      s"ssh -A${bastionPortSpecifications}${stringFragmentTTOptions} $bastionUser@$bastionIpAddress"
-    } else {
-      s"ssh -A${bastionPortSpecifications}${stringFragmentMinusIOption}${stringFragmentTTOptions} $bastionUser@$bastionIpAddress"
-    }
-    val stringFragmentTargetConnection = s"-t -t ssh${targetPortSpecifications}${stringFragmentTTOptions} $targetInstanceUser@$targetIpAddress"
-    val connectionString = s"${stringFragmentSshAdd}${stringFragmentBastionConnection} ${stringFragmentTargetConnection}"
+    val useAgentFragment = if(useAgent) " -A" else ""
+    val connectionString =
+      s"""ssh$useAgentFragment -o "IdentitiesOnly yes" $identityFragment$hostsFileString $proxyFragment$stringFragmentTTOptions $targetInstanceUser@$targetIpAddress"""
     val cmd = if(rawOutput) {
       s"$connectionString"
     }else{
       s"""
          | # Execute the following commands within the next $sshCredentialsLifetimeSeconds seconds:
-         | ${connectionString};
+         | $connectionString;
          |""".stripMargin
     }
     (targetInstance.id, cmd)
