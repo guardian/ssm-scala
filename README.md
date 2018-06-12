@@ -125,8 +125,7 @@ An example of using `repl` is:
 ./ssm repl --profile <aws-profile> -t security-hq,security,PROD
 ```
 
-The REPL mode causes `ssm` to generate a list of
-instances and then wait for commands to be specified.  Each command will be executed on all instances and the user can select the instance to display.
+The REPL mode causes `ssm` to generate a list of instances and then wait for commands to be specified. Each command will be executed on all instances and the user can select the instance to display.
 
 An example of using `ssh` command is:
 
@@ -134,11 +133,9 @@ An example of using `ssh` command is:
 ./ssm ssh --profile <aws-profile> -t security-hq,security,PROD
 ```
 
-This causes `ssm` to generate a temporary ssh
-key, and install the public key on a specific instance.  It will then output the command to `ssh` directly to that instance. 
-The instance must already have appropriate security groups.
+This causes `ssm` to generate a temporary ssh key, and install the public key on a specific instance. It will then output the command to `ssh` directly to that instance. The instance must already have appropriate security groups.
 
-The target for the ssh command will be the first available of: public domain name, then public ip address or private ip address if the --private options was specified.
+The target for the ssh command will be the public IP address if there is one, otherwise the private IP address. The `--private` flag overrides this behavior and defaults to the private IP address.
 
 Note that if the argument `-t <app>,<stack>,<stage>` resolves to more than one instance, the command will stop with an error message. You can circumvent this behaviour and instruct `ssm` to proceed with one single instance using the command line flags `--oldest` and `--newest`, which select either the oldest or newest instances.
 
@@ -211,8 +208,7 @@ If you do not know the id of the current bastion, but it is tagged correctly, it
 ssm ssh --profile <profile-name> --bastion-tags <app,stack,stage> --bastion-port 2022 -i i-application-12345
 ```
 
-This will respect any --newest / --oldest switches, although it is anticipated that there will usually only be one bastion.
-It will always use the public IP address of the bastion.
+This will respect any --newest / --oldest switches, although it is anticipated that there will usually only be one bastion. It will always use the public IP address of the bastion.
 
 ### Bastion users
 
@@ -230,7 +226,6 @@ There's been occurences of bastions connections strings of the form
 ssh -A -i /path/to/temp/private/key -t -t ubuntu@bastion-hostname \ 
     -t -t ssh -t -t ubuntu@target-ip-address;
 ```
-
 not working, because the private file was not found for the second ssh connection, leading to a "Permission denied (publickey)" error message. 
 
 When this happens the user can use the `-a`, `--agent` flag that performs a registration of the private key at the local ssh agent. With this flag, ssm command

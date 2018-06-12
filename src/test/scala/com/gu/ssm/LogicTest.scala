@@ -50,103 +50,44 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
       Instance(InstanceId(id), None, publicIpOpt, privateIp, LocalDateTime.now().plusDays(launchDateDayShift).atZone(ZoneId.systemDefault()).toInstant())
 
     "if given no instances, should be Left" in {
-      getSSHInstance(List(), SismUnspecified, usePrivate = false).isLeft shouldBe true
+      getSSHInstance(List(), SismUnspecified).isLeft shouldBe true
     }
 
-    "Given one instance and want public IP" - {
-
-      "Instance is ill-formed should be Left" in {
-        val i = makeInstance("X", None, "10.1.1.10", 0)
-        getSSHInstance(List(i), SismUnspecified, usePrivate = false).isLeft shouldBe true
+    "Given one instance" - {
+      "If single instance selection mode is SismNewest, returns argument" in {
+        val i = makeInstance("X", Some("127.0.0.1"), "10.1.1.10", 0)
+        getSSHInstance(List(i), SismNewest).right.get shouldEqual i
       }
 
-      "Instance is well-formed, should return argument in all cases" - {
+      "If single instance selection mode is SismOldest, returns argument" in {
+        val i = makeInstance("X", Some("127.0.0.1"), "10.1.1.10", 0)
+        getSSHInstance(List(i), SismOldest).right.get shouldEqual i
+      }
 
-        "If single instance selection mode is SismNewest, returns argument" in {
-          val i = makeInstance("X", Some("127.0.0.1"), "10.1.1.10", 0)
-          getSSHInstance(List(i), SismNewest, usePrivate = false).right.get shouldEqual i
-        }
-
-        "If single instance selection mode is SismOldest, returns argument" in {
-          val i = makeInstance("X", Some("127.0.0.1"), "10.1.1.10", 0)
-          getSSHInstance(List(i), SismOldest, usePrivate = false).right.get shouldEqual i
-        }
-
-        "If single instance selection mode is SismUnspecified, returns argument" in {
-          val i = makeInstance("X", Some("127.0.0.1"), "10.1.1.10", 0)
-          getSSHInstance(List(i), SismUnspecified, usePrivate = false).right.get shouldEqual i
-        }
+      "If single instance selection mode is SismUnspecified, returns argument" in {
+        val i = makeInstance("X", Some("127.0.0.1"), "10.1.1.10", 0)
+        getSSHInstance(List(i), SismUnspecified).right.get shouldEqual i
       }
     }
 
-    "Given more than one instance and want public IP" - {
+    "Given more than one instance" - {
+      val i1 = makeInstance("X", None, "10.1.1.10", -7)
+      val i2 = makeInstance("Y", Some("127.0.0.1"), "10.1.1.10", -1)
+      val i3 = makeInstance("Z", Some("127.0.0.1"), "10.1.1.10", 0)
 
-      "All instances are ill-formed, should be Left" in {
-        val i1 = makeInstance("X", None, "", -7)
-        val i2 = makeInstance("Y", None, "", 0)
-        getSSHInstance(List(i1, i2), SismUnspecified, usePrivate = false).isLeft shouldBe true
+      "If single instance selection mode is SismNewest, selects the newest instance with public IP" in {
+        getSSHInstance(List(i1, i2, i3), SismNewest).right.get shouldEqual i3
       }
 
-      "Multiple instances are well formed" - {
-        val i1 = makeInstance("X", None, "10.1.1.10", -7)
-        val i2 = makeInstance("Y", Some("127.0.0.1"), "10.1.1.10", -1)
-        val i3 = makeInstance("Z", Some("127.0.0.1"), "10.1.1.10", 0)
+      "If single instance selection mode is SismOldest, selects the oldest instance with public IP" in {
+        getSSHInstance(List(i1, i2, i3), SismOldest).right.get shouldEqual i1
+      }
 
-        "If single instance selection mode is SismNewest, selects the newest well-formed instance" in {
-          getSSHInstance(List(i1, i2, i3), SismNewest, usePrivate = false).right.get shouldEqual i3
-        }
-
-        "If single instance selection mode is SismOldest, selects the oldest well-formed instance" in {
-          getSSHInstance(List(i1, i2, i3), SismOldest, usePrivate = false).right.get shouldEqual i2
-        }
-
-        "If single instance selection mode is SismUnspecified, should be Left" in {
-          getSSHInstance(List(i1, i2, i3), SismUnspecified, usePrivate = false).isLeft shouldBe true
-        }
+      "If single instance selection mode is SismUnspecified, should be Left" in {
+        getSSHInstance(List(i1, i2, i3), SismUnspecified).isLeft shouldBe true
       }
     }
 
-    "Given one instance and want private IP" - {
-
-      "Instance is well-formed, should return argument in all cases" - {
-
-        "If single instance selection mode is SismNewest, returns argument" in {
-          val i = makeInstance("X", Some("127.0.0.1"), "10.1.1.10", 0)
-          getSSHInstance(List(i), SismNewest, usePrivate = true).right.get shouldEqual i
-        }
-
-        "If single instance selection mode is SismOldest, returns argument" in {
-          val i = makeInstance("X", Some("127.0.0.1"), "10.1.1.10", 0)
-          getSSHInstance(List(i), SismOldest, usePrivate = true).right.get shouldEqual i
-        }
-
-        "If single instance selection mode is SismUnspecified, returns argument" in {
-          val i = makeInstance("X", Some("127.0.0.1"), "10.1.1.10", 0)
-          getSSHInstance(List(i),  SismUnspecified, usePrivate = true).right.get shouldEqual i
-        }
-      }
-    }
-
-    "Given more than one instance and want private IP" - {
-
-      "Multiple instances are well formed" - {
-        val i1 = makeInstance("X", None, "10.1.1.10", -7)
-        val i2 = makeInstance("Y", Some("127.0.0.1"), "10.1.1.10", -1)
-        val i3 = makeInstance("Z", Some("127.0.0.1"), "10.1.1.10", 0)
-
-        "If single instance selection mode is SismNewest, selects the newest well-formed instance" in {
-          getSSHInstance(List(i1, i2, i3), SismNewest, usePrivate = true).right.get shouldEqual i3
-        }
-
-        "If single instance selection mode is SismOldest, selects the oldest well-formed instance" in {
-          getSSHInstance(List(i1, i2, i3), SismOldest, usePrivate = true).right.get shouldEqual i1
-        }
-
-        "If single instance selection mode is SismUnspecified, should be Left" in {
-          getSSHInstance(List(i1, i2, i3), SismUnspecified, usePrivate = true).isLeft shouldBe true
-        }
-      }
-    }
   }
 
   "getIpAddress" - {
@@ -159,33 +100,31 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
     val instanceWithPublicIpAndPrivateIp = makeInstance("id-a78414cb9b14", None, Some("34.1.1.10"), "10.1.1.10")
     val instanceWithPublicDnsAndPublicIPAndPrivateIp = makeInstance("id-a78414cb9b14", Some("ec2-dnsname"), Some("34.1.1.10"), "10.1.1.10")
 
-    "given want private IP" - {
-      "return private as only private exists" in {
-        val result = getAddress(instanceWithPrivateIpOnly, usePrivate = true)
+    "specifying we want private IP" - {
+      "return private if only private exists" in {
+        val result = getAddress(instanceWithPrivateIpOnly, onlyUsePrivateIP = true)
         result.right.value shouldEqual "10.1.1.10"
       }
 
       "return private if public and private exists" in {
-        val result = getAddress(instanceWithPublicIpAndPrivateIp, usePrivate = true)
+        val result = getAddress(instanceWithPublicIpAndPrivateIp, onlyUsePrivateIP = true)
         result.right.value shouldEqual "10.1.1.10"
       }
     }
 
-    "given want public IP" - {
+    "not specifying we want private IP" - {
       "return public if it exists" in {
-        val result = getAddress(instanceWithPublicIpAndPrivateIp, usePrivate = false)
+        val result = getAddress(instanceWithPublicIpAndPrivateIp, onlyUsePrivateIP = false)
         result.right.value shouldEqual "34.1.1.10"
       }
 
-      "return error if only private exists" in {
-        val result = getAddress(instanceWithPrivateIpOnly, usePrivate = false)
-        result.isLeft shouldBe true
+      "return private if no public and no dns" in {
+        val result = getAddress(instanceWithPrivateIpOnly, onlyUsePrivateIP = false)
+        result.right.value shouldEqual "10.1.1.10"
       }
-    }
 
-    "given want public IP when DNS name exists" - {
-      "return public if it exists" in {
-        val result = getAddress(instanceWithPublicDnsAndPublicIPAndPrivateIp, usePrivate = false)
+      "return public IP if it exists, even if public DNS exists" in {
+        val result = getAddress(instanceWithPublicDnsAndPublicIPAndPrivateIp, onlyUsePrivateIP = false)
         result.right.value shouldEqual "34.1.1.10"
       }
     }

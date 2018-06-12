@@ -12,7 +12,7 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     argParser.parse(args, Arguments.empty()) match {
-      case Some(Arguments(Some(executionTarget), toExecuteOpt, profile, region, Some(mode), Some(user), sism, _, _, usePrivate, rawOutput, bastionInstanceIdOpt, bastionPortNumberOpt, Some(bastionUser), targetInstancePortNumberOpt, useAgent, Some(sshdConfigPath), preferredAlgs)) =>
+      case Some(Arguments(Some(executionTarget), toExecuteOpt, profile, region, Some(mode), Some(user), sism, _, _, onlyUsePrivateIP, rawOutput, bastionInstanceIdOpt, bastionPortNumberOpt, Some(bastionUser), targetInstancePortNumberOpt, useAgent, Some(sshdConfigPath), preferredAlgs)) =>
         val awsClients = Logic.getClients(profile, region)
         mode match {
           case SsmRepl =>
@@ -23,8 +23,8 @@ object Main {
               case _ => fail()
             }
           case SsmSsh => bastionInstanceIdOpt match {
-            case None => setUpStandardSSH(awsClients, executionTarget, user, sism, usePrivate, rawOutput, targetInstancePortNumberOpt, sshdConfigPath, preferredAlgs, useAgent)
-            case Some(bastionInstance) => setUpBastionSSH(awsClients, executionTarget, user, sism, usePrivate, rawOutput, bastionInstance, bastionPortNumberOpt, bastionUser, targetInstancePortNumberOpt, useAgent, sshdConfigPath, preferredAlgs)
+            case None => setUpStandardSSH(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, targetInstancePortNumberOpt, sshdConfigPath, preferredAlgs, useAgent)
+            case Some(bastionInstance) => setUpBastionSSH(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, bastionInstance, bastionPortNumberOpt, bastionUser, targetInstancePortNumberOpt, useAgent, sshdConfigPath, preferredAlgs)
           }
         }
       case Some(_) => fail()
@@ -37,19 +37,19 @@ object Main {
     System.exit(UnhandledError.code)
   }
 
-  private def setUpStandardSSH(awsClients: AWSClients, executionTarget: ExecutionTarget, user: String, sism: SingleInstanceSelectionMode, usePrivate: Boolean, rawOutput: Boolean, targetInstancePortNumberOpt: Option[Int], sshdConfigPath: String, preferredAlgs: List[String], useAgent: Boolean) = {
+  private def setUpStandardSSH(awsClients: AWSClients, executionTarget: ExecutionTarget, user: String, sism: SingleInstanceSelectionMode, onlyUsePrivateIP: Boolean, rawOutput: Boolean, targetInstancePortNumberOpt: Option[Int], sshdConfigPath: String, preferredAlgs: List[String], useAgent: Boolean) = {
     val fProgramResult = for {
       config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, executionTarget)
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
       (privateKeyFile, publicKey) = sshArtifacts
       addPublicKeyCommand = SSH.addTaintedCommand(config.name) + SSH.addPublicKeyCommand(user, publicKey) + SSH.outputHostKeysCommand(sshdConfigPath)
       removePublicKeyCommand = SSH.removePublicKeyCommand(user, publicKey)
-      instance <- Attempt.fromEither(Logic.getSSHInstance(config.targets, sism, usePrivate))
+      instance <- Attempt.fromEither(Logic.getSSHInstance(config.targets, sism))
       _ <- IO.tagAsTainted(instance.id, config.name, awsClients.ec2Client)
       result <- IO.executeOnInstance(instance.id, config.name, addPublicKeyCommand, awsClients.ssmClient)
       _ <- IO.executeOnInstanceAsync(instance.id, config.name, removePublicKeyCommand, awsClients.ssmClient)
       hostKey <- Attempt.fromEither(Logic.getHostKeyEntry(result, preferredAlgs))
-      address <- Attempt.fromEither(Logic.getAddress(instance, usePrivate))
+      address <- Attempt.fromEither(Logic.getAddress(instance, onlyUsePrivateIP))
       hostKeyFile <- SSH.writeHostKey((address, hostKey))
     } yield {
       SSH.sshCmdStandard(rawOutput)(privateKeyFile, instance, user, address, targetInstancePortNumberOpt, Some(hostKeyFile), useAgent)
@@ -64,7 +64,7 @@ object Main {
     executionTarget: ExecutionTarget,
     user: String,
     sism: SingleInstanceSelectionMode,
-    usePrivate: Boolean,
+    onlyUsePrivateIP: Boolean,
     rawOutput: Boolean,
     bastionInstance: ExecutionTarget,
     bastionPortNumberOpt: Option[Int],
@@ -77,12 +77,12 @@ object Main {
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
       (privateKeyFile, publicKey) = sshArtifacts
       bastionConfig <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, bastionInstance)
-      bastionInstance <- Attempt.fromEither(Logic.getSSHInstance(bastionConfig.targets, sism, false))
+      bastionInstance <- Attempt.fromEither(Logic.getSSHInstance(bastionConfig.targets, sism))
       bastionAddPublicKeyCommand = SSH.addPublicKeyCommand(user, publicKey) + SSH.outputHostKeysCommand(sshdConfigPath)
       bastionRemovePublicKeyCommand = SSH.removePublicKeyCommand(user, publicKey)
-      bastionAddress <- Attempt.fromEither(Logic.getAddress(bastionInstance, usePrivate))
+      bastionAddress <- Attempt.fromEither(Logic.getAddress(bastionInstance, onlyUsePrivateIP))
       targetConfig <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, executionTarget)
-      targetInstance <- Attempt.fromEither(Logic.getSSHInstance(targetConfig.targets, sism, true))
+      targetInstance <- Attempt.fromEither(Logic.getSSHInstance(targetConfig.targets, sism))
       targetAddress <- Attempt.fromEither(Logic.getAddress(targetInstance, true))
       targetAddPublicKeyCommand = SSH.addTaintedCommand(targetConfig.name) + SSH.addPublicKeyCommand(user, publicKey) + SSH.outputHostKeysCommand(sshdConfigPath)
       targetRemovePublicKeyCommand = SSH.removePublicKeyCommand(user, publicKey)
