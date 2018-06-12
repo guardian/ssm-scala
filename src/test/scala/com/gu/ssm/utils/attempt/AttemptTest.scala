@@ -44,7 +44,7 @@ class AttemptTest extends FreeSpec with Matchers with EitherValues with AttemptV
   }
 
   "delay" - {
-    "will cause timeout in shorter time" in {
+    "will cause timeout in shorter time" ignore {
       val future = Attempt.delay(10.millis).asFuture
       intercept[TimeoutException] {
         Await.result(future, 5.millis)

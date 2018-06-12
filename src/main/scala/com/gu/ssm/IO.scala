@@ -28,7 +28,14 @@ object IO {
     } yield results
   }
 
-  def installSshKey(instanceId: InstanceId, username: String, script: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[String] = {
+  def executeOnInstance(instanceId: InstanceId, username: String, script: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[Either[CommandStatus, CommandResult]] = {
+    for {
+      cmdId <- SSM.sendCommand(List(instanceId), script, username, client)
+      result <- SSM.getCmdOutput(instanceId, cmdId, client).map{ case (_, result) => result }
+    } yield result
+  }
+
+  def executeOnInstanceAsync(instanceId: InstanceId, username: String, script: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[String] = {
     for {
       cmdId <- SSM.sendCommand(List(instanceId), script, username, client)
     } yield cmdId

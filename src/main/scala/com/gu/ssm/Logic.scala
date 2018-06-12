@@ -64,11 +64,25 @@ object Logic {
     if (usePrivate) {
       Right(instance.privateIpAddress)
     } else {
-      instance.publicDomainNameOpt match {
-        case Some(domainName) => Right(domainName)
+      instance.publicIpAddressOpt match {
+        case Some(ipAddress) => Right(ipAddress)
         case None =>
           instance.publicIpAddressOpt.toRight(FailedAttempt(Failure("No public IP address", "No public IP address", NoIpAddress, None, None)))
       }
+    }
+  }
+
+  def getHostKeyEntry(ssmResult: Either[CommandStatus, CommandResult], preferredAlgs: List[String]): Either[FailedAttempt, String] = {
+    ssmResult match {
+      case Right(result) =>
+        val resultLines = result.stdOut.lines
+        val preferredKeys = resultLines.filter(hostKey => preferredAlgs.exists(hostKey.startsWith))
+        val preferenceOrderedKeys = preferredKeys.toList.sortBy(hostKey => preferredAlgs.indexWhere(hostKey.startsWith))
+        preferenceOrderedKeys.headOption match {
+          case Some(hostKey) => Right(hostKey)
+          case None => Left(Failure("host key with preferred algorithm not found", s"The remote instance did not return a host key with any preferred algorithm (preferred: $preferredAlgs)", NoHostKey).attempt)
+        }
+      case Left(otherStatus) => Left(Failure("host keys not returned", s"The remote instance failed to return the host keys within the timeout window (status: $otherStatus)", AwsError).attempt)
     }
   }
 
