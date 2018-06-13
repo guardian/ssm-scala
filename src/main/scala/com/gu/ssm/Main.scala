@@ -37,7 +37,17 @@ object Main {
     System.exit(UnhandledError.code)
   }
 
-  private def setUpStandardSSH(awsClients: AWSClients, executionTarget: ExecutionTarget, user: String, sism: SingleInstanceSelectionMode, onlyUsePrivateIP: Boolean, rawOutput: Boolean, targetInstancePortNumberOpt: Option[Int], sshdConfigPath: String, preferredAlgs: List[String], useAgent: Boolean) = {
+  private def setUpStandardSSH(
+    awsClients: AWSClients,
+    executionTarget: ExecutionTarget,
+    user: String,
+    sism: SingleInstanceSelectionMode,
+    onlyUsePrivateIP: Boolean,
+    rawOutput: Boolean,
+    targetInstancePortNumberOpt: Option[Int],
+    sshdConfigPath: String,
+    preferredAlgs: List[String],
+    useAgent: Option[Boolean]) = {
     val fProgramResult = for {
       config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, executionTarget)
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
@@ -70,7 +80,7 @@ object Main {
     bastionPortNumberOpt: Option[Int],
     bastionUser: String,
     targetInstancePortNumberOpt: Option[Int],
-    useAgent: Boolean,
+    useAgent: Option[Boolean],
     sshdConfigPath: String,
     preferredAlgs: List[String]) = {
     val fProgramResult = for {

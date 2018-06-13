@@ -27,7 +27,7 @@ case class Arguments(
   bastionPortNumber: Option[Int],
   bastionUser: Option[String],
   targetInstancePortNumber: Option[Int],
-  useAgent: Boolean,
+  useAgent: Option[Boolean],
   sshdConfigPath: Option[String],
   hostKeyAlgPreference: List[String]
 )
@@ -54,7 +54,7 @@ object Arguments {
     bastionPortNumber = None,
     bastionUser = Some(bastionDefaultUser),
     targetInstancePortNumber = None,
-    useAgent = false,
+    useAgent = None,
     sshdConfigPath = Some(defaultSshdConfigPath),
     hostKeyAlgPreference = defaultHostKeyAlgPreference
   )

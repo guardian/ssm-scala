@@ -108,20 +108,19 @@ object ArgumentParser {
         opt[Unit]('A', "agent").optional()
           .action((_, args) => {
             args.copy(
-              useAgent = true)
+              useAgent = Some(true))
           })
           .text("Use the local ssh agent to register the private key (and do not use -i); only bastion connections"),
         opt[Unit]('a', "no-agent").optional()
           .action((_, args) => {
             args.copy(
-              useAgent = false)
+              useAgent = Some(false))
           })
           .text("Do not use the local ssh agent"),
         opt[String]('b', "bastion").optional()
           .action((bastion, args) => {
             args
               .copy(bastionInstance = Some(ExecutionTarget(Some(List(InstanceId(bastion))), None)))
-              .copy(useAgent = true)
           })
           .text(s"Connect through the given bastion specified by its instance id; implies -A (use agent) unless followed by -a"),
         opt[String]('B', "bastion-tags").optional()
@@ -135,7 +134,6 @@ object ArgumentParser {
                 ass => {
                   args
                     .copy(bastionInstance = Some(ExecutionTarget(None, Some(ass))))
-                    .copy(useAgent = true)
                 }
               )
           } text(s"Connect through the given bastion identified by its tags; implies -a (use agent) unless followed by -A"),
