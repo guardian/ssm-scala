@@ -105,13 +105,13 @@ object ArgumentParser {
               rawOutput = true)
           })
           .text("Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)"),
-        opt[Unit]('a', "agent").optional()
+        opt[Unit]('A', "agent").optional()
           .action((_, args) => {
             args.copy(
               useAgent = true)
           })
           .text("Use the local ssh agent to register the private key (and do not use -i); only bastion connections"),
-        opt[Unit]('A', "no-agent").optional()
+        opt[Unit]('a', "no-agent").optional()
           .action((_, args) => {
             args.copy(
               useAgent = false)
@@ -123,7 +123,7 @@ object ArgumentParser {
               .copy(bastionInstance = Some(ExecutionTarget(Some(List(InstanceId(bastion))), None)))
               .copy(useAgent = true)
           })
-          .text(s"Connect through the given bastion specified by its instance id; implies -a (use agent) unless followed by -A"),
+          .text(s"Connect through the given bastion specified by its instance id; implies -A (use agent) unless followed by -a"),
         opt[String]('B', "bastion-tags").optional()
           .validate { tagsStr =>
             Logic.extractSASTags(tagsStr).map(_ => ())
