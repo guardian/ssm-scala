@@ -52,13 +52,17 @@ Create and upload a temporary ssh key
   --private                Use private IP address (must be routable via VPN Gateway)
   --raw                    Unix pipe-able ssh connection string
   -x, --execute            Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)
-  -a, --agent              Use the local ssh agent to register the private key (and do not use -i); only bastion connections
-  -A, --no-agent           Do not use the local ssh agent
-  -b, --bastion <value>    Connect through the given bastion specified by its instance id; implies -a (use agent) unless followed by -A
+  -A, --agent              Use the local ssh agent to register the private key (and do not use -i); only bastion connections
+  -a, --no-agent           Do not use the local ssh agent
+  -b, --bastion <value>    Connect through the given bastion specified by its instance id; implies -A (use agent) unless followed by -a
   -B, --bastion-tags <value>
                            Connect through the given bastion identified by its tags; implies -a (use agent) unless followed by -A
   --bastion-port <value>   Connect through the given bastion at a given port
   --bastion-user <value>   Connect to bastion as this user (default: ubuntu)
+  --sshd-config-path <value>
+                           The location of the sshd configuration on the remote host (default: /etc/ssh/sshd_config)
+  --host-key-alg-preference <value>
+                           The preferred host key algorithms, can be specified multiple times - last is preferred (default: ecdsa-sha2-nistp256, ssh-rsa)
 ```
 
 There are two mandatory configuration items.
