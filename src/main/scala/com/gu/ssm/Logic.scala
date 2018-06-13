@@ -33,20 +33,13 @@ object Logic {
     case _ => Right(Unit)
   }
 
-  def getSSHInstance(instances: List[Instance], sism: SingleInstanceSelectionMode, usePrivate: Boolean): Either[FailedAttempt, Instance] = {
-    if (instances.isEmpty) {
-      Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Could not find any instance", UnhandledError, None, None)))
-    } else {
-      val validInstancesWithOrder = instances
-        .filter(i => usePrivate || i.publicIpAddressOpt.isDefined)
-        .sortBy(_.launchInstant)
-      validInstancesWithOrder match {
-        case Nil => Left(FailedAttempt(Failure(s"Instances with no IPs matching filter", s"Found ${instances.map(_.id.id).mkString(", ")} but no instances have public IPs (use '--private' if internal address is routable)", UnhandledError, None, None)))
-        case instance :: Nil => Right(instance)
-        case _ :: _ :: _ if sism == SismUnspecified => Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${validInstancesWithOrder.map(_.id.id).mkString(", ")}.  Use --oldest or --newest to select single instance", UnhandledError, None, None)))
-        case instances if sism == SismNewest && instances.nonEmpty => Right(instances.last)
-        case instance :: _ if sism == SismOldest => Right(instance)
-      }
+  def getSSHInstance(instances: List[Instance], sism: SingleInstanceSelectionMode): Either[FailedAttempt, Instance] = {
+    instances.sortBy(_.launchInstant) match {
+      case Nil => Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Could not find any instance", UnhandledError, None, None)))
+      case instance :: Nil => Right(instance)
+      case _ :: _ :: _ if sism == SismUnspecified => Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${instances.map(_.id.id).mkString(", ")}.  Use --oldest or --newest to select single instance", UnhandledError, None, None)))
+      case instances if sism == SismNewest => Right(instances.last) // we know that `instances` is not empty, otherwise first case would have applied, therefore calling `.last` is safe
+      case instance :: _ if sism == SismOldest => Right(instance)
     }
   }
 
@@ -60,14 +53,13 @@ object Logic {
   def computeIncorrectInstances(executionTarget: ExecutionTarget, instanceIds: List[InstanceId]): List[InstanceId] =
     executionTarget.instances.getOrElse(List()).filterNot(instanceIds.toSet)
 
-  def getAddress(instance: Instance, usePrivate: Boolean): Either[FailedAttempt, String] = {
-    if (usePrivate) {
+  def getAddress(instance: Instance, onlyUsePrivateIP: Boolean): Either[FailedAttempt, String] = {
+    if (onlyUsePrivateIP) {
       Right(instance.privateIpAddress)
     } else {
       instance.publicIpAddressOpt match {
         case Some(ipAddress) => Right(ipAddress)
-        case None =>
-          instance.publicIpAddressOpt.toRight(FailedAttempt(Failure("No public IP address", "No public IP address", NoIpAddress, None, None)))
+        case None => Right(instance.privateIpAddress)
       }
     }
   }
