@@ -66,7 +66,7 @@ object Main {
       SSH.sshCmdStandard(rawOutput, shouldDisplayIdentityFileOnly, privateKeyFile, instance, user, address, targetInstancePortNumberOpt, Some(hostKeyFile), useAgent)
     }
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
-    programResult.fold(UI.outputFailure, UI.sshOutput(rawOutput))
+    programResult.fold(UI.outputFailure, UI.sshOutput(rawOutput || shouldDisplayIdentityFileOnly))
     System.exit(programResult.fold(_.exitCode, _ => 0))
   }
 
@@ -108,7 +108,7 @@ object Main {
       hostKeyFile <- SSH.writeHostKey((bastionAddress, bastionHostKey), (targetAddress, targetHostKey))
     } yield SSH.sshCmdBastion(rawOutput, shouldDisplayIdentityFileOnly, privateKeyFile, bastionInstance, targetInstance, user, bastionAddress, targetAddress, bastionPortNumberOpt, bastionUser, targetInstancePortNumberOpt, useAgent, Some(hostKeyFile))
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
-    programResult.fold(UI.outputFailure, UI.sshOutput(rawOutput))
+    programResult.fold(UI.outputFailure, UI.sshOutput(rawOutput || shouldDisplayIdentityFileOnly))
     System.exit(programResult.fold(_.exitCode, _ => 0))
   }
 
