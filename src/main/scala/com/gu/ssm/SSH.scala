@@ -102,12 +102,10 @@ object SSH {
     }
     val hostsFileString = hostsFile.map(file => s""" -o "UserKnownHostsFile $file" -o "StrictHostKeyChecking yes"""").getOrElse("")
     val connectionString = s"""ssh -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString$targetPortSpecifications -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $user@$ipAddress"""
-    val cmd = if(rawOutput || shouldDisplayIdentityFileOnly) {
-      if (shouldDisplayIdentityFileOnly) {
-        privateKeyFile.getCanonicalFile.toString
-      }else{
-        s"$connectionString"
-      }
+    val cmd = if(shouldDisplayIdentityFileOnly){
+      privateKeyFile.getCanonicalFile.toString
+    }else if(rawOutput) {
+      s"$connectionString"
     }else{
       s"""
          | # Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:
@@ -130,12 +128,10 @@ object SSH {
     }
     val connectionString =
       s"""ssh$useAgentFragment -o "IdentitiesOnly yes" $identityFragment$hostsFileString $proxyFragment$stringFragmentTTOptions $targetInstanceUser@$targetIpAddress"""
-    val cmd = if(rawOutput || shouldDisplayIdentityFileOnly) {
-      if (shouldDisplayIdentityFileOnly) {
-        privateKeyFile.getCanonicalFile.toString
-      }else{
-        s"$connectionString"
-      }
+    val cmd = if(shouldDisplayIdentityFileOnly){
+      privateKeyFile.getCanonicalFile.toString
+    }else if(rawOutput) {
+      s"$connectionString"
     }else{
       s"""
          | # Execute the following commands within the next $sshCredentialsLifetimeSeconds seconds:
