@@ -63,6 +63,7 @@ Create and upload a temporary ssh key
                            The location of the sshd configuration on the remote host (default: /etc/ssh/sshd_config)
   --host-key-alg-preference <value>
                            The preferred host key algorithms, can be specified multiple times - last is preferred (default: ecdsa-sha2-nistp256, ssh-rsa)
+  --identity-file          Specifies that only the identity file path should be displayed
 ```
 
 There are two mandatory configuration items.
