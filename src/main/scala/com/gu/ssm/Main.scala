@@ -12,7 +12,7 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     argParser.parse(args, Arguments.empty()) match {
-      case Some(Arguments(Some(executionTarget), toExecuteOpt, profile, region, Some(mode), Some(user), sism, _, _, onlyUsePrivateIP, rawOutput, bastionInstanceIdOpt, bastionPortNumberOpt, Some(bastionUser), targetInstancePortNumberOpt, useAgent, Some(sshdConfigPath), preferredAlgs)) =>
+      case Some(Arguments(Some(executionTarget), toExecuteOpt, profile, region, Some(mode), Some(user), sism, _, _, onlyUsePrivateIP, rawOutput, bastionInstanceIdOpt, bastionPortNumberOpt, Some(bastionUser), targetInstancePortNumberOpt, useAgent, Some(sshdConfigPath), preferredAlgs, shouldDisplayIdentityFileOnly)) =>
         val awsClients = Logic.getClients(profile, region)
         mode match {
           case SsmRepl =>
@@ -23,8 +23,8 @@ object Main {
               case _ => fail()
             }
           case SsmSsh => bastionInstanceIdOpt match {
-            case None => setUpStandardSSH(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, targetInstancePortNumberOpt, sshdConfigPath, preferredAlgs, useAgent)
-            case Some(bastionInstance) => setUpBastionSSH(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, bastionInstance, bastionPortNumberOpt, bastionUser, targetInstancePortNumberOpt, useAgent, sshdConfigPath, preferredAlgs)
+            case None => setUpStandardSSH(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, targetInstancePortNumberOpt, sshdConfigPath, preferredAlgs, useAgent, shouldDisplayIdentityFileOnly)
+            case Some(bastionInstance) => setUpBastionSSH(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, bastionInstance, bastionPortNumberOpt, bastionUser, targetInstancePortNumberOpt, useAgent, sshdConfigPath, preferredAlgs, shouldDisplayIdentityFileOnly)
           }
         }
       case Some(_) => fail()
@@ -47,7 +47,8 @@ object Main {
     targetInstancePortNumberOpt: Option[Int],
     sshdConfigPath: String,
     preferredAlgs: List[String],
-    useAgent: Option[Boolean]) = {
+    useAgent: Option[Boolean],
+    shouldDisplayIdentityFileOnly: Boolean) = {
     val fProgramResult = for {
       config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, executionTarget)
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
@@ -62,7 +63,7 @@ object Main {
       address <- Attempt.fromEither(Logic.getAddress(instance, onlyUsePrivateIP))
       hostKeyFile <- SSH.writeHostKey((address, hostKey))
     } yield {
-      SSH.sshCmdStandard(rawOutput)(privateKeyFile, instance, user, address, targetInstancePortNumberOpt, Some(hostKeyFile), useAgent)
+      SSH.sshCmdStandard(rawOutput, shouldDisplayIdentityFileOnly)(privateKeyFile, instance, user, address, targetInstancePortNumberOpt, Some(hostKeyFile), useAgent)
     }
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
     programResult.fold(UI.outputFailure, UI.sshOutput(rawOutput))
@@ -82,7 +83,8 @@ object Main {
     targetInstancePortNumberOpt: Option[Int],
     useAgent: Option[Boolean],
     sshdConfigPath: String,
-    preferredAlgs: List[String]) = {
+    preferredAlgs: List[String],
+    shouldDisplayIdentityFileOnly: Boolean) = {
     val fProgramResult = for {
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
       (privateKeyFile, publicKey) = sshArtifacts
@@ -104,7 +106,7 @@ object Main {
       bastionHostKey <- Attempt.fromEither(Logic.getHostKeyEntry(bastionResult, preferredAlgs))
       targetHostKey <- Attempt.fromEither(Logic.getHostKeyEntry(targetResult, preferredAlgs))
       hostKeyFile <- SSH.writeHostKey((bastionAddress, bastionHostKey), (targetAddress, targetHostKey))
-    } yield SSH.sshCmdBastion(rawOutput)(privateKeyFile, bastionInstance, targetInstance, user, bastionAddress, targetAddress, bastionPortNumberOpt, bastionUser, targetInstancePortNumberOpt, useAgent, Some(hostKeyFile))
+    } yield SSH.sshCmdBastion(rawOutput, shouldDisplayIdentityFileOnly)(privateKeyFile, bastionInstance, targetInstance, user, bastionAddress, targetAddress, bastionPortNumberOpt, bastionUser, targetInstancePortNumberOpt, useAgent, Some(hostKeyFile))
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
     programResult.fold(UI.outputFailure, UI.sshOutput(rawOutput))
     System.exit(programResult.fold(_.exitCode, _ => 0))

@@ -149,6 +149,9 @@ object ArgumentParser {
         opt[String]("host-key-alg-preference").optional().unbounded()
           .action((alg, args) => args.copy(hostKeyAlgPreference = alg :: args.hostKeyAlgPreference))
           .text(s"The preferred host key algorithms, can be specified multiple times - last is preferred (default: ${defaultHostKeyAlgPreference.mkString(", ")})"),
+        opt[Unit]("identity-file").optional()
+          .action((_, args) => args.copy(shouldDisplayIdentityFileOnly = true))
+          .text(s"Specifies that only the identity file path should be displayed"),
         checkConfig( c =>
           if (c.isSelectionModeOldest && c.isSelectionModeNewest) failure("You cannot both specify --newest and --oldest")
           else success )

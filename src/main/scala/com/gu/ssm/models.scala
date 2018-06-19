@@ -29,7 +29,8 @@ case class Arguments(
   targetInstancePortNumber: Option[Int],
   useAgent: Option[Boolean],
   sshdConfigPath: Option[String],
-  hostKeyAlgPreference: List[String]
+  hostKeyAlgPreference: List[String],
+  shouldDisplayIdentityFileOnly: Boolean
 )
 
 object Arguments {
@@ -56,7 +57,8 @@ object Arguments {
     targetInstancePortNumber = None,
     useAgent = None,
     sshdConfigPath = Some(defaultSshdConfigPath),
-    hostKeyAlgPreference = defaultHostKeyAlgPreference
+    hostKeyAlgPreference = defaultHostKeyAlgPreference,
+    shouldDisplayIdentityFileOnly = false
   )
 }
 
