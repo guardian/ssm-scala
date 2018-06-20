@@ -50,7 +50,7 @@ Create and upload a temporary ssh key
   --newest                 Selects the newest instance if more than one instance was specified
   --oldest                 Selects the oldest instance if more than one instance was specified
   --private                Use private IP address (must be routable via VPN Gateway)
-  --raw                    Unix pipe-able ssh connection string
+  --raw                    Unix pipe-able ssh connection string - note: you must use 'eval' to execute this due to nested quoting
   -x, --execute            Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)
   -A, --agent              Use the local ssh agent to register the private key (and do not use -i); only bastion connections
   -a, --no-agent           Do not use the local ssh agent
@@ -90,7 +90,30 @@ This message highlights the fact that access is being logged and that the next p
 
 ### "Too many authentication failures"
 
-If while using ssm you encounter the error message "Too many authentication failures", run `ssh-add -D` to reset your agent's counter. 
+This is the result of having too many keys in your agent and exceeding the servers configured authentication attempts. This is fixed as of 0.9.7 as we disable the use of the agent using `IdentitiesOnly`.
+
+If you still see "Too many authentication failures" then please raise an issue. You can work around it by running `ssh-add -D` to remove all keys from your agent. 
+
+### --raw usage
+
+If you need to add extra parameters to the SSH command then you can use `--raw`. In it's simplest form the following are equivalent:
+```bash
+ssm ssh -i i-0123456789abcdef0 -p composer -x
+``` 
+
+and 
+
+```bash
+eval $(ssh -i i-0123456789abcdef0 -p composer --raw)
+```
+
+This helps to undertake actions such as construct tunnels. For example to access a remote postgres server:
+
+```bash
+eval $(ssh -i i-0123456789abcdef0 -p composer --raw) -L 5432:my-postgres-server-hostname:5432
+```
+
+Note the use of `eval` in these examples - this is required in order to correctly parse the nested quotes that are output as part of the raw command. If you don't use `eval` then you are likely to see an error message such as `ssh: Could not resolve hostname yes": nodename nor servname provided, or not known`. 
 
 ### Execution targets
 

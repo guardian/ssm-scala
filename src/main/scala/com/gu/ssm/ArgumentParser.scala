@@ -98,7 +98,7 @@ object ArgumentParser {
             args.copy(
               rawOutput = true)
           })
-          .text("Unix pipe-able ssh connection string"),
+          .text("Unix pipe-able ssh connection string - note: you must use 'eval' to execute this due to nested quoting"),
         opt[Unit]('x', "execute").optional()
           .action((_, args) => {
             args.copy(
