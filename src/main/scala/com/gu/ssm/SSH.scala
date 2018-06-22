@@ -20,7 +20,7 @@ object SSH {
     val keyProvider = "BC"
 
     try {
-      val privateKeyFile = File.createTempFile(prefix, suffix)
+      val privateKeyFile = File.createTempFile(prefix, suffix, new File(System.getProperty("java.io.tmpdir")))
       FilePermissions(privateKeyFile, "0600")
       val publicKey = KeyMaker.makeKey(privateKeyFile, keyAlgorithm, keyProvider)
       Right((privateKeyFile, publicKey))
