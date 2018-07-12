@@ -140,6 +140,14 @@ object SSH {
   // The first file goes to the second file
   // The remote file is indicated by a colon
 
+  def startingColonToInt(string: String): Integer = {
+    if(string.startsWith(":")) 1 else  0
+  }
+
+  def removeFirstLetter(string: String): String = {
+    string.substring(1)
+  }
+
   def scpCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], useAgent: Option[Boolean], hostsFile: Option[File], sourceFile: String, targetFile: String): (InstanceId, String) = {
     val targetPortSpecifications = targetInstancePortNumberOpt match {
       case Some(portNumber) => s" -p ${portNumber}"
@@ -151,16 +159,28 @@ object SSH {
       case None => ""
       case Some(decision) => if(decision) " -A" else " -a"
     }
-    val connectionString = s"""scp -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} ${sourceFile} $user@$ipAddress:${targetFile}"""
-    val cmd = if(rawOutput) {
-      s"$connectionString"
+    // We are using colon to designate the remote file.
+    // There should be only one.
+    if (startingColonToInt(sourceFile)+startingColonToInt(targetFile) == 1) {
+      val connectionString =
+        if (startingColonToInt(sourceFile)==1) {
+          s"""scp -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $user@$ipAddress:${removeFirstLetter(sourceFile)} ${targetFile}"""
+        }else {
+          s"""scp -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} ${sourceFile} $user@$ipAddress:${removeFirstLetter(targetFile)}"""
+        }
+      val cmd = if(rawOutput) {
+        s"$connectionString"
+      }else{
+        s"""
+           | # Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:
+           | ${connectionString};
+           |""".stripMargin
+      }
+      (instance.id, cmd)
     }else{
-      s"""
-         | # Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:
-         | ${connectionString};
-         |""".stripMargin
+      (instance.id, "Incorrect remote server specifications, only one file should carry the starting colon")
     }
-    (instance.id, cmd)
+
   }
 
 }
