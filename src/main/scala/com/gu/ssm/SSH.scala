@@ -140,13 +140,18 @@ object SSH {
   // The first file goes to the second file
   // The remote file is indicated by a colon
 
-  def scpCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], sourceFile: String, targetFile: String): (InstanceId, String) = {
+  def scpCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], useAgent: Option[Boolean], hostsFile: Option[File], sourceFile: String, targetFile: String): (InstanceId, String) = {
     val targetPortSpecifications = targetInstancePortNumberOpt match {
       case Some(portNumber) => s" -p ${portNumber}"
       case _ => ""
     }
+    val hostsFileString = hostsFile.map(file => s""" -o "UserKnownHostsFile $file" -o "StrictHostKeyChecking yes"""").getOrElse("")
     val theTTOptions = if(rawOutput) { " -t -t" }else{ "" }
-    val connectionString = s"scp${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} ${sourceFile} $user@$ipAddress:${targetFile}"
+    val useAgentFragment = useAgent match {
+      case None => ""
+      case Some(decision) => if(decision) " -A" else " -a"
+    }
+    val connectionString = s"""scp -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} ${sourceFile} $user@$ipAddress:${targetFile}"""
     val cmd = if(rawOutput) {
       s"$connectionString"
     }else{

@@ -142,7 +142,7 @@ object Main {
       address <- Attempt.fromEither(Logic.getAddress(instance, onlyUsePrivateIP))
       hostKeyFile <- SSH.writeHostKey((address, hostKey))
     } yield {
-      SSH.scpCmdStandard(rawOutput)(privateKeyFile, instance, user, address, targetInstancePortNumberOpt, sourceFile, targetFile)
+      SSH.scpCmdStandard(rawOutput)(privateKeyFile, instance, user, address, targetInstancePortNumberOpt, useAgent, Some(hostKeyFile), sourceFile, targetFile)
     }
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
     programResult.fold(UI.outputFailure, UI.sshOutput(rawOutput))

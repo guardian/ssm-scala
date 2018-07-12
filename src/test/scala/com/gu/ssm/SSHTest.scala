@@ -198,4 +198,53 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
       }
     }
   }
+
+  "create scp command" - {
+    import SSH.scpCmdStandard
+
+    "create standard scp command" - {
+
+      val file = new File("/banana")
+      val instance = Instance(InstanceId("raspberry"), None, Some("34.1.1.10"), "10.1.1.10", Instant.now())
+
+      "instance id is correct" in {
+        val (instanceId, _) = scpCmdStandard(false)(file, instance, "user4", "34.1.1.10", None, Some(false), None, "/path/to/sourceFile", "/path/to/targetFile")
+        instanceId.id shouldEqual "raspberry"
+      }
+
+      "user command" - {
+        "is correctly formed without port specification" in {
+          val (_, command) = scpCmdStandard(false)(file, instance, "user4", "34.1.1.10", None, Some(false), None, "/path/to/sourceFile", "/path/to/targetFile")
+          command should include ("""scp -o "IdentitiesOnly yes" -a -i /banana /path/to/sourceFile user4@34.1.1.10:/path/to/targetFile""")
+        }
+
+        "is correctly formed with port specification" in {
+          val (_, command) = scpCmdStandard(false)(file, instance, "user4", "34.1.1.10", Some(2345), Some(false), None, "/path/to/sourceFile", "/path/to/targetFile")
+          command should include ("""scp -o "IdentitiesOnly yes" -a -p 2345 -i /banana /path/to/sourceFile user4@34.1.1.10:/path/to/targetFile""")
+        }
+
+        "is correctly formed with a hosts file" in {
+          val (_, command) = scpCmdStandard(false)(file, instance, "user4", "34.1.1.10", Some(2345), Some(false), Some(new File("/tmp/hostsfile")), "/path/to/sourceFile", "/path/to/targetFile")
+          command should include ("""scp -o "IdentitiesOnly yes" -a -o "UserKnownHostsFile /tmp/hostsfile" -o "StrictHostKeyChecking yes" -p 2345 -i /banana /path/to/sourceFile user4@34.1.1.10:/path/to/targetFile""")
+        }
+
+        "is correctly formed with agent forwarding file" in {
+          val (_, command) = scpCmdStandard(false)(file, instance, "user4", "34.1.1.10", Some(2345), Some(true), None, "/path/to/sourceFile", "/path/to/targetFile")
+          command should include ("""scp -o "IdentitiesOnly yes" -A -p 2345 -i /banana /path/to/sourceFile user4@34.1.1.10:/path/to/targetFile""")
+        }
+      }
+
+      "machine command" - {
+        "is correctly formed without port specification" in {
+          val (_, command) = scpCmdStandard(true)(file, instance, "user4", "34.1.1.10", None, Some(false), None, "/path/to/sourceFile", "/path/to/targetFile")
+          command should equal ("""scp -o "IdentitiesOnly yes" -a -i /banana -t -t /path/to/sourceFile user4@34.1.1.10:/path/to/targetFile""")
+        }
+
+        "is correctly formed with port specification" in {
+          val (_, command) = scpCmdStandard(true)(file, instance, "user4", "34.1.1.10", Some(2345), Some(false), None, "/path/to/sourceFile", "/path/to/targetFile")
+          command should equal ("""scp -o "IdentitiesOnly yes" -a -p 2345 -i /banana -t -t /path/to/sourceFile user4@34.1.1.10:/path/to/targetFile""")
+        }
+      }
+    }
+  }
 }
