@@ -197,9 +197,11 @@ object ArgumentParser {
           })
           .text("Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)"),
         arg[String]("<sourceFile>...").required()
-          .action( (sourceFile, args) => args.copy(sourceFile = Some(sourceFile)) ),
+          .action( (sourceFile, args) => args.copy(sourceFile = Some(sourceFile)) )
+          .text("Source file for the scp sub command. See README for details"),
         arg[String]("<targetFile>...").required()
-          .action( (targetFile, args) => args.copy(targetFile = Some(targetFile)) ),
+          .action( (targetFile, args) => args.copy(targetFile = Some(targetFile)) )
+          .text("Target file for the scp sub command. See README for details"),
         checkConfig( c =>
           if (c.isSelectionModeOldest && c.isSelectionModeNewest) failure("You cannot both specify --newest and --oldest")
           else success )
