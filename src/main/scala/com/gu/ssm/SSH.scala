@@ -92,7 +92,7 @@ object SSH {
 
   def sshCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], hostsFile: Option[File], useAgent: Option[Boolean]): (InstanceId, String) = {
     val targetPortSpecifications = targetInstancePortNumberOpt match {
-      case Some(portNumber) => s" -p $portNumber" // trailing space is important
+      case Some(portNumber) => s" -p ${portNumber}"
       case _ => ""
     }
     val theTTOptions = if(rawOutput) { " -t -t" }else{ "" }
@@ -135,6 +135,27 @@ object SSH {
          |""".stripMargin
     }
     (targetInstance.id, cmd)
+  }
+
+  // The first file goes to the second file
+  // The remote file is indicated by a colon
+
+  def scpCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], sourceFile: String, targetFile: String): (InstanceId, String) = {
+    val targetPortSpecifications = targetInstancePortNumberOpt match {
+      case Some(portNumber) => s" -p ${portNumber}"
+      case _ => ""
+    }
+    val theTTOptions = if(rawOutput) { " -t -t" }else{ "" }
+    val connectionString = s"scp${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} ${sourceFile} $user@$ipAddress:${targetFile}"
+    val cmd = if(rawOutput) {
+      s"$connectionString"
+    }else{
+      s"""
+         | # Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:
+         | ${connectionString};
+         |""".stripMargin
+    }
+    (instance.id, cmd)
   }
 
 }

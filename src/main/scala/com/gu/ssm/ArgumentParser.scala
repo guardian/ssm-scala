@@ -154,6 +154,57 @@ object ArgumentParser {
           else success )
       )
 
+    cmd("scp")
+      .action((_, c) => c.copy(mode = Some(SsmScp)))
+      .text("Secure Copy")
+      .children(
+        opt[String]('u', "user").optional()
+          .action((user, args) => args.copy(targetInstanceUser = Some(user)))
+          .text(s"Connect to remote host as this user (default: $targetInstanceDefaultUser)"),
+        opt[Int]("port").optional()
+          .action((port, args) => args.copy(targetInstancePortNumber = Some(port)))
+          .text(s"Connect to remote host on this port"),
+        opt[Unit]("newest").optional()
+          .action((_, args) => {
+            args.copy(
+              singleInstanceSelectionMode = SismNewest,
+              isSelectionModeNewest = true)
+          })
+          .text("Selects the newest instance if more than one instance was specified"),
+        opt[Unit]("oldest").optional()
+          .action((_, args) => {
+            args.copy(
+              singleInstanceSelectionMode = SismOldest,
+              isSelectionModeOldest = true)
+          })
+          .text("Selects the oldest instance if more than one instance was specified"),
+        opt[Unit]("private").optional()
+          .action((_, args) => {
+            args.copy(
+              usePrivateIpAddress = true)
+          })
+          .text("Use private IP address (must be routable via VPN Gateway)"),
+        opt[Unit]("raw").optional()
+          .action((_, args) => {
+            args.copy(
+              rawOutput = true)
+          })
+          .text("Unix pipe-able scp connection string"),
+        opt[Unit]('x', "execute").optional()
+          .action((_, args) => {
+            args.copy(
+              rawOutput = true)
+          })
+          .text("Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)"),
+        arg[String]("<sourceFile>...").required()
+          .action( (sourceFile, args) => args.copy(sourceFile = Some(sourceFile)) ),
+        arg[String]("<targetFile>...").required()
+          .action( (targetFile, args) => args.copy(targetFile = Some(targetFile)) ),
+        checkConfig( c =>
+          if (c.isSelectionModeOldest && c.isSelectionModeNewest) failure("You cannot both specify --newest and --oldest")
+          else success )
+      )
+
     checkConfig { args =>
       if (args.mode.isEmpty) Left("You must select a mode to use: cmd, repl or ssh")
       else if (args.toExecute.isEmpty && args.mode.contains(SsmCmd)) Left("You must provide commands to execute (src-file or cmd)")
