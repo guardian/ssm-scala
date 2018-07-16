@@ -12,7 +12,7 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     argParser.parse(args, Arguments.empty()) match {
-      case Some(Arguments(Some(executionTarget), toExecuteOpt, profile, region, Some(mode), Some(user), sism, _, _, onlyUsePrivateIP, rawOutput, bastionInstanceIdOpt, bastionPortNumberOpt, Some(bastionUser), targetInstancePortNumberOpt, useAgent, Some(sshdConfigPath), preferredAlgs)) =>
+      case Some(Arguments(Some(executionTarget), toExecuteOpt, profile, region, Some(mode), Some(user), sism, _, _, onlyUsePrivateIP, rawOutput, bastionInstanceIdOpt, bastionPortNumberOpt, Some(bastionUser), targetInstancePortNumberOpt, useAgent, Some(sshdConfigPath), preferredAlgs, sourceFileOpt, targetFileOpt)) =>
         val awsClients = Logic.getClients(profile, region)
         mode match {
           case SsmRepl =>
@@ -26,6 +26,11 @@ object Main {
             case None => setUpStandardSSH(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, targetInstancePortNumberOpt, sshdConfigPath, preferredAlgs, useAgent)
             case Some(bastionInstance) => setUpBastionSSH(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, bastionInstance, bastionPortNumberOpt, bastionUser, targetInstancePortNumberOpt, useAgent, sshdConfigPath, preferredAlgs)
           }
+          case SsmScp => (sourceFileOpt, targetFileOpt) match {
+            case (Some(sourceFile), Some(targetFile)) => setUpStandardScp(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, targetInstancePortNumberOpt, sshdConfigPath, preferredAlgs, useAgent, sourceFile, targetFile)
+            case _ => fail()
+          }
+
         }
       case Some(_) => fail()
       case None => System.exit(ArgumentsError.code) // parsing cmd line args failed, help message will have been displayed
@@ -105,6 +110,40 @@ object Main {
       targetHostKey <- Attempt.fromEither(Logic.getHostKeyEntry(targetResult, preferredAlgs))
       hostKeyFile <- SSH.writeHostKey((bastionAddress, bastionHostKey), (targetAddress, targetHostKey))
     } yield SSH.sshCmdBastion(rawOutput)(privateKeyFile, bastionInstance, targetInstance, user, bastionAddress, targetAddress, bastionPortNumberOpt, bastionUser, targetInstancePortNumberOpt, useAgent, Some(hostKeyFile))
+    val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
+    programResult.fold(UI.outputFailure, UI.sshOutput(rawOutput))
+    System.exit(programResult.fold(_.exitCode, _ => 0))
+  }
+
+  private def setUpStandardScp(
+                                awsClients: AWSClients,
+                                executionTarget: ExecutionTarget,
+                                user: String,
+                                sism: SingleInstanceSelectionMode,
+                                onlyUsePrivateIP: Boolean,
+                                rawOutput: Boolean,
+                                targetInstancePortNumberOpt: Option[Int],
+                                sshdConfigPath: String,
+                                preferredAlgs: List[String],
+                                useAgent: Option[Boolean],
+                                sourceFile: String,
+                                targetFile: String) = {
+    val fProgramResult = for {
+      config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, executionTarget)
+      sshArtifacts <- Attempt.fromEither(SSH.createKey())
+      (privateKeyFile, publicKey) = sshArtifacts
+      addPublicKeyCommand = SSH.addTaintedCommand(config.name) + SSH.addPublicKeyCommand(user, publicKey) + SSH.outputHostKeysCommand(sshdConfigPath)
+      removePublicKeyCommand = SSH.removePublicKeyCommand(user, publicKey)
+      instance <- Attempt.fromEither(Logic.getSSHInstance(config.targets, sism))
+      _ <- IO.tagAsTainted(instance.id, config.name, awsClients.ec2Client)
+      result <- IO.executeOnInstance(instance.id, config.name, addPublicKeyCommand, awsClients.ssmClient)
+      _ <- IO.executeOnInstanceAsync(instance.id, config.name, removePublicKeyCommand, awsClients.ssmClient)
+      hostKey <- Attempt.fromEither(Logic.getHostKeyEntry(result, preferredAlgs))
+      address <- Attempt.fromEither(Logic.getAddress(instance, onlyUsePrivateIP))
+      hostKeyFile <- SSH.writeHostKey((address, hostKey))
+    } yield {
+      SSH.scpCmdStandard(rawOutput)(privateKeyFile, instance, user, address, targetInstancePortNumberOpt, useAgent, Some(hostKeyFile), sourceFile, targetFile)
+    }
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
     programResult.fold(UI.outputFailure, UI.sshOutput(rawOutput))
     System.exit(programResult.fold(_.exitCode, _ => 0))

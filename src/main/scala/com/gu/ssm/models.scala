@@ -29,7 +29,9 @@ case class Arguments(
   targetInstancePortNumber: Option[Int],
   useAgent: Option[Boolean],
   sshdConfigPath: Option[String],
-  hostKeyAlgPreference: List[String]
+  hostKeyAlgPreference: List[String],
+  sourceFile: Option[String],
+  targetFile: Option[String]
 )
 
 object Arguments {
@@ -56,7 +58,9 @@ object Arguments {
     targetInstancePortNumber = None,
     useAgent = None,
     sshdConfigPath = Some(defaultSshdConfigPath),
-    hostKeyAlgPreference = defaultHostKeyAlgPreference
+    hostKeyAlgPreference = defaultHostKeyAlgPreference,
+    sourceFile = None,
+    targetFile = None
   )
 }
 
@@ -77,6 +81,7 @@ sealed trait SsmMode
 case object SsmCmd extends SsmMode
 case object SsmRepl extends SsmMode
 case object SsmSsh extends SsmMode
+case object SsmScp extends SsmMode
 
 case class CommandResult(stdOut: String, stdErr: String)
 

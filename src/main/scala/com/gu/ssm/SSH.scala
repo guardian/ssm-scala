@@ -92,7 +92,7 @@ object SSH {
 
   def sshCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], hostsFile: Option[File], useAgent: Option[Boolean]): (InstanceId, String) = {
     val targetPortSpecifications = targetInstancePortNumberOpt match {
-      case Some(portNumber) => s" -p $portNumber" // trailing space is important
+      case Some(portNumber) => s" -p ${portNumber}"
       case _ => ""
     }
     val theTTOptions = if(rawOutput) { " -t -t" }else{ "" }
@@ -135,6 +135,53 @@ object SSH {
          |""".stripMargin
     }
     (targetInstance.id, cmd)
+  }
+
+  // The first file goes to the second file
+  // The remote file is indicated by a colon
+
+  def scpCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], useAgent: Option[Boolean], hostsFile: Option[File], sourceFile: String, targetFile: String): (InstanceId, String) = {
+
+    def isRemote(filepath: String): Boolean = {
+      filepath.startsWith(":")
+    }
+
+    def exactlyOneArgumentIsRemote(filepath1: String, filepath2: String): Boolean = {
+      List(filepath1, filepath2).map(isRemote).count(_ == true) == 1
+    }
+
+    val targetPortSpecifications = targetInstancePortNumberOpt match {
+      case Some(portNumber) => s" -p ${portNumber}"
+      case _ => ""
+    }
+    val hostsFileString = hostsFile.map(file => s""" -o "UserKnownHostsFile $file" -o "StrictHostKeyChecking yes"""").getOrElse("")
+    val theTTOptions = if(rawOutput) { " -t -t" }else{ "" }
+    val useAgentFragment = useAgent match {
+      case None => ""
+      case Some(decision) => if(decision) " -A" else " -a"
+    }
+    // We are using colon to designate the remote file.
+    // There should be only one.
+    if (exactlyOneArgumentIsRemote(sourceFile, targetFile)) {
+      val connectionString =
+        if (isRemote(sourceFile)) {
+          s"""scp -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $user@$ipAddress:${sourceFile.stripPrefix(":")} ${targetFile}"""
+        }else {
+          s"""scp -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} ${sourceFile} $user@$ipAddress:${targetFile.stripPrefix(":")}"""
+        }
+      val cmd = if(rawOutput) {
+        s"$connectionString"
+      }else{
+        s"""
+           | # Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:
+           | ${connectionString};
+           |""".stripMargin
+      }
+      (instance.id, cmd)
+    }else{
+      (instance.id, "Incorrect remote server specifications, only one file should carry the starting colon")
+    }
+
   }
 
 }

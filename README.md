@@ -31,7 +31,7 @@ Otherwise, fetch the most recently released version of the program from the [Git
 The automatically generated help section for `ssm` is
 
 ```
-Usage: ssm [cmd|repl|ssh] [options]
+Usage: ssm [cmd|repl|ssh|scp] [options] <args>...
 
   -p, --profile <value>    The AWS profile name to use for authenticating this execution
   -i, --instances <value>  Specify the instance ID(s) on which the specified command(s) should execute
@@ -63,6 +63,17 @@ Create and upload a temporary ssh key
                            The location of the sshd configuration on the remote host (default: /etc/ssh/sshd_config)
   --host-key-alg-preference <value>
                            The preferred host key algorithms, can be specified multiple times - last is preferred (default: ecdsa-sha2-nistp256, ssh-rsa)
+Command: scp [options] <sourceFile>... <targetFile>...
+Secure Copy
+  -u, --user <value>       Connect to remote host as this user (default: ubuntu)
+  --port <value>           Connect to remote host on this port
+  --newest                 Selects the newest instance if more than one instance was specified
+  --oldest                 Selects the oldest instance if more than one instance was specified
+  --private                Use private IP address (must be routable via VPN Gateway)
+  --raw                    Unix pipe-able scp connection string
+  -x, --execute            Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)
+  <sourceFile>...          Source file for the scp sub command. See README for details
+  <targetFile>...          Target file for the scp sub command. See README for details
 ```
 
 There are two mandatory configuration items.
@@ -270,6 +281,40 @@ ssh-add /path/to/temp/private/key && \
     -t -t ssh ubuntu@target-ip-address;
 ```
  
+
+## Secure Copy
+
+**ssm** support the **scp** sub command for the secure transfer of files and directories.
+
+### Introduction
+
+An example of usage is 
+
+```
+./ssm scp -p account -t app,stack,stage /path/to/file1 :/path/to/file1
+``` 
+
+Which outputs
+
+```
+# simplified version
+scp -i /path/to/identity/file.tmp /path/to/file1 ubuntu@34.242.32.40:/path/to/file2;
+```
+
+Otherwise 
+
+```
+./ssm scp -p account -t app,stack,stage :/path/to/file1 /path/to/file2
+```
+
+outputs 
+
+```
+# simplified version
+scp -i /path/to/identity/file.tmp ubuntu@34.242.32.40:/path/to/file1 /path/to/file2 ;
+```
+
+The convention is: the first (left hand side) file is always the source and the second (right hand side) is always the target and the colon, indicates which one is on the remote server. 
 
 ## Development
 
