@@ -140,15 +140,20 @@ object SSH {
   // The first file goes to the second file
   // The remote file is indicated by a colon
 
-  def startingColonToInt(string: String): Integer = {
-    if(string.startsWith(":")) 1 else  0
-  }
-
   def removeFirstLetter(string: String): String = {
     string.substring(1)
   }
 
   def scpCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], useAgent: Option[Boolean], hostsFile: Option[File], sourceFile: String, targetFile: String): (InstanceId, String) = {
+
+    def isRemote(filepath: String): Boolean = {
+      filepath.startsWith(":")
+    }
+
+    def exactlyOneArgumentIsRemote(filepath1: String, filepath2: String): Boolean = {
+      List(filepath1, filepath2).map(isRemote).count(_ == true) == 1
+    }
+
     val targetPortSpecifications = targetInstancePortNumberOpt match {
       case Some(portNumber) => s" -p ${portNumber}"
       case _ => ""
@@ -161,9 +166,9 @@ object SSH {
     }
     // We are using colon to designate the remote file.
     // There should be only one.
-    if (startingColonToInt(sourceFile)+startingColonToInt(targetFile) == 1) {
+    if (exactlyOneArgumentIsRemote(sourceFile, targetFile)) {
       val connectionString =
-        if (startingColonToInt(sourceFile)==1) {
+        if (isRemote(sourceFile)) {
           s"""scp -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $user@$ipAddress:${removeFirstLetter(sourceFile)} ${targetFile}"""
         }else {
           s"""scp -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} ${sourceFile} $user@$ipAddress:${removeFirstLetter(targetFile)}"""
