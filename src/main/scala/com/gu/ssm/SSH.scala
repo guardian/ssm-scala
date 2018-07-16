@@ -169,9 +169,9 @@ object SSH {
     if (exactlyOneArgumentIsRemote(sourceFile, targetFile)) {
       val connectionString =
         if (isRemote(sourceFile)) {
-          s"""scp -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $user@$ipAddress:${removeFirstLetter(sourceFile)} ${targetFile}"""
+          s"""scp -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $user@$ipAddress:${sourceFile.stripPrefix(":")} ${targetFile}"""
         }else {
-          s"""scp -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} ${sourceFile} $user@$ipAddress:${removeFirstLetter(targetFile)}"""
+          s"""scp -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} ${sourceFile} $user@$ipAddress:${targetFile.stripPrefix(":")}"""
         }
       val cmd = if(rawOutput) {
         s"$connectionString"
