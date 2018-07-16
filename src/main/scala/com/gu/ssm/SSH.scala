@@ -140,10 +140,6 @@ object SSH {
   // The first file goes to the second file
   // The remote file is indicated by a colon
 
-  def removeFirstLetter(string: String): String = {
-    string.substring(1)
-  }
-
   def scpCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], useAgent: Option[Boolean], hostsFile: Option[File], sourceFile: String, targetFile: String): (InstanceId, String) = {
 
     def isRemote(filepath: String): Boolean = {
