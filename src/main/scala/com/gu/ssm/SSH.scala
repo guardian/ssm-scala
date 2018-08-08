@@ -26,13 +26,13 @@ object SSH {
       Right((privateKeyFile, publicKey))
     } catch {
       case e:IOException => Left(FailedAttempt(
-        Failure(s"Unable to create private key file", "Error creating key on disk", UnhandledError, None, Some(e))
+        Failure(s"Unable to create private key file", "Error creating key on disk", UnhandledError, e)
       ))
       case e:NoSuchAlgorithmException => Left(FailedAttempt(
-        Failure(s"Unable to create key pair with algorithm $keyAlgorithm", s"Error creating key with algorithm $keyAlgorithm", UnhandledError, None, Some(e))
+        Failure(s"Unable to create key pair with algorithm $keyAlgorithm", s"Error creating key with algorithm $keyAlgorithm", UnhandledError, e)
       ))
       case e:NoSuchProviderException => Left(FailedAttempt(
-        Failure(s"Unable to create key pair with provider $keyProvider", s"Error creating key with provider $keyProvider", UnhandledError, None, Some(e))
+        Failure(s"Unable to create key pair with provider $keyProvider", s"Error creating key with provider $keyProvider", UnhandledError, e)
       ))
     }
   }
@@ -55,7 +55,7 @@ object SSH {
       Attempt.Right(hostKeyFile)
     } catch {
       case e:IOException => Attempt.Left(
-        Failure(s"Unable to create host key file", "Error creating host key on disk", UnhandledError, None, Some(e))
+        Failure(s"Unable to create host key file", "Error creating host key on disk", UnhandledError, e)
       )
     }
   }
@@ -90,7 +90,7 @@ object SSH {
        | for hostkey in $$(grep ^HostKey $sshd_config_path| cut -d' ' -f 2); do cat $${hostkey}.pub; done
      """.stripMargin
 
-  def sshCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], hostsFile: Option[File], useAgent: Option[Boolean]): (InstanceId, String) = {
+  def sshCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], hostsFile: Option[File], useAgent: Option[Boolean]): (InstanceId, Seq[Output]) = {
     val targetPortSpecifications = targetInstancePortNumberOpt match {
       case Some(portNumber) => s" -p ${portNumber}"
       case _ => ""
@@ -102,18 +102,18 @@ object SSH {
     }
     val hostsFileString = hostsFile.map(file => s""" -o "UserKnownHostsFile $file" -o "StrictHostKeyChecking yes"""").getOrElse("")
     val connectionString = s"""ssh -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString$targetPortSpecifications -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $user@$ipAddress"""
-    val cmd = if(rawOutput) {
-      s"$connectionString"
-    }else{
-      s"""
-         | # Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:
-         | ${connectionString};
-         |""".stripMargin
+    val cmd = if (rawOutput) {
+      Seq(Out(s"$connectionString", newline = false))
+    } else {
+      Seq(
+        Metadata(s"# Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:"),
+        Out(s"$connectionString;")
+      )
     }
     (instance.id, cmd)
   }
 
-  def sshCmdBastion(rawOutput: Boolean)(privateKeyFile: File, bastionInstance: Instance, targetInstance: Instance, targetInstanceUser: String, bastionIpAddress: String, targetIpAddress: String, bastionPortNumberOpt: Option[Int], bastionUser: String, targetInstancePortNumberOpt: Option[Int], useAgent: Option[Boolean], hostsFile: Option[File]): (InstanceId, String) = {
+  def sshCmdBastion(rawOutput: Boolean)(privateKeyFile: File, bastionInstance: Instance, targetInstance: Instance, targetInstanceUser: String, bastionIpAddress: String, targetIpAddress: String, bastionPortNumberOpt: Option[Int], bastionUser: String, targetInstancePortNumberOpt: Option[Int], useAgent: Option[Boolean], hostsFile: Option[File]): (InstanceId, Seq[Output]) = {
     val bastionPort = bastionPortNumberOpt.getOrElse(22)
     val targetPort = targetInstancePortNumberOpt.getOrElse(22)
     val hostsFileString = hostsFile.map(file => s""" -o "UserKnownHostsFile $file" -o "StrictHostKeyChecking yes"""").getOrElse("")
@@ -127,12 +127,12 @@ object SSH {
     val connectionString =
       s"""ssh$useAgentFragment -o "IdentitiesOnly yes" $identityFragment$hostsFileString $proxyFragment$stringFragmentTTOptions $targetInstanceUser@$targetIpAddress"""
     val cmd = if(rawOutput) {
-      s"$connectionString"
+      Seq(Out(s"$connectionString", newline = false))
     }else{
-      s"""
-         | # Execute the following commands within the next $sshCredentialsLifetimeSeconds seconds:
-         | $connectionString;
-         |""".stripMargin
+      Seq(
+        Metadata(s"# Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:"),
+        Out(s"$connectionString;")
+      )
     }
     (targetInstance.id, cmd)
   }
@@ -140,7 +140,7 @@ object SSH {
   // The first file goes to the second file
   // The remote file is indicated by a colon
 
-  def scpCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], useAgent: Option[Boolean], hostsFile: Option[File], sourceFile: String, targetFile: String): (InstanceId, String) = {
+  def scpCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], useAgent: Option[Boolean], hostsFile: Option[File], sourceFile: String, targetFile: String): (InstanceId, Seq[Output]) = {
 
     def isRemote(filepath: String): Boolean = {
       filepath.startsWith(":")
@@ -170,16 +170,16 @@ object SSH {
           s"""scp -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} ${sourceFile} $user@$ipAddress:${targetFile.stripPrefix(":")}"""
         }
       val cmd = if(rawOutput) {
-        s"$connectionString"
+        Seq(Out(s"$connectionString", newline = false))
       }else{
-        s"""
-           | # Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:
-           | ${connectionString};
-           |""".stripMargin
+        Seq(
+          Metadata(s"# Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:"),
+          Out(s"$connectionString;")
+        )
       }
       (instance.id, cmd)
     }else{
-      (instance.id, "Incorrect remote server specifications, only one file should carry the starting colon")
+      (instance.id, Seq(Err("Incorrect remote server specifications, only one file should carry the starting colon")))
     }
 
   }

@@ -26,16 +26,16 @@ object AwsAsyncHandler {
         case _ => None
       }
       if (e.getMessage.contains("Request has expired")) {
-        Failure("expired AWS credentials", "Failed to request data from AWS, the temporary credentials have expired", AwsPermissionsError).attempt
+        Failure("expired AWS credentials", "Failed to request data from AWS, the temporary credentials have expired", AwsPermissionsError, e).attempt
       } else if (e.getMessage.contains("Unable to load AWS credentials from any provider in the chain")) {
-        Failure("Invalid AWS profile name (no credentials)", "No credentials found for the specified AWS profile", AwsPermissionsError).attempt
+        Failure("Invalid AWS profile name (no credentials)", "No credentials found for the specified AWS profile", AwsPermissionsError, e).attempt
       } else if (e.getMessage.contains("No AWS profile named")) {
-        Failure("Invalid AWS profile name (does not exist)", "The specified AWS profile does not exist", AwsPermissionsError).attempt
+        Failure("Invalid AWS profile name (does not exist)", "The specified AWS profile does not exist", AwsPermissionsError, e).attempt
       } else if (e.getMessage.contains("is not authorized to perform")) {
         val message = serviceNameOpt.fold("You do not have sufficient AWS privileges")(serviceName => s"You do not have sufficient privileges to perform actions on $serviceName")
-        Failure("insufficient permissions", message, AwsPermissionsError).attempt
+        Failure("insufficient permissions", message, AwsPermissionsError, e).attempt
       } else if (e.getMessage.contains("InvalidInstanceId")) {
-        Failure("InvalidInstanceId from AWS", "The specified instance(s) are not eligible targets (AWS said InvalidInstanceId)", AwsError).attempt
+        Failure("InvalidInstanceId from AWS", "The specified instance(s) are not eligible targets (AWS said InvalidInstanceId)", AwsError, e).attempt
       } else {
         val details = serviceNameOpt.fold("AWS unknown error, unknown service (check logs for stacktrace)") { serviceName =>
           s"AWS unknown error, service: $serviceName (check logs for stacktrace), ${e.getMessage}"
@@ -43,7 +43,7 @@ object AwsAsyncHandler {
         val friendlyMessage = serviceNameOpt.fold("Unknown error while making API calls to AWS.") { serviceName =>
           s"Unknown error while making an API call to AWS' $serviceName service, ${e.getMessage}"
         }
-        Failure(details, friendlyMessage, AwsError).attempt
+        Failure(details, friendlyMessage, AwsError, e).attempt
       }
     }
   }
