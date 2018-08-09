@@ -47,6 +47,9 @@ object ArgumentParser {
       args.copy(region = Region.getRegion(Regions.fromName(region)))
     } text "AWS region name (defaults to eu-west-1)"
 
+    opt[Unit]("verbose").action( (_, c) =>
+      c.copy(verbose = true) ).text("enable more verbose logging")
+
     cmd("cmd")
       .action((_, c) => c.copy(mode = Some(SsmCmd)))
       .text("Execute a single (bash) command, or a file containing bash commands")

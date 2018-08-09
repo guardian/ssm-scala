@@ -29,15 +29,15 @@ object Logic {
   }
 
   def checkInstancesList(config: SSMConfig): Either[FailedAttempt, Unit] = config.targets match {
-    case List() => Left(FailedAttempt(List(Failure("No instances found", "No instances found", ErrorCode, None, None))))
+    case List() => Left(FailedAttempt(List(Failure("No instances found", "No instances found", ErrorCode))))
     case _ => Right(Unit)
   }
 
   def getSSHInstance(instances: List[Instance], sism: SingleInstanceSelectionMode): Either[FailedAttempt, Instance] = {
     instances.sortBy(_.launchInstant) match {
-      case Nil => Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Could not find any instance", UnhandledError, None, None)))
+      case Nil => Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Could not find any instance", UnhandledError)))
       case instance :: Nil => Right(instance)
-      case _ :: _ :: _ if sism == SismUnspecified => Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${instances.map(_.id.id).mkString(", ")}.  Use --oldest or --newest to select single instance", UnhandledError, None, None)))
+      case _ :: _ :: _ if sism == SismUnspecified => Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${instances.map(_.id.id).mkString(", ")}.  Use --oldest or --newest to select single instance", UnhandledError)))
       case instances if sism == SismNewest => Right(instances.last) // we know that `instances` is not empty, otherwise first case would have applied, therefore calling `.last` is safe
       case instance :: _ if sism == SismOldest => Right(instance)
     }
@@ -72,7 +72,12 @@ object Logic {
         val preferenceOrderedKeys = preferredKeys.toList.sortBy(hostKey => preferredAlgs.indexWhere(hostKey.startsWith))
         preferenceOrderedKeys.headOption match {
           case Some(hostKey) => Right(hostKey)
-          case None => Left(Failure("host key with preferred algorithm not found", s"The remote instance did not return a host key with any preferred algorithm (preferred: $preferredAlgs)", NoHostKey).attempt)
+          case None => Left(Failure(
+            "host key with preferred algorithm not found",
+            s"The remote instance did not return a host key with any preferred algorithm (preferred: $preferredAlgs)",
+            NoHostKey,
+            s"The result lines returned from the host:\n${resultLines.mkString("\n")}"
+          ).attempt)
         }
       case Left(otherStatus) => Left(Failure("host keys not returned", s"The remote instance failed to return the host keys within the timeout window (status: $otherStatus)", AwsError).attempt)
     }

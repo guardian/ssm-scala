@@ -12,6 +12,7 @@ case class AppStackStage(app: String, stack: String, stage: String)
 case class ExecutionTarget(instances: Option[List[InstanceId]] = None, ass: Option[AppStackStage] = None)
 
 case class Arguments(
+  verbose: Boolean,
   executionTarget: Option[ExecutionTarget],
   toExecute: Option[String],
   profile: Option[String],
@@ -41,6 +42,7 @@ object Arguments {
   val defaultHostKeyAlgPreference = List("ecdsa-sha2-nistp256", "ssh-rsa")
 
   def empty(): Arguments = Arguments(
+    verbose = false,
     executionTarget = None,
     toExecute = None,
     profile = None,

@@ -11,16 +11,17 @@ object Main {
   private val maximumWaitTime = 25.seconds
 
   def main(args: Array[String]): Unit = {
-    argParser.parse(args, Arguments.empty()) match {
-      case Some(Arguments(Some(executionTarget), toExecuteOpt, profile, region, Some(mode), Some(user), sism, _, _, onlyUsePrivateIP, rawOutput, bastionInstanceIdOpt, bastionPortNumberOpt, Some(bastionUser), targetInstancePortNumberOpt, useAgent, Some(sshdConfigPath), preferredAlgs, sourceFileOpt, targetFileOpt)) =>
+    val (result, verbose) = argParser.parse(args, Arguments.empty()) match {
+      case Some(Arguments(verbose, Some(executionTarget), toExecuteOpt, profile, region, Some(mode), Some(user), sism, _, _, onlyUsePrivateIP, rawOutput, bastionInstanceIdOpt, bastionPortNumberOpt, Some(bastionUser), targetInstancePortNumberOpt, useAgent, Some(sshdConfigPath), preferredAlgs, sourceFileOpt, targetFileOpt)) =>
         val awsClients = Logic.getClients(profile, region)
-        mode match {
+        val r = mode match {
           case SsmRepl =>
             new InteractiveProgram(awsClients).main(profile, region, executionTarget)
+            ProgramResult(Nil)
           case SsmCmd =>
             toExecuteOpt match {
               case Some(toExecute) => execute(awsClients, executionTarget, toExecute)
-              case _ => fail()
+              case _ => fail
             }
           case SsmSsh => bastionInstanceIdOpt match {
             case None => setUpStandardSSH(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, targetInstancePortNumberOpt, sshdConfigPath, preferredAlgs, useAgent)
@@ -28,18 +29,21 @@ object Main {
           }
           case SsmScp => (sourceFileOpt, targetFileOpt) match {
             case (Some(sourceFile), Some(targetFile)) => setUpStandardScp(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, targetInstancePortNumberOpt, sshdConfigPath, preferredAlgs, useAgent, sourceFile, targetFile)
-            case _ => fail()
+            case _ => fail
           }
-
         }
-      case Some(_) => fail()
-      case None => System.exit(ArgumentsError.code) // parsing cmd line args failed, help message will have been displayed
+        r -> verbose
+      case Some(_) => fail -> false
+      case None => ProgramResult(Nil, Some(ArgumentsError)) -> false // parsing cmd line args failed, help message will have been displayed
     }
+
+    val ui = new UI(verbose)
+    ui.printAll(result.output)
+    System.exit(result.nonZeroExitCode.map(_.code).getOrElse(0))
   }
 
-  private def fail(): Unit = {
-    UI.printErr("Impossible application state! This should be enforced by the CLI parser.  Did not receive valid instructions")
-    System.exit(UnhandledError.code)
+  private def fail: ProgramResult = {
+    ProgramResult(Seq(Err("Impossible application state! This should be enforced by the CLI parser.  Did not receive valid instructions")), Some(UnhandledError))
   }
 
   private def setUpStandardSSH(
@@ -70,8 +74,7 @@ object Main {
       SSH.sshCmdStandard(rawOutput)(privateKeyFile, instance, user, address, targetInstancePortNumberOpt, Some(hostKeyFile), useAgent)
     }
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
-    programResult.fold(UI.outputFailure, UI.sshOutput(rawOutput))
-    System.exit(programResult.fold(_.exitCode, _ => 0))
+    ProgramResult(programResult.map(UI.sshOutput(rawOutput)))
   }
 
   private def setUpBastionSSH(
@@ -111,8 +114,7 @@ object Main {
       hostKeyFile <- SSH.writeHostKey((bastionAddress, bastionHostKey), (targetAddress, targetHostKey))
     } yield SSH.sshCmdBastion(rawOutput)(privateKeyFile, bastionInstance, targetInstance, user, bastionAddress, targetAddress, bastionPortNumberOpt, bastionUser, targetInstancePortNumberOpt, useAgent, Some(hostKeyFile))
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
-    programResult.fold(UI.outputFailure, UI.sshOutput(rawOutput))
-    System.exit(programResult.fold(_.exitCode, _ => 0))
+    ProgramResult(programResult.map(UI.sshOutput(rawOutput)))
   }
 
   private def setUpStandardScp(
@@ -145,11 +147,10 @@ object Main {
       SSH.scpCmdStandard(rawOutput)(privateKeyFile, instance, user, address, targetInstancePortNumberOpt, useAgent, Some(hostKeyFile), sourceFile, targetFile)
     }
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
-    programResult.fold(UI.outputFailure, UI.sshOutput(rawOutput))
-    System.exit(programResult.fold(_.exitCode, _ => 0))
+    ProgramResult(programResult.map(UI.sshOutput(rawOutput)))
   }
 
-  private def execute(awsClients: AWSClients, executionTarget: ExecutionTarget, toExecute: String): Unit = {
+  private def execute(awsClients: AWSClients, executionTarget: ExecutionTarget, toExecute: String): ProgramResult = {
     val fProgramResult = for {
       config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, executionTarget)
       _ <- Attempt.fromEither(Logic.checkInstancesList(config))
@@ -157,7 +158,6 @@ object Main {
       incorrectInstancesFromInstancesTag = Logic.computeIncorrectInstances(executionTarget, results.map(_._1))
     } yield ResultsWithInstancesNotFound(results,incorrectInstancesFromInstancesTag)
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
-    programResult.fold(UI.outputFailure, UI.output)
-    System.exit(programResult.fold(_.exitCode, _ => 0))
+    ProgramResult(programResult.map(UI.output))
   }
 }
