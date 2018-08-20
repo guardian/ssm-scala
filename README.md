@@ -360,15 +360,7 @@ To use ssm-scala against the instances of your project, three things need to hap
 
 1. Update your base image in AMIgo with the **ssm-agent** role.
 
-2. Add the following declaration 
-
-	```
-	ManagedPolicyArns: [ "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM" ]
-	```
-
-	under the `AWS::IAM::Role`'s `Properties` to your cloudformation. 
-	
-	Alternatively, considering that this policy might not work for instances requiring limited set of permissions, you can add (an adaptation of) the following `AWS::IAM::Policy` to your cloudformation file
+2. Add permissions with a policy like:
 	
 	```
 	  ExampleAppSSMRunCommandPolicy:
