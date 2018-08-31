@@ -85,9 +85,9 @@ object SSH {
       | /bin/sed -i '/${publicKey.replaceAll("/", "\\\\/")}/d' /home/$user/.ssh/authorized_keys;
       |""".stripMargin
 
-  def outputHostKeysCommand(sshd_config_path: String): String =
-    s"""
-       | for hostkey in $$(grep ^HostKey $sshd_config_path| cut -d' ' -f 2); do cat $${hostkey}.pub; done
+  def outputHostKeysCommand(): String =
+    """
+       | for hostkey in $(sshd -T 2> /dev/null |grep "^hostkey " | cut -d ' ' -f 2); do cat $hostkey.pub; done
      """.stripMargin
 
   def sshCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], hostsFile: Option[File], useAgent: Option[Boolean]): (InstanceId, Seq[Output]) = {
