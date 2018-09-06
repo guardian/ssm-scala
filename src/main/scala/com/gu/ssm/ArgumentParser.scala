@@ -3,7 +3,7 @@ package com.gu.ssm
 import java.io.File
 
 import com.amazonaws.regions.{Region, Regions}
-import com.gu.ssm.Arguments.{targetInstanceDefaultUser, bastionDefaultUser, defaultSshdConfigPath, defaultHostKeyAlgPreference}
+import com.gu.ssm.Arguments.{targetInstanceDefaultUser, bastionDefaultUser, defaultHostKeyAlgPreference}
 import scopt.OptionParser
 
 
@@ -146,9 +146,6 @@ object ArgumentParser {
         opt[String]("bastion-user").optional()
           .action((bastionUser, args) => args.copy(bastionUser = Some(bastionUser)))
           .text(s"Connect to bastion as this user (default: $bastionDefaultUser)"),
-        opt[String]("sshd-config-path").optional()
-          .action((sshdConfigPath, args) => args.copy(sshdConfigPath = Some(sshdConfigPath)))
-          .text(s"The location of the sshd configuration on the remote host (default: $defaultSshdConfigPath)"),
         opt[String]("host-key-alg-preference").optional().unbounded()
           .action((alg, args) => args.copy(hostKeyAlgPreference = alg :: args.hostKeyAlgPreference))
           .text(s"The preferred host key algorithms, can be specified multiple times - last is preferred (default: ${defaultHostKeyAlgPreference.mkString(", ")})"),

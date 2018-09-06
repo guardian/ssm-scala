@@ -59,8 +59,6 @@ Create and upload a temporary ssh key
                            Connect through the given bastion identified by its tags; implies -a (use agent) unless followed by -A
   --bastion-port <value>   Connect through the given bastion at a given port
   --bastion-user <value>   Connect to bastion as this user (default: ubuntu)
-  --sshd-config-path <value>
-                           The location of the sshd configuration on the remote host (default: /etc/ssh/sshd_config)
   --host-key-alg-preference <value>
                            The preferred host key algorithms, can be specified multiple times - last is preferred (default: ecdsa-sha2-nistp256, ssh-rsa)
 Command: scp [options] <sourceFile>... <targetFile>...
