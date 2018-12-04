@@ -256,11 +256,11 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
 
           "target file is remote" in {
             val (_, command) = scpCmdStandard(true)(file, instance, "user4", "34.1.1.10", None, Some(false), None, "/path/to/sourceFile", ":/path/to/targetFile")
-            command.head.text should equal ("""scp -o "IdentitiesOnly yes" -a -i /banana -t -t /path/to/sourceFile user4@34.1.1.10:/path/to/targetFile""")
+            command.head.text should equal ("""scp -o "IdentitiesOnly yes" -a -i /banana /path/to/sourceFile user4@34.1.1.10:/path/to/targetFile""")
           }
           "source file is remote" in {
             val (_, command) = scpCmdStandard(true)(file, instance, "user4", "34.1.1.10", None, Some(false), None, ":/path/to/sourceFile", "/path/to/targetFile")
-            command.head.text should equal ("""scp -o "IdentitiesOnly yes" -a -i /banana -t -t user4@34.1.1.10:/path/to/sourceFile /path/to/targetFile""")
+            command.head.text should equal ("""scp -o "IdentitiesOnly yes" -a -i /banana user4@34.1.1.10:/path/to/sourceFile /path/to/targetFile""")
           }
           "incorrect specifications in" in {
             val (_, command) = scpCmdStandard(true)(file, instance, "user4", "34.1.1.10", None, Some(false), None, ":/path/to/sourceFile", ":/path/to/targetFile")
@@ -270,12 +270,12 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
 
         "is correctly formed without port specification" in {
           val (_, command) = scpCmdStandard(true)(file, instance, "user4", "34.1.1.10", None, Some(false), None, ":/path/to/sourceFile", "/path/to/targetFile")
-          command.head.text should equal ("""scp -o "IdentitiesOnly yes" -a -i /banana -t -t user4@34.1.1.10:/path/to/sourceFile /path/to/targetFile""")
+          command.head.text should equal ("""scp -o "IdentitiesOnly yes" -a -i /banana user4@34.1.1.10:/path/to/sourceFile /path/to/targetFile""")
         }
 
         "is correctly formed with port specification" in {
           val (_, command) = scpCmdStandard(true)(file, instance, "user4", "34.1.1.10", Some(2345), Some(false), None, "/path/to/sourceFile", ":/path/to/targetFile")
-          command.head.text should equal ("""scp -o "IdentitiesOnly yes" -a -p 2345 -i /banana -t -t /path/to/sourceFile user4@34.1.1.10:/path/to/targetFile""")
+          command.head.text should equal ("""scp -o "IdentitiesOnly yes" -a -p 2345 -i /banana /path/to/sourceFile user4@34.1.1.10:/path/to/targetFile""")
         }
       }
     }
