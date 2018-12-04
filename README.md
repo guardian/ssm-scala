@@ -61,7 +61,7 @@ Create and upload a temporary ssh key
   --bastion-user <value>   Connect to bastion as this user (default: ubuntu)
   --host-key-alg-preference <value>
                            The preferred host key algorithms, can be specified multiple times - last is preferred (default: ecdsa-sha2-nistp256, ssh-rsa)
-Command: scp [options] <sourceFile>... <targetFile>...
+Command: scp [options] [:]<sourceFile>... [:]<targetFile>...
 Secure Copy
   -u, --user <value>       Connect to remote host as this user (default: ubuntu)
   --port <value>           Connect to remote host on this port
