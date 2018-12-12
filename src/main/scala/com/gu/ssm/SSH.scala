@@ -155,7 +155,6 @@ object SSH {
       case _ => ""
     }
     val hostsFileString = hostsFile.map(file => s""" -o "UserKnownHostsFile $file" -o "StrictHostKeyChecking yes"""").getOrElse("")
-    val theTTOptions = if(rawOutput) { " -t -t" }else{ "" }
     val useAgentFragment = useAgent match {
       case None => ""
       case Some(decision) => if(decision) " -A" else " -a"
@@ -165,9 +164,9 @@ object SSH {
     if (exactlyOneArgumentIsRemote(sourceFile, targetFile)) {
       val connectionString =
         if (isRemote(sourceFile)) {
-          s"""scp -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $user@$ipAddress:${sourceFile.stripPrefix(":")} ${targetFile}"""
+          s"""scp -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString} $user@$ipAddress:${sourceFile.stripPrefix(":")} ${targetFile}"""
         }else {
-          s"""scp -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} ${sourceFile} $user@$ipAddress:${targetFile.stripPrefix(":")}"""
+          s"""scp -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString} ${sourceFile} $user@$ipAddress:${targetFile.stripPrefix(":")}"""
         }
       val cmd = if(rawOutput) {
         Seq(Out(s"$connectionString", newline = false))
