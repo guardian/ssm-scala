@@ -354,11 +354,9 @@ To release a new version of `ssm` perform the two following tasks:
 
 ## How to use SSM Scala with your own project
 
-To use ssm-scala against the instances of your project, three things need to happen:
+To use ssm-scala against the instances of your project, the following needs to happen:
 
-1. Update your base image in AMIgo with the **ssm-agent** role.
-
-2. Add permissions with a policy like:
+1. Add permissions with a policy like:
 	
 	```
 	  ExampleAppSSMRunCommandPolicy:
@@ -387,7 +385,7 @@ To use ssm-scala against the instances of your project, three things need to hap
 	
 	Example stolen from the [Security-HQ cloudformation](https://github.com/guardian/security-hq/blob/master/cloudformation/security-hq.template.yaml) file.
 
-3. Download the executable from the [project release page](https://github.com/guardian/ssm-scala/releases). Instructions on usage can be found in the above sections.
+2. Download the executable from the [project release page](https://github.com/guardian/ssm-scala/releases). Instructions on usage can be found in the above sections.
 
 Note: SSM needs the target server to have outbound port 443 (ssm-agent's communication with AWS's SSM and EC2 Messages endpoints). 
 
