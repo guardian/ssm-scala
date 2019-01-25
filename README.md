@@ -113,13 +113,13 @@ ssm ssh -i i-0123456789abcdef0 -p composer -x
 and 
 
 ```bash
-eval $(ssh -i i-0123456789abcdef0 -p composer --raw)
+eval $(ssm ssh -i i-0123456789abcdef0 -p composer --raw)
 ```
 
 This helps to undertake actions such as construct tunnels. For example to access a remote postgres server:
 
 ```bash
-eval $(ssh -i i-0123456789abcdef0 -p composer --raw) -L 5432:my-postgres-server-hostname:5432
+eval $(ssm ssh -i i-0123456789abcdef0 -p composer --raw) -L 5432:my-postgres-server-hostname:5432
 ```
 
 Note the use of `eval` in these examples - this is required in order to correctly parse the nested quotes that are output as part of the raw command. If you don't use `eval` then you are likely to see an error message such as `ssh: Could not resolve hostname yes": nodename nor servname provided, or not known`. 
