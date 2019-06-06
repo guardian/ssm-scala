@@ -39,6 +39,7 @@ Usage: ssm [cmd|repl|ssh|scp] [options] <args>...
   -r, --region <value>     AWS region name (defaults to eu-west-1)
 Command: cmd [options]
 Execute a single (bash) command, or a file containing bash commands
+  -u, --user <value>       Execute the command on the remote host as this user (default: ubuntu)
   -c, --cmd <value>        A bash command to execute
   -f, --file <value>       A file containing bash commands to execute
 Command: repl

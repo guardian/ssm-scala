@@ -54,6 +54,9 @@ object ArgumentParser {
       .action((_, c) => c.copy(mode = Some(SsmCmd)))
       .text("Execute a single (bash) command, or a file containing bash commands")
       .children(
+        opt[String]('u', "user").optional()
+          .action((user, args) => args.copy(targetInstanceUser = Some(user)))
+          .text(s"Execute command on remote host as this user (default: $targetInstanceDefaultUser)"),
         opt[String]('c', "cmd").optional()
           .action((cmd, args) => args.copy(toExecute = Some(cmd)))
           .text("A bash command to execute"),

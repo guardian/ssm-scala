@@ -20,7 +20,7 @@ object Main {
             ProgramResult(Nil)
           case SsmCmd =>
             toExecuteOpt match {
-              case Some(toExecute) => execute(awsClients, executionTarget, toExecute)
+              case Some(toExecute) => execute(awsClients, executionTarget, user, toExecute)
               case _ => fail
             }
           case SsmSsh => bastionInstanceIdOpt match {
@@ -147,11 +147,11 @@ object Main {
     ProgramResult(programResult.map(UI.sshOutput(rawOutput)))
   }
 
-  private def execute(awsClients: AWSClients, executionTarget: ExecutionTarget, toExecute: String): ProgramResult = {
+  private def execute(awsClients: AWSClients, executionTarget: ExecutionTarget, user: String, toExecute: String): ProgramResult = {
     val fProgramResult = for {
       config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, executionTarget)
       _ <- Attempt.fromEither(Logic.checkInstancesList(config))
-      results <- IO.executeOnInstances(config.targets.map(i => i.id), config.name, toExecute, awsClients.ssmClient)
+      results <- IO.executeOnInstances(config.targets.map(i => i.id), user, toExecute, awsClients.ssmClient)
       incorrectInstancesFromInstancesTag = Logic.computeIncorrectInstances(executionTarget, results.map(_._1))
     } yield ResultsWithInstancesNotFound(results,incorrectInstancesFromInstancesTag)
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
