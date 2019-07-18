@@ -4,6 +4,8 @@ import org.scalatest.{EitherValues, FreeSpec, Matchers}
 import java.io.File
 import java.time.Instant
 
+import com.amazonaws.regions.{Region, Regions}
+
 class SSHTest extends FreeSpec with Matchers with EitherValues {
 
   "create add key command" - {
@@ -55,6 +57,7 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
     import SSH.sshCmdStandard
     import SSH.sshCmdBastion
     import SSH.sshCredentialsLifetimeSeconds
+    val EU_WEST_1 = Region.getRegion(Regions.EU_WEST_1)
 
     "create standard ssh command" - {
 
@@ -62,40 +65,40 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
       val instance = Instance(InstanceId("raspberry"), None, Some("34.1.1.10"), "10.1.1.10", Instant.now())
 
       "instance id is correct" in {
-        val (instanceId, _) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", None, None, Some(false))
+        val (instanceId, _) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", None, None, Some(false), None, EU_WEST_1)
         instanceId.id shouldEqual "raspberry"
       }
 
       "user command" - {
         "is correctly formed without port specification" in {
-          val (_, command) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", None, None, Some(false))
+          val (_, command) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", None, None, Some(false), None, EU_WEST_1)
           command should contain (Out("""ssh -o "IdentitiesOnly yes" -a -i /banana user4@34.1.1.10;"""))
         }
 
         "is correctly formed with port specification" in {
-          val (_, command) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", Some(2345), None, Some(false))
+          val (_, command) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", Some(2345), None, Some(false), None, EU_WEST_1)
           command should contain (Out("""ssh -o "IdentitiesOnly yes" -a -p 2345 -i /banana user4@34.1.1.10;"""))
         }
 
         "is correctly formed with a hosts file" in {
-          val (_, command) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", Some(2345), Some(new File("/tmp/hostsfile")), Some(false))
+          val (_, command) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", Some(2345), Some(new File("/tmp/hostsfile")), Some(false), None, EU_WEST_1)
           command should contain (Out("""ssh -o "IdentitiesOnly yes" -a -o "UserKnownHostsFile /tmp/hostsfile" -o "StrictHostKeyChecking yes" -p 2345 -i /banana user4@34.1.1.10;"""))
         }
 
         "is correctly formed with agent forwarding file" in {
-          val (_, command) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", Some(2345), None, Some(true))
+          val (_, command) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", Some(2345), None, Some(true), None, EU_WEST_1)
           command should contain (Out("""ssh -o "IdentitiesOnly yes" -A -p 2345 -i /banana user4@34.1.1.10;"""))
         }
       }
 
       "machine command" - {
         "is correctly formed without port specification" in {
-          val (_, command) = sshCmdStandard(true)(file, instance, "user4", "34.1.1.10", None, None, Some(false))
+          val (_, command) = sshCmdStandard(true)(file, instance, "user4", "34.1.1.10", None, None, Some(false), None, EU_WEST_1)
           command.head.text should equal ("""ssh -o "IdentitiesOnly yes" -a -i /banana -t -t user4@34.1.1.10""")
         }
 
         "is correctly formed with port specification" in {
-          val (_, command) = sshCmdStandard(true)(file, instance, "user4", "34.1.1.10", Some(2345), None, Some(false))
+          val (_, command) = sshCmdStandard(true)(file, instance, "user4", "34.1.1.10", Some(2345), None, Some(false), None, EU_WEST_1)
           command.head.text should equal ("""ssh -o "IdentitiesOnly yes" -a -p 2345 -i /banana -t -t user4@34.1.1.10""")
         }
       }

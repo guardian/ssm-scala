@@ -1,5 +1,6 @@
 package com.gu.ssm
 
+import com.amazonaws.regions.Region
 import com.gu.ssm.utils.attempt._
 
 import scala.concurrent.duration._
@@ -24,7 +25,7 @@ object Main {
               case _ => fail
             }
           case SsmSsh => bastionInstanceIdOpt match {
-            case None => setUpStandardSSH(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, targetInstancePortNumberOpt, preferredAlgs, useAgent)
+            case None => setUpStandardSSH(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, targetInstancePortNumberOpt, preferredAlgs, useAgent, profile, region)
             case Some(bastionInstance) => setUpBastionSSH(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, bastionInstance, bastionPortNumberOpt, bastionUser, targetInstancePortNumberOpt, useAgent, preferredAlgs)
           }
           case SsmScp => (sourceFileOpt, targetFileOpt) match {
@@ -55,7 +56,9 @@ object Main {
     rawOutput: Boolean,
     targetInstancePortNumberOpt: Option[Int],
     preferredAlgs: List[String],
-    useAgent: Option[Boolean]) = {
+    useAgent: Option[Boolean],
+    profile: Option[String],
+    region: Region) = {
     val fProgramResult = for {
       config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, executionTarget)
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
@@ -70,7 +73,7 @@ object Main {
       address <- Attempt.fromEither(Logic.getAddress(instance, onlyUsePrivateIP))
       hostKeyFile <- SSH.writeHostKey((address, hostKey))
     } yield {
-      SSH.sshCmdStandard(rawOutput)(privateKeyFile, instance, user, address, targetInstancePortNumberOpt, Some(hostKeyFile), useAgent)
+      SSH.sshCmdStandard(rawOutput)(privateKeyFile, instance, user, address, targetInstancePortNumberOpt, Some(hostKeyFile), useAgent, profile, region)
     }
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
     ProgramResult(programResult.map(UI.sshOutput(rawOutput)))
