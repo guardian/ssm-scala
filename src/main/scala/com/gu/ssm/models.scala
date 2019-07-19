@@ -31,7 +31,8 @@ case class Arguments(
   useAgent: Option[Boolean],
   hostKeyAlgPreference: List[String],
   sourceFile: Option[String],
-  targetFile: Option[String]
+  targetFile: Option[String],
+  tunnelThroughSystemsManager: Boolean
 )
 
 object Arguments {
@@ -59,7 +60,8 @@ object Arguments {
     useAgent = None,
     hostKeyAlgPreference = defaultHostKeyAlgPreference,
     sourceFile = None,
-    targetFile = None
+    targetFile = None,
+    tunnelThroughSystemsManager = false
   )
 }
 

@@ -152,6 +152,11 @@ object ArgumentParser {
         opt[String]("host-key-alg-preference").optional().unbounded()
           .action((alg, args) => args.copy(hostKeyAlgPreference = alg :: args.hostKeyAlgPreference))
           .text(s"The preferred host key algorithms, can be specified multiple times - last is preferred (default: ${defaultHostKeyAlgPreference.mkString(", ")})"),
+
+        opt[Unit]("ssm-tunnel").optional()
+          .action((_, args) => args.copy(tunnelThroughSystemsManager = true))
+          .text("Connect to the host proxying through AWS Systems Manager, rather than directly to port 22. Requires Systems Manager Agent > 2.3.672.0 to be installed."),
+
         checkConfig( c =>
           if (c.isSelectionModeOldest && c.isSelectionModeNewest) failure("You cannot both specify --newest and --oldest")
           else success )

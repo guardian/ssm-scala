@@ -91,7 +91,7 @@ object SSH {
        | for hostkey in $(sshd -T 2> /dev/null |grep "^hostkey " | cut -d ' ' -f 2); do cat $hostkey.pub; done
      """.stripMargin
 
-  def sshCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], hostsFile: Option[File], useAgent: Option[Boolean], profile: Option[String], region: Region): (InstanceId, Seq[Output]) = {
+  def sshCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], hostsFile: Option[File], useAgent: Option[Boolean], profile: Option[String], region: Region, tunnelThroughSystemsManager: Boolean): (InstanceId, Seq[Output]) = {
     val targetPortSpecifications = targetInstancePortNumberOpt match {
       case Some(portNumber) => s" -p ${portNumber}"
       case _ => ""
@@ -102,7 +102,7 @@ object SSH {
       case Some(decision) => if(decision) " -A" else " -a"
     }
     val hostsFileString = hostsFile.map(file => s""" -o "UserKnownHostsFile $file" -o "StrictHostKeyChecking yes"""").getOrElse("")
-    val proxyFragment = s""" -o "ProxyCommand sh -c \\"aws ssm start-session --target ${instance.id.id} --document-name AWS-StartSSHSession --parameters 'portNumber=22' --region $region ${profile.map("--profile " + _).getOrElse("")}\\"""""
+    val proxyFragment = if(tunnelThroughSystemsManager) { s""" -o "ProxyCommand sh -c \\"aws ssm start-session --target ${instance.id.id} --document-name AWS-StartSSHSession --parameters 'portNumber=22' --region $region ${profile.map("--profile " + _).getOrElse("")}\\""""" } else { "" }
     val connectionString = s"""ssh -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString$targetPortSpecifications$proxyFragment -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $user@$ipAddress"""
 
     val cmd = if (rawOutput) {

@@ -65,41 +65,48 @@ class SSHTest extends FreeSpec with Matchers with EitherValues {
       val instance = Instance(InstanceId("raspberry"), None, Some("34.1.1.10"), "10.1.1.10", Instant.now())
 
       "instance id is correct" in {
-        val (instanceId, _) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", None, None, Some(false), None, EU_WEST_1)
+        val (instanceId, _) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", None, None, Some(false), None, EU_WEST_1, tunnelThroughSystemsManager = false)
         instanceId.id shouldEqual "raspberry"
       }
 
       "user command" - {
         "is correctly formed without port specification" in {
-          val (_, command) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", None, None, Some(false), None, EU_WEST_1)
+          val (_, command) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", None, None, Some(false), None, EU_WEST_1, tunnelThroughSystemsManager = false)
           command should contain (Out("""ssh -o "IdentitiesOnly yes" -a -i /banana user4@34.1.1.10;"""))
         }
 
         "is correctly formed with port specification" in {
-          val (_, command) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", Some(2345), None, Some(false), None, EU_WEST_1)
+          val (_, command) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", Some(2345), None, Some(false), None, EU_WEST_1, tunnelThroughSystemsManager = false)
           command should contain (Out("""ssh -o "IdentitiesOnly yes" -a -p 2345 -i /banana user4@34.1.1.10;"""))
         }
 
         "is correctly formed with a hosts file" in {
-          val (_, command) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", Some(2345), Some(new File("/tmp/hostsfile")), Some(false), None, EU_WEST_1)
+          val (_, command) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", Some(2345), Some(new File("/tmp/hostsfile")), Some(false), None, EU_WEST_1, tunnelThroughSystemsManager = false)
           command should contain (Out("""ssh -o "IdentitiesOnly yes" -a -o "UserKnownHostsFile /tmp/hostsfile" -o "StrictHostKeyChecking yes" -p 2345 -i /banana user4@34.1.1.10;"""))
         }
 
         "is correctly formed with agent forwarding file" in {
-          val (_, command) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", Some(2345), None, Some(true), None, EU_WEST_1)
+          val (_, command) = sshCmdStandard(false)(file, instance, "user4", "34.1.1.10", Some(2345), None, Some(true), None, EU_WEST_1, tunnelThroughSystemsManager = false)
           command should contain (Out("""ssh -o "IdentitiesOnly yes" -A -p 2345 -i /banana user4@34.1.1.10;"""))
         }
       }
 
       "machine command" - {
         "is correctly formed without port specification" in {
-          val (_, command) = sshCmdStandard(true)(file, instance, "user4", "34.1.1.10", None, None, Some(false), None, EU_WEST_1)
+          val (_, command) = sshCmdStandard(true)(file, instance, "user4", "34.1.1.10", None, None, Some(false), None, EU_WEST_1, tunnelThroughSystemsManager = false)
           command.head.text should equal ("""ssh -o "IdentitiesOnly yes" -a -i /banana -t -t user4@34.1.1.10""")
         }
 
         "is correctly formed with port specification" in {
-          val (_, command) = sshCmdStandard(true)(file, instance, "user4", "34.1.1.10", Some(2345), None, Some(false), None, EU_WEST_1)
+          val (_, command) = sshCmdStandard(true)(file, instance, "user4", "34.1.1.10", Some(2345), None, Some(false), None, EU_WEST_1, tunnelThroughSystemsManager = false)
           command.head.text should equal ("""ssh -o "IdentitiesOnly yes" -a -p 2345 -i /banana -t -t user4@34.1.1.10""")
+        }
+      }
+
+      "ssm tunnel" - {
+        "is correctly formed" in {
+          val (_, command) = sshCmdStandard(true)(file, instance, "user4", "34.1.1.10", None, None, Some(false), None, EU_WEST_1, tunnelThroughSystemsManager = true)
+          command.head.text should equal ("""ssh -o "IdentitiesOnly yes" -a -o "ProxyCommand sh -c \"aws ssm start-session --target raspberry --document-name AWS-StartSSHSession --parameters 'portNumber=22' --region eu-west-1 \"" -i /banana -t -t user4@34.1.1.10""")
         }
       }
     }
