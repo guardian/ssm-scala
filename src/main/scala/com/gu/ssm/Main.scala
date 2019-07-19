@@ -29,7 +29,7 @@ object Main {
             case Some(bastionInstance) => setUpBastionSSH(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, bastionInstance, bastionPortNumberOpt, bastionUser, targetInstancePortNumberOpt, useAgent, preferredAlgs)
           }
           case SsmScp => (sourceFileOpt, targetFileOpt) match {
-            case (Some(sourceFile), Some(targetFile)) => setUpStandardScp(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, targetInstancePortNumberOpt, preferredAlgs, useAgent, sourceFile, targetFile)
+            case (Some(sourceFile), Some(targetFile)) => setUpStandardScp(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, targetInstancePortNumberOpt, preferredAlgs, useAgent, sourceFile, targetFile, profile, region, tunnelThroughSystemsManager)
             case _ => fail
           }
         }
@@ -130,7 +130,10 @@ object Main {
                                 preferredAlgs: List[String],
                                 useAgent: Option[Boolean],
                                 sourceFile: String,
-                                targetFile: String) = {
+                                targetFile: String,
+                                profile: Option[String],
+                                region: Region,
+                                tunnelThroughSystemsManager: Boolean) = {
     val fProgramResult = for {
       config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, executionTarget)
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
@@ -145,7 +148,7 @@ object Main {
       address <- Attempt.fromEither(Logic.getAddress(instance, onlyUsePrivateIP))
       hostKeyFile <- SSH.writeHostKey((address, hostKey))
     } yield {
-      SSH.scpCmdStandard(rawOutput)(privateKeyFile, instance, user, address, targetInstancePortNumberOpt, useAgent, Some(hostKeyFile), sourceFile, targetFile)
+      SSH.scpCmdStandard(rawOutput)(privateKeyFile, instance, user, address, targetInstancePortNumberOpt, useAgent, Some(hostKeyFile), sourceFile, targetFile, profile, region, tunnelThroughSystemsManager)
     }
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
     ProgramResult(programResult.map(UI.sshOutput(rawOutput)))
