@@ -128,7 +128,7 @@ object ArgumentParser {
             args
               .copy(bastionInstance = Some(ExecutionTarget(Some(List(InstanceId(bastion))), None)))
           })
-          .text(s"Connect through the given bastion specified by its instance id; implies -A (use agent) unless followed by -a"),
+          .text(s"Connect through the given bastion specified by its instance id; implies -A (use agent) unless followed by -a. --ssm-tunnel can be used to avoid the need for a bastion instance"),
         opt[String]('B', "bastion-tags").optional()
           .validate { tagsStr =>
             Logic.extractSASTags(tagsStr).map(_ => ())
@@ -142,13 +142,13 @@ object ArgumentParser {
                     .copy(bastionInstance = Some(ExecutionTarget(None, Some(ass))))
                 }
               )
-          } text(s"Connect through the given bastion identified by its tags; implies -a (use agent) unless followed by -A"),
+          } text(s"Connect through the given bastion identified by its tags; implies -a (use agent) unless followed by -A. --ssm-tunnel can be used to avoid the need for a bastion instance"),
         opt[Int]("bastion-port").optional()
           .action((bastionPortNumber, args) => args.copy(bastionPortNumber = Some(bastionPortNumber)))
-          .text(s"Connect through the given bastion at a given port"),
+          .text(s"Connect through the given bastion at a given port. --ssm-tunnel can be used to avoid the need for a bastion instance"),
         opt[String]("bastion-user").optional()
           .action((bastionUser, args) => args.copy(bastionUser = Some(bastionUser)))
-          .text(s"Connect to bastion as this user (default: $bastionDefaultUser)"),
+          .text(s"Connect to bastion as this user (default: $bastionDefaultUser). --ssm-tunnel can be used to avoid the need for a bastion instance"),
         opt[String]("host-key-alg-preference").optional().unbounded()
           .action((alg, args) => args.copy(hostKeyAlgPreference = alg :: args.hostKeyAlgPreference))
           .text(s"The preferred host key algorithms, can be specified multiple times - last is preferred (default: ${defaultHostKeyAlgPreference.mkString(", ")})"),
