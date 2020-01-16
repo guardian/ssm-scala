@@ -26,6 +26,12 @@ brew upgrade ssm
 
 Otherwise, fetch the most recently released version of the program from the [Github releases page](https://github.com/guardian/ssm-scala/releases/latest) and make sure it is executable (`chmod +x ssm`). You may then want to put it somewhere in your PATH.
 
+## Known issues
+
+If the disk on which the keyfile is stored is full, then ssm-scala cannot add the public key identity prior to logging in to the box.  This is often found to be the case, and also can apparently cause the AWS SSM agent to stop.
+
+One potential workaround for this is rebooting the box using the EC2 console (may clear down logs, for example).
+
 ## Usage
 
 The automatically generated help section for `ssm` is
