@@ -4,6 +4,7 @@ import java.io._
 import java.security.{NoSuchAlgorithmException, NoSuchProviderException}
 import java.util.Calendar
 
+import com.amazonaws.regions.Region
 import com.gu.ssm.utils.attempt._
 import com.gu.ssm.utils.{FilePermissions, KeyMaker}
 
@@ -90,7 +91,7 @@ object SSH {
        | for hostkey in $(sshd -T 2> /dev/null |grep "^hostkey " | cut -d ' ' -f 2); do cat $hostkey.pub; done
      """.stripMargin
 
-  def sshCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], hostsFile: Option[File], useAgent: Option[Boolean]): (InstanceId, Seq[Output]) = {
+  def sshCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], hostsFile: Option[File], useAgent: Option[Boolean], profile: Option[String], region: Region, tunnelThroughSystemsManager: Boolean): (InstanceId, Seq[Output]) = {
     val targetPortSpecifications = targetInstancePortNumberOpt match {
       case Some(portNumber) => s" -p ${portNumber}"
       case _ => ""
@@ -101,7 +102,9 @@ object SSH {
       case Some(decision) => if(decision) " -A" else " -a"
     }
     val hostsFileString = hostsFile.map(file => s""" -o "UserKnownHostsFile $file" -o "StrictHostKeyChecking yes"""").getOrElse("")
-    val connectionString = s"""ssh -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString$targetPortSpecifications -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $user@$ipAddress"""
+    val proxyFragment = if(tunnelThroughSystemsManager) { s""" -o "ProxyCommand sh -c \\"aws ssm start-session --target ${instance.id.id} --document-name AWS-StartSSHSession --parameters 'portNumber=22' --region $region ${profile.map("--profile " + _).getOrElse("")}\\""""" } else { "" }
+    val connectionString = s"""ssh -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString$targetPortSpecifications$proxyFragment -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $user@$ipAddress"""
+
     val cmd = if (rawOutput) {
       Seq(Out(s"$connectionString", newline = false))
     } else {
@@ -140,7 +143,7 @@ object SSH {
   // The first file goes to the second file
   // The remote file is indicated by a colon
 
-  def scpCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], useAgent: Option[Boolean], hostsFile: Option[File], sourceFile: String, targetFile: String): (InstanceId, Seq[Output]) = {
+  def scpCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], useAgent: Option[Boolean], hostsFile: Option[File], sourceFile: String, targetFile: String, profile: Option[String], region: Region, tunnelThroughSystemsManager: Boolean): (InstanceId, Seq[Output]) = {
 
     def isRemote(filepath: String): Boolean = {
       filepath.startsWith(":")
@@ -155,6 +158,7 @@ object SSH {
       case _ => ""
     }
     val hostsFileString = hostsFile.map(file => s""" -o "UserKnownHostsFile $file" -o "StrictHostKeyChecking yes"""").getOrElse("")
+    val proxyFragment = if(tunnelThroughSystemsManager) { s""" -o "ProxyCommand sh -c \\"aws ssm start-session --target ${instance.id.id} --document-name AWS-StartSSHSession --parameters 'portNumber=22' --region $region ${profile.map("--profile " + _).getOrElse("")}\\""""" } else { "" }
     val useAgentFragment = useAgent match {
       case None => ""
       case Some(decision) => if(decision) " -A" else " -a"
@@ -164,9 +168,9 @@ object SSH {
     if (exactlyOneArgumentIsRemote(sourceFile, targetFile)) {
       val connectionString =
         if (isRemote(sourceFile)) {
-          s"""scp -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString} $user@$ipAddress:${sourceFile.stripPrefix(":")} ${targetFile}"""
+          s"""scp -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString$proxyFragment${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString} $user@$ipAddress:${sourceFile.stripPrefix(":")} ${targetFile}"""
         }else {
-          s"""scp -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString} ${sourceFile} $user@$ipAddress:${targetFile.stripPrefix(":")}"""
+          s"""scp -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString$proxyFragment${targetPortSpecifications} -i ${privateKeyFile.getCanonicalFile.toString} ${sourceFile} $user@$ipAddress:${targetFile.stripPrefix(":")}"""
         }
       val cmd = if(rawOutput) {
         Seq(Out(s"$connectionString", newline = false))

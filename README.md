@@ -43,9 +43,10 @@ Usage: ssm [cmd|repl|ssh|scp] [options] <args>...
   -i, --instances <value>  Specify the instance ID(s) on which the specified command(s) should execute
   -t, --tags <value>       Search for instances by tag e.g. '--tags app,stack,stage'
   -r, --region <value>     AWS region name (defaults to eu-west-1)
+  --verbose                enable more verbose logging
 Command: cmd [options]
 Execute a single (bash) command, or a file containing bash commands
-  -u, --user <value>       Execute the command on the remote host as this user (default: ubuntu)
+  -u, --user <value>       Execute command on remote host as this user (default: ubuntu)
   -c, --cmd <value>        A bash command to execute
   -f, --file <value>       A file containing bash commands to execute
 Command: repl
@@ -61,13 +62,14 @@ Create and upload a temporary ssh key
   -x, --execute            Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)
   -A, --agent              Use the local ssh agent to register the private key (and do not use -i); only bastion connections
   -a, --no-agent           Do not use the local ssh agent
-  -b, --bastion <value>    Connect through the given bastion specified by its instance id; implies -A (use agent) unless followed by -a
+  -b, --bastion <value>    Connect through the given bastion specified by its instance id; implies -A (use agent) unless followed by -a. --ssm-tunnel can be used to avoid the need for a bastion instance
   -B, --bastion-tags <value>
-                           Connect through the given bastion identified by its tags; implies -a (use agent) unless followed by -A
-  --bastion-port <value>   Connect through the given bastion at a given port
-  --bastion-user <value>   Connect to bastion as this user (default: ubuntu)
+                           Connect through the given bastion identified by its tags; implies -a (use agent) unless followed by -A. --ssm-tunnel can be used to avoid the need for a bastion instance
+  --bastion-port <value>   Connect through the given bastion at a given port. --ssm-tunnel can be used to avoid the need for a bastion instance
+  --bastion-user <value>   Connect to bastion as this user (default: ubuntu). --ssm-tunnel can be used to avoid the need for a bastion instance
   --host-key-alg-preference <value>
                            The preferred host key algorithms, can be specified multiple times - last is preferred (default: ecdsa-sha2-nistp256, ssh-rsa)
+  --ssm-tunnel             Connect to the host proxying through AWS Systems Manager, rather than directly to port 22. Requires Systems Manager Agent > 2.3.672.0 to be installed.
 Command: scp [options] [:]<sourceFile>... [:]<targetFile>...
 Secure Copy
   -u, --user <value>       Connect to remote host as this user (default: ubuntu)
@@ -77,8 +79,8 @@ Secure Copy
   --private                Use private IP address (must be routable via VPN Gateway)
   --raw                    Unix pipe-able scp connection string
   -x, --execute            Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)
-  <sourceFile>...          Source file for the scp sub command. See README for details
-  <targetFile>...          Target file for the scp sub command. See README for details
+  [:]<sourceFile>...       Source file for the scp sub command. See README for details
+  [:]<targetFile>...       Target file for the scp sub command. See README for details
 ```
 
 There are two mandatory configuration items.
@@ -204,9 +206,18 @@ instead of the example given in the previous `--raw` section.
 
 ## Bastions
 
-### Introduction
+Bastion are proxy servers used as entry point to private networks and ssm scala supports their use.
 
-Bastion are proxy servers used as entry point to private networks and ssm scala supports their use. 
+You may not need a bastion server at all! The latest version of the AWS Systems Manager (> 2.3.672.0) supports proxying
+connections to instances via the Systems Manager service:
+
+```
+ssm ssh --profile <profile-name> -i i-application-12345 --ssm-tunnel
+```
+
+This runs entirely internal to AWS, meaning you can close off port 22 access to external networks.
+
+### Introduction
 
 In this example we assume that you have a bastion with a public IP address (even though the bastion Ingress rules may restrict it to some IP ranges), identified by aws instance id `i-bastion12345`, and an application server, on a private network with private IP address, and with instance id `i-application-12345`, you would then use ssm to connect to it using 
 
