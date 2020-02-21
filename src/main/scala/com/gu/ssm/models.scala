@@ -6,6 +6,8 @@ import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceAsync
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
 import java.time.Instant
 
+import com.gu.ssm.Arguments.InstanceLookupParameters
+
 case class InstanceId(id: String) extends AnyVal
 case class Instance(id: InstanceId, publicDomainNameOpt: Option[String], publicIpAddressOpt: Option[String], privateIpAddress: String, launchInstant: Instant)
 case class AppStackStage(app: String, stack: String, stage: String)
@@ -32,13 +34,16 @@ case class Arguments(
   hostKeyAlgPreference: List[String],
   sourceFile: Option[String],
   targetFile: Option[String],
-  tunnelThroughSystemsManager: Boolean
+  tunnelThroughSystemsManager: Boolean,
+  instanceLookupParameters: Option[InstanceLookupParameters]
 )
 
 object Arguments {
   val targetInstanceDefaultUser = "ubuntu"
   val bastionDefaultUser = "ubuntu"
   val defaultHostKeyAlgPreference = List("ecdsa-sha2-nistp256", "ssh-rsa")
+
+  type InstanceLookupParameters = Either[InstanceId, AppStackStage]
 
   def empty(): Arguments = Arguments(
     verbose = false,
@@ -61,7 +66,8 @@ object Arguments {
     hostKeyAlgPreference = defaultHostKeyAlgPreference,
     sourceFile = None,
     targetFile = None,
-    tunnelThroughSystemsManager = false
+    tunnelThroughSystemsManager = false,
+    instanceLookupParameters = None
   )
 }
 
@@ -83,6 +89,7 @@ case object SsmCmd extends SsmMode
 case object SsmRepl extends SsmMode
 case object SsmSsh extends SsmMode
 case object SsmScp extends SsmMode
+case object SsmProxy extends SsmMode
 
 case class CommandResult(stdOut: String, stdErr: String)
 

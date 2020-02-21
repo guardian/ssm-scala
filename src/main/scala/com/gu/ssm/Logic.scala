@@ -6,6 +6,7 @@ import com.amazonaws.regions.Region
 import com.amazonaws.services.ec2.AmazonEC2Async
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceAsync
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
+import com.gu.ssm.Arguments.InstanceLookupParameters
 import com.gu.ssm.aws.{EC2, SSM, STS}
 import com.gu.ssm.utils.attempt._
 
@@ -25,6 +26,22 @@ object Logic {
         Right(AppStackStage(app, stack, stage))
       case _ =>
         Left("You should provide app, stack and stage tags in the format \"app,stack,stage\"")
+    }
+  }
+
+  def extractInstanceLookupParameters(input: String): InstanceLookupParameters = {
+    val maybeTags = input.split(",").map(_.split("=").toList)
+
+    val maybeApp = maybeTags.collectFirst { case "App" :: app :: Nil => app }
+    val maybeStack = maybeTags.collectFirst { case "Stack" :: stack :: Nil => stack }
+    val maybeStage = maybeTags.collectFirst { case "Stage" :: stage :: Nil => stage }
+
+    (maybeApp, maybeStack, maybeStage) match {
+      case (Some(app), Some(stack), Some(stage)) =>
+        Right(AppStackStage(app, stack, stage))
+
+      case _ =>
+        Left(InstanceId(input))
     }
   }
 

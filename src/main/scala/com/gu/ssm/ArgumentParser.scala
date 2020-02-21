@@ -215,6 +215,17 @@ object ArgumentParser {
           else success )
       )
 
+    cmd("proxy")
+      .action((_, c) => c.copy(mode = Some(SsmSsh)))
+      .text("Create and upload a temporary ssh key, open a tunnel via AWS systems manager and then proxy data. This is designed to be used as a ProxyCommand in SSH config")
+      .children(
+        opt[String]("instanceLookupParameters").required()
+          .action( (params, args) =>
+            args.copy(instanceLookupParameters = Some(Logic.extractInstanceLookupParameters(params)))
+          )
+          .text("Either the instance ID or tags in format App=<app>,Stack=<stack>,Stage=<stage>. The newest instance matching the tags will be connected to")
+      )
+
     checkConfig { args =>
       if (args.mode.isEmpty) Left("You must select a mode to use: cmd, repl or ssh")
       else if (args.toExecute.isEmpty && args.mode.contains(SsmCmd)) Left("You must provide commands to execute (src-file or cmd)")

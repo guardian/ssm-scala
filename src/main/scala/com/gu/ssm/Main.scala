@@ -13,7 +13,7 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     val (result, verbose) = argParser.parse(args, Arguments.empty()) match {
-      case Some(Arguments(verbose, Some(executionTarget), toExecuteOpt, profile, region, Some(mode), Some(user), sism, _, _, onlyUsePrivateIP, rawOutput, bastionInstanceIdOpt, bastionPortNumberOpt, Some(bastionUser), targetInstancePortNumberOpt, useAgent, preferredAlgs, sourceFileOpt, targetFileOpt, tunnelThroughSystemsManager)) =>
+      case Some(Arguments(verbose, Some(executionTarget), toExecuteOpt, profile, region, Some(mode), Some(user), sism, _, _, onlyUsePrivateIP, rawOutput, bastionInstanceIdOpt, bastionPortNumberOpt, Some(bastionUser), targetInstancePortNumberOpt, useAgent, preferredAlgs, sourceFileOpt, targetFileOpt, tunnelThroughSystemsManager, instanceLookupParameters)) =>
         val awsClients = Logic.getClients(profile, region)
         val r = mode match {
           case SsmRepl =>
@@ -30,6 +30,10 @@ object Main {
           }
           case SsmScp => (sourceFileOpt, targetFileOpt) match {
             case (Some(sourceFile), Some(targetFile)) => setUpStandardScp(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, targetInstancePortNumberOpt, preferredAlgs, useAgent, sourceFile, targetFile, profile, region, tunnelThroughSystemsManager)
+            case _ => fail
+          }
+          case SsmProxy => instanceLookupParameters match {
+            case Some(params) => setUpProxy()
             case _ => fail
           }
         }
@@ -152,6 +156,10 @@ object Main {
     }
     val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
     ProgramResult(programResult.map(UI.sshOutput(rawOutput)))
+  }
+
+  private def setUpProxy(): ProgramResult = {
+    ???
   }
 
   private def execute(awsClients: AWSClients, executionTarget: ExecutionTarget, user: String, toExecute: String): ProgramResult = {
