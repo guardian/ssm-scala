@@ -228,16 +228,22 @@ You'll also need to ensure you're using a recent AMI that has at least version 2
 
 Upgrade your local version of ssm and awscli:
 
+```
   brew upgrade ssm
   brew upgrade awscli
+```
 
 You'll also need to install the systems manager plugin on your machine:
 
+```
   brew cask install session-manager-plugin
+```
 
 You can then SSH using SSM and the --ssm-tunnel command:
 
+```
   ssm ssh -x -i i-0937fe9baa578095b -p deployTools --ssm-tunnel
+ ```
 
 (Useful tip - you can find the instance id using prism, e.g. `prism -f instanceName amigo`)
 
@@ -245,22 +251,16 @@ You can then SSH using SSM and the --ssm-tunnel command:
 
 Once you've confirmed this is working you can remove any security group rules allowing access on port 22.
 
-## More info
-#Check out the original PR: https://github.com/guardian/ssm-scala/pull/111 for further details on how this works.
+### More info
+
+Check out the original PR: https://github.com/guardian/ssm-scala/pull/111 for further details on how this works.
 
 
 ## Bastions
 
 Bastion are proxy servers used as entry point to private networks and ssm scala supports their use.
 
-You may not need a bastion server at all! The latest version of the AWS Systems Manager (> 2.3.672.0) supports proxying
-connections to instances via the Systems Manager service:
-
-```
-ssm ssh --profile <profile-name> -i i-application-12345 --ssm-tunnel
-```
-
-This runs entirely internal to AWS, meaning you can close off port 22 access to external networks.
+You may not need a bastion server at all! Prefer to use an SSM tunnel (see above) where possible.
 
 ### Introduction
 
