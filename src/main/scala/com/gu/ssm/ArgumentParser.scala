@@ -204,6 +204,10 @@ object ArgumentParser {
               rawOutput = true)
           })
           .text("Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)"),
+        opt[Unit]("ssm-tunnel").optional()
+          .action((_, args) => args.copy(tunnelThroughSystemsManager = true))
+          .text("Connect to the host proxying through AWS Systems Manager, rather than directly to port 22. Requires Systems Manager Agent > 2.3.672.0 to be installed."),
+
         arg[String]("[:]<sourceFile>...").required()
           .action( (sourceFile, args) => args.copy(sourceFile = Some(sourceFile)) )
           .text("Source file for the scp sub command. See README for details"),
