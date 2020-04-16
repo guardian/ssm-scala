@@ -224,6 +224,8 @@ See [here](https://github.com/guardian/deploy-tools-platform/blob/master/cloudfo
 
 You'll also need to ensure you're using a recent AMI that has at least version 2.3.672.0 of systems manager - this is now in our base images so using a recent amigo AMI should do the job.
 
+Once these permissions are added, the `ssm-agent` service running on the boxes will need to be restarted before connecting. This will happen as boxes are cycled – e.g. by redeploying your app – or you can restart an agent manually with `sudo snap restart amazon-ssm-agent.amazon-ssm-agent`.
+
 ### On your machine
 
 Upgrade your local version of ssm and awscli:
