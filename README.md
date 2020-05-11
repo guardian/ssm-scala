@@ -29,7 +29,7 @@ Otherwise, fetch the most recently released version of the program from the [Git
 
 ## First time here, just show me the SSH thing real quick
 
-The readme is quite detailled (and shows how to do many more things than what will be shown in this section) but you are probably reading it because you just want to ssh to a box. Here is what you need to do:
+The readme is quite detailed (and shows how to do many more things than what will be shown in this section) but you are probably reading it because you just want to ssh to a box. Here is what you need to do:
 
 1. Install ssm. How to do so was explained in the previous section.
 2. Ensure that you have the Janus credentials of the account you want to work with. We are going to assume `frontend` in this section for the examples.
