@@ -37,13 +37,13 @@ The readme is quite detailled (and shows how to do many more things than what wi
 3. At your console type
 
 	```
-	ssm ssh -i i-00032c76140bc9140 -p frontend -x
+	ssm ssh --ssm-tunnel -i i-00032c76140bc9140 -p frontend -x
 	```
 	
 	and more generally
 
 	```
-	ssm ssh -i <instance-id> -p <accountName> -x
+	ssm ssh --ssm-tunnel -i <instance-id> -p <accountName> -x
 	```
 
 5. And that's it! If all went well you have been ssh'ed to the box. 
