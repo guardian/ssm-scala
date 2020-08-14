@@ -30,7 +30,7 @@ object ArgumentParser {
         Logic.extractSASTags(tagsStr)
           .fold(
             _ => args,
-            ass => args.copy(executionTarget = Some(ExecutionTarget(ass = Some(ass))))
+            tagValues => args.copy(executionTarget = Some(ExecutionTarget(tagValues = Some(tagValues))))
           )
       } text "Search for instances by tag e.g. '--tags app,stack,stage'"
 
@@ -137,9 +137,9 @@ object ArgumentParser {
             Logic.extractSASTags(tagsStr)
               .fold(
                 _ => args,
-                ass => {
+                tagValues => {
                   args
-                    .copy(bastionInstance = Some(ExecutionTarget(None, Some(ass))))
+                    .copy(bastionInstance = Some(ExecutionTarget(None, Some(tagValues))))
                 }
               )
           } text(s"Connect through the given bastion identified by its tags; implies -a (use agent) unless followed by -A. --ssm-tunnel can be used to avoid the need for a bastion instance"),

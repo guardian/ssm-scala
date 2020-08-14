@@ -19,10 +19,10 @@ object Logic {
     }
   }
 
-  def extractSASTags(input: String): Either[String, AppStackStage] = {
+  def extractSASTags(input: String): Either[String, List[String]] = {
     input.split(',').toList match {
       case app :: stack :: stage :: Nil =>
-        Right(AppStackStage(app, stack, stage))
+        Right(List(app, stack, stage))
       case _ =>
         Left("You should provide app, stack and stage tags in the format \"app,stack,stage\"")
     }

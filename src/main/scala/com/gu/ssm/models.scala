@@ -9,7 +9,7 @@ import java.time.Instant
 case class InstanceId(id: String) extends AnyVal
 case class Instance(id: InstanceId, publicDomainNameOpt: Option[String], publicIpAddressOpt: Option[String], privateIpAddress: String, launchInstant: Instant)
 case class AppStackStage(app: String, stack: String, stage: String)
-case class ExecutionTarget(instances: Option[List[InstanceId]] = None, ass: Option[AppStackStage] = None)
+case class ExecutionTarget(instances: Option[List[InstanceId]] = None, tagValues: Option[List[String]] = None)
 
 case class Arguments(
   verbose: Boolean,

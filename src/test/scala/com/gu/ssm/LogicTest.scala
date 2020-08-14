@@ -10,7 +10,7 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
     import Logic.extractSASTags
 
     "extracts stack app and stage from valid input" in {
-      val expected = AppStackStage("app", "stack", "stage")
+      val expected = List("app", "stack", "stage")
       extractSASTags("app,stack,stage").right.value shouldEqual expected
     }
 
