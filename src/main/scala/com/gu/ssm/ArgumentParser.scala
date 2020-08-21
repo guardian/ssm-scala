@@ -22,7 +22,7 @@ object ArgumentParser {
         args.copy(executionTarget = Some(ExecutionTarget(instances = Some(instances))))
       } text "Specify the instance ID(s) on which the specified command(s) should execute"
 
-    opt[String]('t', "tags")
+    opt[Seq[String]]('t', "tags")
       .validate { tagsStr =>
         Logic.extractSASTags(tagsStr).map(_ => ())
       }
@@ -129,7 +129,7 @@ object ArgumentParser {
               .copy(bastionInstance = Some(ExecutionTarget(Some(List(InstanceId(bastion))), None)))
           })
           .text(s"Connect through the given bastion specified by its instance id; implies -A (use agent) unless followed by -a. --ssm-tunnel can be used to avoid the need for a bastion instance"),
-        opt[String]('B', "bastion-tags").optional()
+        opt[Seq[String]]('B', "bastion-tags").optional()
           .validate { tagsStr =>
             Logic.extractSASTags(tagsStr).map(_ => ())
           }

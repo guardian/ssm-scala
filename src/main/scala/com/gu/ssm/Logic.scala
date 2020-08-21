@@ -19,13 +19,10 @@ object Logic {
     }
   }
 
-  def extractSASTags(input: String): Either[String, List[String]] = {
-    input.split(',').toList match {
-      case app :: stack :: stage :: Nil =>
-        Right(List(app, stack, stage))
-      case _ =>
-        Left("You should provide app, stack and stage tags in the format \"app,stack,stage\"")
-    }
+  def extractSASTags(tags: Seq[String]): Either[String, List[String]] = {
+    if (tags.length < 1 || tags.head.length == 0) Left("Please supply at least an app, stack or stage tag. For example, -t grafana,PROD,deploy")
+    else if (tags.length > 10) Left("Please provide fewer tags")
+    else Right(tags.toList)
   }
 
   def checkInstancesList(config: SSMConfig): Either[FailedAttempt, Unit] = config.targets match {
