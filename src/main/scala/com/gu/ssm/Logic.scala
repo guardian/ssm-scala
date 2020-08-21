@@ -20,8 +20,8 @@ object Logic {
   }
 
   def extractSASTags(tags: Seq[String]): Either[String, List[String]] = {
-    if (tags.length < 1 || tags.head.length == 0) Left("Please supply at least an app, stack or stage tag. For example, -t grafana,PROD,deploy")
-    else if (tags.length > 10) Left("Please provide fewer tags")
+    if (tags.length < 1 || tags.head.length == 0) Left("Please supply an app, stack and stage tag in any order. For example, -t grafana,PROD,deploy")
+    else if (tags.length >= 10) Left("Please provide fewer than 10 tags")
     else Right(tags.toList)
   }
 
