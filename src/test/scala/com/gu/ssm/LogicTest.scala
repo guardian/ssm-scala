@@ -18,8 +18,12 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
       extractSASTags(Seq("")).isLeft shouldEqual true
     }
 
-    "returns error if more than 10 tags are provided" in {
-      extractSASTags(Seq("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")).isLeft shouldEqual true
+    "returns error if more than 3 tags are provided" in {
+      extractSASTags(Seq("a", "b", "c", "d")).isLeft shouldEqual true
+    }
+
+    "returns error if less than 3 tags are provided" in {
+      extractSASTags(Seq("a", "b")).isLeft shouldEqual true
     }
   }
 
