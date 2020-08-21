@@ -15,9 +15,7 @@ object IO {
     executionTarget.instances.map( instances =>
       EC2.resolveInstanceIds(instances, ec2Client)
     ).orElse {
-      executionTarget.ass.map { ass =>
-        EC2.resolveASSInstances(ass, ec2Client)
-      }
+      executionTarget.tagValues.map(EC2.resolveByTags(_, ec2Client))
     }.getOrElse(Attempt.Left(Failure("Unable to resolve execution target", "You must provide an execution target (instance(s) or tags)", ArgumentsError)))
   }
 

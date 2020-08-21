@@ -6,7 +6,7 @@ import com.amazonaws.services.ec2.model._
 import com.amazonaws.services.ec2.{AmazonEC2Async, AmazonEC2AsyncClientBuilder}
 import com.gu.ssm.aws.AwsAsyncHandler.{awsToScala, handleAWSErrs}
 import com.gu.ssm.utils.attempt.Attempt
-import com.gu.ssm.{AppStackStage, Instance, InstanceId}
+import com.gu.ssm.{Instance, InstanceId}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
@@ -26,13 +26,13 @@ object EC2 {
       .build()
   }
 
-  def resolveASSInstances(ass: AppStackStage, client: AmazonEC2Async)(implicit ec: ExecutionContext): Attempt[List[Instance]] = {
+  def resolveByTags(tagValues: List[String], client: AmazonEC2Async)(implicit ec: ExecutionContext): Attempt[List[Instance]] = {
     val request = new DescribeInstancesRequest()
       .withFilters(
         new Filter("instance-state-name", List("running").asJava),
-        new Filter("tag:App", List(ass.app).asJava),
-        new Filter("tag:Stack", List(ass.stack).asJava),
-        new Filter("tag:Stage", List(ass.stage).asJava)
+        new Filter("tag:App", tagValues.asJava),
+        new Filter("tag:Stack", tagValues.asJava),
+        new Filter("tag:Stage", tagValues.asJava)
       )
     handleAWSErrs(awsToScala(client.describeInstancesAsync)(request).map(extractInstances))
   }

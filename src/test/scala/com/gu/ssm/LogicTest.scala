@@ -10,24 +10,16 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
     import Logic.extractSASTags
 
     "extracts stack app and stage from valid input" in {
-      val expected = AppStackStage("app", "stack", "stage")
-      extractSASTags("app,stack,stage").right.value shouldEqual expected
-    }
-
-    "provides error message if only two pieces of info are provided" in {
-      extractSASTags("abc,def").isLeft shouldEqual true
-    }
-
-    "provides error message if only one piece of info is provided" in {
-      extractSASTags("abc").isLeft shouldEqual true
+      val expected = List("app", "stack", "stage")
+      extractSASTags(Seq("app", "stack", "stage")).right.value shouldEqual expected
     }
 
     "provides error if nothing is provided" in {
-      extractSASTags("").isLeft shouldEqual true
+      extractSASTags(Seq("")).isLeft shouldEqual true
     }
 
-    "returns error if too much info is provided" in {
-      extractSASTags("a,b,c,d").isLeft shouldEqual true
+    "returns error if more than 10 tags are provided" in {
+      extractSASTags(Seq("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")).isLeft shouldEqual true
     }
   }
 
