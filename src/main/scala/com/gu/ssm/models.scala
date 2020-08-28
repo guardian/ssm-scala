@@ -61,7 +61,7 @@ object Arguments {
     hostKeyAlgPreference = defaultHostKeyAlgPreference,
     sourceFile = None,
     targetFile = None,
-    tunnelThroughSystemsManager = false
+    tunnelThroughSystemsManager = true
   )
 }
 

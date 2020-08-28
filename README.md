@@ -166,8 +166,8 @@ Note the use of `eval` in these examples - this is required in order to correctl
 	-i i-0123456,i-9876543
 
 # by tag
-	--tags <app>,<stack>,<stage>
-	-t <app>,<stack>,<stage>
+	--tags <app>,<stage>,<stack>
+	-t <app>,<stage>,<stack>
 ```
 
 If you provide tags, `ssm` will search for running instances that are have those tags.
@@ -227,9 +227,14 @@ ssm ssh --profile security -t security-hq,security,PROD --newest --execute
 
 instead of the example given in the previous `--raw` section.
 
+## Disabling SSM Tunnel
+*By default, SSM proxies your connection via AWS systems manager*, which saves you from opening up port 22, connecting to
+the VPN, or using bastion hosts. This requires a recent version of systems manager to be runnning on your machine and
+the target machine. You can still connect the old way via port 22 using the flag `--no-ssm-proxy`
+
 ## Enabling SSM Tunnel
 
-It is possible to tunnel SSH traffic through AWS systems manager and avoid needing to open up port 22 at all on your instances. This is strongly encouraged! To get it working you'll need to do the following stuff:
+It is strongly encouraged to connect using the default SSM tunnel behaviour. To get this working you'll need to do the following stuff:
 
 ### In AWS
 
@@ -285,7 +290,7 @@ Check out the original PR: https://github.com/guardian/ssm-scala/pull/111 for fu
 
 Bastion are proxy servers used as entry point to private networks and ssm scala supports their use.
 
-You may not need a bastion server at all! Prefer to use an SSM tunnel (see above) where possible.
+*You may not need a bastion server at all! Prefer to use an SSM tunnel (see above) where possible.*
 
 ### Introduction
 
@@ -315,13 +320,13 @@ ssm ssh --profile <profile-name> --bastion i-bastion12345 --bastion-port 2345 -i
 In the current version of bastion support you will need to specify the bastion using its aws instance id, but you can refer to the application instance using the tag system as in
 
 ```
-ssm ssh --profile <profile-name> --bastion i-bastion12345 --bastion-port 2022 --tags app,stack,stage
+ssm ssh --profile <profile-name> --bastion i-bastion12345 --bastion-port 2022 --tags app,stage,stack
 ```
 
 together, if the tags may resolve to more than one instance, the `--oldest` and `--newest` flags
 
 ```
-ssm ssh --profile <profile-name> --bastion i-bastion12345 --bastion-port 2022 --tags app,stack,stage --newest
+ssm ssh --profile <profile-name> --bastion i-bastion12345 --bastion-port 2022 --tags app,stage,stack --newest
 ```
 
 ### Using tags to specify the bastion instance
@@ -329,7 +334,7 @@ ssm ssh --profile <profile-name> --bastion i-bastion12345 --bastion-port 2022 --
 If you do not know the id of the current bastion, but it is tagged correctly, it is also possible to use:
 
 ```
-ssm ssh --profile <profile-name> --bastion-tags <app,stack,stage> --bastion-port 2022 -i i-application-12345
+ssm ssh --profile <profile-name> --bastion-tags <app,stage,stack> --bastion-port 2022 -i i-application-12345
 ```
 
 This will respect any --newest / --oldest switches, although it is anticipated that there will usually only be one bastion. It will always use the public IP address of the bastion.
@@ -377,7 +382,7 @@ ssh-add /path/to/temp/private/key && \
 An example of usage is 
 
 ```
-./ssm scp -p account -t app,stack,stage /path/to/file1 :/path/to/file1
+./ssm scp -p account -t app,stage,stack /path/to/file1 :/path/to/file1
 ``` 
 
 Which outputs
@@ -390,7 +395,7 @@ scp -i /path/to/identity/file.tmp /path/to/file1 ubuntu@34.242.32.40:/path/to/fi
 Otherwise 
 
 ```
-./ssm scp -p account -t app,stack,stage :/path/to/file1 /path/to/file2
+./ssm scp -p account -t app,stage,stack :/path/to/file1 /path/to/file2
 ```
 
 outputs 
