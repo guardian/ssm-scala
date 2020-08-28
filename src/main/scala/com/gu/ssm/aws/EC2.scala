@@ -26,13 +26,18 @@ object EC2 {
       .build()
   }
 
+  def makeFilter(tagName: String, values: List[String]) = new Filter(s"tag:$tagName", values.asJava)
+
   def resolveByTags(tagValues: List[String], client: AmazonEC2Async)(implicit ec: ExecutionContext): Attempt[List[Instance]] = {
+    val allTags = tagValues ++ tagValues.map(_.toUpperCase) ++ tagValues.map(_.toLowerCase)
+
+    // if user has provided fewer than 3 tags then assume order app,stage,stack
+    val tagOrder = List("App", "Stage", "Stack")
+    val filters = tagOrder.take(tagValues.length).map(makeFilter(_, allTags))
+
     val request = new DescribeInstancesRequest()
       .withFilters(
-        new Filter("instance-state-name", List("running").asJava),
-        new Filter("tag:App", tagValues.asJava),
-        new Filter("tag:Stack", tagValues.asJava),
-        new Filter("tag:Stage", tagValues.asJava)
+        filters: _*
       )
     handleAWSErrs(awsToScala(client.describeInstancesAsync)(request).map(extractInstances))
   }
