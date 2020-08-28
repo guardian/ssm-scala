@@ -1,6 +1,7 @@
 package com.gu.ssm
 
 import java.io.File
+import java.util.stream.Collectors
 
 import com.amazonaws.regions.Region
 import com.amazonaws.services.ec2.AmazonEC2Async
@@ -10,7 +11,7 @@ import com.gu.ssm.aws.{EC2, SSM, STS}
 import com.gu.ssm.utils.attempt._
 
 import scala.io.Source
-
+import collection.JavaConverters._
 object Logic {
   def generateScript(toExecute: Either[String, File]): String = {
     toExecute match {
@@ -64,9 +65,9 @@ object Logic {
   def getHostKeyEntry(ssmResult: Either[CommandStatus, CommandResult], preferredAlgs: List[String]): Either[FailedAttempt, String] = {
     ssmResult match {
       case Right(result) =>
-        val resultLines = result.stdOut.lines
+        val resultLines = result.stdOut.lines.collect(Collectors.toList()).asScala
         val preferredKeys = resultLines.filter(hostKey => preferredAlgs.exists(hostKey.startsWith))
-        val preferenceOrderedKeys = preferredKeys.toList.sortBy(hostKey => preferredAlgs.indexWhere(hostKey.startsWith))
+        val preferenceOrderedKeys = preferredKeys.sortBy(hostKey => preferredAlgs.indexWhere(hostKey.startsWith))
         preferenceOrderedKeys.headOption match {
           case Some(hostKey) => Right(hostKey)
           case None => Left(Failure(
