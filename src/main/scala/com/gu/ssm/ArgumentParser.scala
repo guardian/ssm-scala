@@ -129,7 +129,7 @@ object ArgumentParser {
             args
               .copy(bastionInstance = Some(ExecutionTarget(Some(List(InstanceId(bastion))), None)))
           })
-          .text(s"Connect through the given bastion specified by its instance id; implies -A (use agent) unless followed by -a. --ssm-tunnel can be used to avoid the need for a bastion instance"),
+          .text(s"Connect through the given bastion specified by its instance id; implies -A (use agent) unless followed by -a."),
         opt[Seq[String]]('B', "bastion-tags").optional()
           .validate { tagsStr =>
             Logic.extractSASTags(tagsStr).map(_ => ())
@@ -143,20 +143,20 @@ object ArgumentParser {
                     .copy(bastionInstance = Some(ExecutionTarget(None, Some(tagValues))))
                 }
               )
-          } text(s"Connect through the given bastion identified by its tags; implies -a (use agent) unless followed by -A. --ssm-tunnel can be used to avoid the need for a bastion instance"),
+          } text(s"Connect through the given bastion identified by its tags; implies -a (use agent) unless followed by -A."),
         opt[Int]("bastion-port").optional()
           .action((bastionPortNumber, args) => args.copy(bastionPortNumber = Some(bastionPortNumber)))
-          .text(s"Connect through the given bastion at a given port. --ssm-tunnel can be used to avoid the need for a bastion instance"),
+          .text(s"Connect through the given bastion at a given port. "),
         opt[String]("bastion-user").optional()
           .action((bastionUser, args) => args.copy(bastionUser = Some(bastionUser)))
-          .text(s"Connect to bastion as this user (default: $bastionDefaultUser). --ssm-tunnel can be used to avoid the need for a bastion instance"),
+          .text(s"Connect to bastion as this user (default: $bastionDefaultUser). "),
         opt[String]("host-key-alg-preference").optional().unbounded()
           .action((alg, args) => args.copy(hostKeyAlgPreference = alg :: args.hostKeyAlgPreference))
           .text(s"The preferred host key algorithms, can be specified multiple times - last is preferred (default: ${defaultHostKeyAlgPreference.mkString(", ")})"),
 
-        opt[Unit]("ssm-tunnel").optional()
-          .action((_, args) => args.copy(tunnelThroughSystemsManager = true))
-          .text("Connect to the host proxying through AWS Systems Manager, rather than directly to port 22. Requires Systems Manager Agent > 2.3.672.0 to be installed."),
+        opt[Unit]("no-ssm-proxy").optional()
+          .action((_, args) => args.copy(tunnelThroughSystemsManager = false))
+          .text("Do not connect to the host proxying via AWS Systems Manager - go direct to port 22. Useful for  instances running old versions of systems manager (< 2.3.672.0)"),
 
         checkConfig( c =>
           if (c.isSelectionModeOldest && c.isSelectionModeNewest) failure("You cannot both specify --newest and --oldest")
@@ -205,9 +205,9 @@ object ArgumentParser {
               rawOutput = true)
           })
           .text("Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)"),
-        opt[Unit]("ssm-tunnel").optional()
-          .action((_, args) => args.copy(tunnelThroughSystemsManager = true))
-          .text("Connect to the host proxying through AWS Systems Manager, rather than directly to port 22. Requires Systems Manager Agent > 2.3.672.0 to be installed."),
+        opt[Unit]("no-ssm-proxy").optional()
+          .action((_, args) => args.copy(tunnelThroughSystemsManager = false))
+          .text("Do not connect to the host proxying via AWS Systems Manager - go direct to port 22. Useful for instances running old versions of systems manager (< 2.3.672.0)"),
 
         arg[String]("[:]<sourceFile>...").required()
           .action( (sourceFile, args) => args.copy(sourceFile = Some(sourceFile)) )
@@ -223,7 +223,7 @@ object ArgumentParser {
     checkConfig { args =>
       if (args.mode.isEmpty) Left("You must select a mode to use: cmd, repl or ssh")
       else if (args.toExecute.isEmpty && args.mode.contains(SsmCmd)) Left("You must provide commands to execute (src-file or cmd)")
-      else if (args.executionTarget.isEmpty) Left("You must provide a list of target instances; or Stack, Stage, App tags")
+      else if (args.executionTarget.isEmpty) Left("You must provide a list of target instances (-i) or instance App/Stage/Stack tags (-t)")
       else if (args.profile.isEmpty && !System.getenv().containsKey("AWS_PROFILE")) Left("--profile switch or environment variable AWS_PROFILE expected")
       else Right(())
     }
