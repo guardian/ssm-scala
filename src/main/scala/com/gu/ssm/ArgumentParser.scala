@@ -32,7 +32,7 @@ object ArgumentParser {
             _ => args,
             tagValues => args.copy(executionTarget = Some(ExecutionTarget(tagValues = Some(tagValues))))
           )
-      } text "Search for instances by tag e.g. '--tags app,stack,stage'"
+      } text "Search for instances by tag e.g. '--tags app,stage,stack'"
 
     opt[String]('r', "region").optional()
       .validate { region =>
