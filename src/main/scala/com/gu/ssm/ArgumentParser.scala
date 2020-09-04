@@ -153,6 +153,8 @@ object ArgumentParser {
         opt[String]("host-key-alg-preference").optional().unbounded()
           .action((alg, args) => args.copy(hostKeyAlgPreference = alg :: args.hostKeyAlgPreference))
           .text(s"The preferred host key algorithms, can be specified multiple times - last is preferred (default: ${defaultHostKeyAlgPreference.mkString(", ")})"),
+        opt[Unit]("ssm-tunnel").optional()
+          .text("[deprecated]"),
 
         opt[Unit]("no-ssm-proxy").optional()
           .action((_, args) => args.copy(tunnelThroughSystemsManager = false))
@@ -205,6 +207,8 @@ object ArgumentParser {
               rawOutput = true)
           })
           .text("Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)"),
+        opt[Unit]("ssm-tunnel").optional()
+          .text("[deprecated]"),
         opt[Unit]("no-ssm-proxy").optional()
           .action((_, args) => args.copy(tunnelThroughSystemsManager = false))
           .text("Do not connect to the host proxying via AWS Systems Manager - go direct to port 22. Useful for instances running old versions of systems manager (< 2.3.672.0)"),
