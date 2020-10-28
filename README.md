@@ -452,30 +452,34 @@ To use ssm-scala against the instances of your project, the following needs to h
 
 1. Add permissions with a policy like:
 	
-	```
-	  ExampleAppSSMRunCommandPolicy:
-	    Type: AWS::IAM::Policy
-	    Properties:
-	      PolicyName: example-app-ssm-run-command-policy
-	      PolicyDocument:
-	        Statement:
-	        # minimal policy to allow to (only) run commands via ssm
-	        - Effect: Allow
-	          Resource: "*"
-	          Action:
-	          - ec2messages:AcknowledgeMessage
-	          - ec2messages:DeleteMessage
-	          - ec2messages:FailMessage
-	          - ec2messages:GetEndpoint
-	          - ec2messages:GetMessages
-	          - ec2messages:SendReply
-	          - ssm:UpdateInstanceInformation
-	          - ssm:ListInstanceAssociations
-	          - ssm:DescribeInstanceProperties
-	          - ssm:DescribeDocumentParameters
-	      Roles: 
-	      - !Ref ExampleAppInstanceRole
-	```
+    ```yaml
+    ExampleAppSSMRunCommandPolicy:
+      Type: AWS::IAM::Policy
+      Properties:
+        PolicyName: example-app-ssm-run-command-policy
+        PolicyDocument:
+          Statement:
+          # minimal policy to allow to (only) run commands via ssm
+          - Effect: Allow
+            Resource: "*"
+            Action:
+            - ec2messages:AcknowledgeMessage
+            - ec2messages:DeleteMessage
+            - ec2messages:FailMessage
+            - ec2messages:GetEndpoint
+            - ec2messages:GetMessages
+            - ec2messages:SendReply
+            - ssm:UpdateInstanceInformation
+            - ssm:ListInstanceAssociations
+            - ssm:DescribeInstanceProperties
+            - ssm:DescribeDocumentParameters
+            - ssmmessages:CreateControlChannel
+            - ssmmessages:CreateDataChannel
+            - ssmmessages:OpenControlChannel
+            - ssmmessages:OpenDataChannel
+        Roles: 
+        - !Ref ExampleAppInstanceRole
+    ```
 	
 	Example stolen from the [Security-HQ cloudformation](https://github.com/guardian/security-hq/blob/master/cloudformation/security-hq.template.yaml) file.
 
