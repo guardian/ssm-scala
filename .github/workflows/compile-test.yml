@@ -1,0 +1,15 @@
+name: compile-test
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: lokkju/github-action-sbt@master
+        with:
+          commands: test
