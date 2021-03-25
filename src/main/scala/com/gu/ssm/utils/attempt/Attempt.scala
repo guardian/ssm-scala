@@ -175,21 +175,17 @@ object Attempt {
     * Note that this will fail immediately with the failure if a FailedAttempt is returned,
     * this function is for testing the successful value.
     */
-  def retryUntil[A](maxRetries: Int, delayBetweenRetries: FiniteDuration, attemptA: () => Attempt[A])(condition: A => Boolean)
+  def retryUntil[A](delayBetweenRetries: FiniteDuration, attemptA: () => Attempt[A])(condition: A => Boolean)
               (implicit ec: ExecutionContext): Attempt[A] = {
     def loop(a: A, attemptCount: Int): Attempt[A] = {
       if (condition(a)) {
         Attempt.Right(a)
       } else {
-        if (attemptCount < maxRetries) {
-          for {
-            _ <- delay(delayBetweenRetries)
-            nextA <- attemptA()
-            result <- loop(nextA, attemptCount + 1)
-          } yield result
-        } else {
-          Attempt.Left(Failure("exceeded max retries", "Exceeded maximum number of retries while performing an operation", ErrorCode))
-        }
+        for {
+          _ <- delay(delayBetweenRetries)
+          nextA <- attemptA()
+          result <- loop(nextA, attemptCount + 1)
+        } yield result
       }
     }
 
