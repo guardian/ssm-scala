@@ -9,7 +9,6 @@ import com.gu.ssm.ArgumentParser.argParser
 
 object Main {
   implicit val ec: ExecutionContextExecutor = ExecutionContext.global
-  private val maximumWaitTime = 25.seconds
 
   def main(args: Array[String]): Unit = {
     val (result, verbose) = argParser.parse(args, Arguments.empty()) match {
@@ -76,7 +75,7 @@ object Main {
     } yield {
       SSH.sshCmdStandard(rawOutput)(privateKeyFile, instance, user, address, targetInstancePortNumberOpt, Some(hostKeyFile), useAgent, profile, region, tunnelThroughSystemsManager)
     }
-    val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
+    val programResult = Await.result(fProgramResult.asFuture, Duration.Inf)
     ProgramResult(programResult.map(UI.sshOutput(rawOutput)))
   }
 
@@ -115,7 +114,7 @@ object Main {
       targetHostKey <- Attempt.fromEither(Logic.getHostKeyEntry(targetResult, preferredAlgs))
       hostKeyFile <- SSH.writeHostKey((bastionAddress, bastionHostKey), (targetAddress, targetHostKey))
     } yield SSH.sshCmdBastion(rawOutput)(privateKeyFile, bastionInstance, targetInstance, user, bastionAddress, targetAddress, bastionPortNumberOpt, bastionUser, targetInstancePortNumberOpt, useAgent, Some(hostKeyFile))
-    val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
+    val programResult = Await.result(fProgramResult.asFuture, Duration.Inf)
     ProgramResult(programResult.map(UI.sshOutput(rawOutput)))
   }
 
@@ -150,7 +149,7 @@ object Main {
     } yield {
       SSH.scpCmdStandard(rawOutput)(privateKeyFile, instance, user, address, targetInstancePortNumberOpt, useAgent, Some(hostKeyFile), sourceFile, targetFile, profile, region, tunnelThroughSystemsManager)
     }
-    val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
+    val programResult = Await.result(fProgramResult.asFuture, Duration.Inf)
     ProgramResult(programResult.map(UI.sshOutput(rawOutput)))
   }
 
@@ -161,7 +160,7 @@ object Main {
       results <- IO.executeOnInstances(config.targets.map(i => i.id), user, toExecute, awsClients.ssmClient)
       incorrectInstancesFromInstancesTag = Logic.computeIncorrectInstances(executionTarget, results.map(_._1))
     } yield ResultsWithInstancesNotFound(results,incorrectInstancesFromInstancesTag)
-    val programResult = Await.result(fProgramResult.asFuture, maximumWaitTime)
+    val programResult = Await.result(fProgramResult.asFuture, Duration.Inf)
     ProgramResult(programResult.map(UI.output))
   }
 }
