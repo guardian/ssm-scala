@@ -58,42 +58,28 @@ class AttemptTest extends FreeSpec with Matchers with EitherValues with AttemptV
   }
 
   "retry" - {
-    "returns failure if the number of retries is exceeded" in {
-      Attempt.retryUntil(5, Duration.Zero, () => Attempt.Right(false))(_ == true).isFailedAttempt() shouldEqual true
-    }
-
     "returns success if the attempt returns successfully" in {
-      Attempt.retryUntil(5, Duration.Zero, () => Attempt.Right(true))(_ == true).isSuccessfulAttempt() shouldEqual true
+      Attempt.retryUntil(Duration.Zero, () => Attempt.Right(true))(_ == true).isSuccessfulAttempt() shouldEqual true
     }
 
-    "returns true if the attempt returns before the retries are exhausted" in {
+    "returns true if the attempt returns after retrying" in {
       var counter = 0
       def incr(): Attempt[Int] = {
         counter += 1
         Attempt.Right(counter)
       }
 
-      Attempt.retryUntil(5, Duration.Zero, () => incr())(_ > 3).value() shouldEqual 4
-    }
-
-    "returns false if the attempt does not return before the retries are exhausted" in {
-      var counter = 0
-      def incr(): Attempt[Int] = {
-        counter += 1
-        Attempt.Right(counter)
-      }
-
-      Attempt.retryUntil(5, Duration.Zero, () => incr())(_ > 8).isFailedAttempt() shouldEqual true
+      Attempt.retryUntil(Duration.Zero, () => incr())(_ > 3).value() shouldEqual 4
     }
 
     "returns failure if the attempt fails" in {
       val failure = Failure("test failure", "Test failure", ErrorCode).attempt
-      Attempt.retryUntil(5, Duration.Zero, () => Attempt.Left[Boolean](failure))(_ => true).leftValue() shouldEqual failure
+      Attempt.retryUntil(Duration.Zero, () => Attempt.Left[Boolean](failure))(_ => true).leftValue() shouldEqual failure
     }
 
     "delays between retrying" - {
       "and thus will time out in this test" in {
-        val future = Attempt.retryUntil(5, 10.millis, () => Attempt.Right(false))(_ == true).asFuture
+        val future = Attempt.retryUntil(10.millis, () => Attempt.Right(false))(_ == true).asFuture
         intercept[TimeoutException] {
           Await.result(future, 25.millis)
         }

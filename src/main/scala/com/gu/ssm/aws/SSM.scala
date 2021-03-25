@@ -64,7 +64,7 @@ object SSM {
 
   def getCmdOutput(instance: InstanceId, commandId: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[(InstanceId, Either[CommandStatus, CommandResult])] = {
     for {
-      cmdResult <- Attempt.retryUntil(60, 500.millis, () => getCommandInvocation(instance, commandId, client))(_.isRight)
+      cmdResult <- Attempt.retryUntil(delayBetweenRetries = 500.millis, () => getCommandInvocation(instance, commandId, client))(_.isRight)
     } yield instance -> cmdResult
   }
 
