@@ -33,7 +33,8 @@ object EC2 {
 
     // if user has provided fewer than 3 tags then assume order app,stage,stack
     val tagOrder = List("App", "Stage", "Stack")
-    val filters = tagOrder.take(tagValues.length).map(makeFilter(_, allTags))
+    val filters = new Filter("instance-state-name", List("running").asJava) ::
+        tagOrder.take(tagValues.length).map(makeFilter(_, allTags))
 
     val request = new DescribeInstancesRequest()
       .withFilters(
