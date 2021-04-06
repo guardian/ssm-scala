@@ -162,10 +162,11 @@ object Main {
     } yield ResultsWithInstancesNotFound(results,incorrectInstancesFromInstancesTag)
 
     val programResult = Await.result(fProgramResult.asFuture, Duration.Inf)
+    val programOutput = ProgramResult(programResult.map(UI.output))
 
     val anyCommandFailed = programResult.exists(_.results.exists(_._2.map(_.commandFailed).getOrElse(false)))
-    val nonZeroExitCode = if(anyCommandFailed) { Some(ErrorCode) } else { None }
+    val nonZeroExitCode = if(programOutput.nonZeroExitCode.isEmpty && anyCommandFailed) { Some(ErrorCode) } else { programOutput.nonZeroExitCode }
 
-    ProgramResult(programResult.map(UI.output)).copy(nonZeroExitCode = nonZeroExitCode)
+    programOutput.copy(nonZeroExitCode = nonZeroExitCode)
   }
 }
