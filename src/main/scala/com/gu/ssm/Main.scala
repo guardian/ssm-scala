@@ -160,7 +160,12 @@ object Main {
       results <- IO.executeOnInstances(config.targets.map(i => i.id), user, toExecute, awsClients.ssmClient)
       incorrectInstancesFromInstancesTag = Logic.computeIncorrectInstances(executionTarget, results.map(_._1))
     } yield ResultsWithInstancesNotFound(results,incorrectInstancesFromInstancesTag)
+
     val programResult = Await.result(fProgramResult.asFuture, Duration.Inf)
-    ProgramResult(programResult.map(UI.output))
+
+    val anyCommandFailed = programResult.exists(_.results.exists(_._2.map(_.commandFailed).getOrElse(false)))
+    val nonZeroExitCode = if(anyCommandFailed) { Some(ErrorCode) } else { None }
+
+    ProgramResult(programResult.map(UI.output)).copy(nonZeroExitCode = nonZeroExitCode)
   }
 }

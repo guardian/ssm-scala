@@ -54,9 +54,9 @@ object SSM {
   def extractCommandResult(getCommandInvocationResult: GetCommandInvocationResult): Either[CommandStatus, CommandResult] = {
     commandStatus(getCommandInvocationResult.getStatusDetails) match {
       case Success =>
-        Right(CommandResult(getCommandInvocationResult.getStandardOutputContent, getCommandInvocationResult.getStandardErrorContent))
+        Right(CommandResult(getCommandInvocationResult.getStandardOutputContent, getCommandInvocationResult.getStandardErrorContent, commandFailed = false))
       case Failed =>
-        Right(CommandResult(getCommandInvocationResult.getStandardOutputContent, getCommandInvocationResult.getStandardErrorContent))
+        Right(CommandResult(getCommandInvocationResult.getStandardOutputContent, getCommandInvocationResult.getStandardErrorContent, commandFailed = true))
       case status =>
         Left(status)
     }

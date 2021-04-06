@@ -136,17 +136,17 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
         """.stripMargin
 
       "return the host key using the first algorithm when there is a match" in {
-        val hostKey = Logic.getHostKeyEntry(Right(CommandResult(results, "")), List("ecdsa-sha2-nistp256", "ssh-rsa"))
+        val hostKey = Logic.getHostKeyEntry(Right(CommandResult(results, "", true)), List("ecdsa-sha2-nistp256", "ssh-rsa"))
         hostKey.right.value shouldBe "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKDHXJ6sXLoKprcNzMDLF6YVroaf5ycshemnS1TJggIA6cf/FW5EmdzUlf+P0QfBdLsqjBVBxQhyWTtHXD4Byds= root@ip-10-248-50-51"
       }
 
       "return the host key using the second algorithm when there is a match for the first" in {
-        val hostKey = Logic.getHostKeyEntry(Right(CommandResult(results, "")), List("ecdsa-idontexist", "ssh-rsa"))
+        val hostKey = Logic.getHostKeyEntry(Right(CommandResult(results, "", true)), List("ecdsa-idontexist", "ssh-rsa"))
         hostKey.right.value shouldBe "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCgfV3YLgQ6PKhz3NHwFOhQA1ZgBBxYq9duNF0RdHezuBDQAdz51UKssvsIBi74/DuHk7RjaPPMZaC6yNkAuRMTyJk82S93GGow36iMTQD4HTpDuUFloT+SiTrjez/mkS2Wk+fm4brhjo9Xb8M3TXpOn65AXC/3mrB8JrZwx5Y9d2IwEQT1/r6aM1mUo2JJrSQJ1zv+3+ZFKfij1UncjG7rXsUegmR0lmt8bfAkpef1I+LK3CERgxRNCcuM80ptTws3vgxyP9cS60IiF7W1lwuwtvDvZ9LuDnHlrMi+t1t5EvwRm1CE9eLw9+qTQQijBFVjZlXT03St/6IJLMvBazI7 root@ip-10-248-50-51"
       }
 
       "error when there are no suitable host keys" in {
-        val hostKey = Logic.getHostKeyEntry(Right(CommandResult(results, "")), List("ssh-bob"))
+        val hostKey = Logic.getHostKeyEntry(Right(CommandResult(results, "", true)), List("ssh-bob"))
         hostKey.left.value.failures.head.friendlyMessage shouldBe "The remote instance did not return a host key with any preferred algorithm (preferred: List(ssh-bob))"
       }
     }

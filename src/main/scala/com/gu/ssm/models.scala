@@ -84,7 +84,7 @@ case object SsmRepl extends SsmMode
 case object SsmSsh extends SsmMode
 case object SsmScp extends SsmMode
 
-case class CommandResult(stdOut: String, stdErr: String)
+case class CommandResult(stdOut: String, stdErr: String, commandFailed: Boolean)
 
 case class SSMConfig (
   targets: List[Instance],
