@@ -99,8 +99,7 @@ case class AWSClients (
 
 case class ResultsWithInstancesNotFound(
   results: List[(InstanceId, scala.Either[CommandStatus, CommandResult])],
-  instancesNotFound: List[InstanceId],
-  anyCommandFailed: Boolean
+  instancesNotFound: List[InstanceId]
 )
 
 sealed trait SingleInstanceSelectionMode

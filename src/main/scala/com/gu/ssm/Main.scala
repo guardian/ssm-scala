@@ -76,7 +76,7 @@ object Main {
       SSH.sshCmdStandard(rawOutput)(privateKeyFile, instance, user, address, targetInstancePortNumberOpt, Some(hostKeyFile), useAgent, profile, region, tunnelThroughSystemsManager)
     }
     val programResult = Await.result(fProgramResult.asFuture, Duration.Inf)
-    ProgramResult(programResult.map(UI.sshOutput(rawOutput)))
+    ProgramResult.convertErrorToResult(programResult.map(UI.sshOutput(rawOutput)))
   }
 
   private def setUpBastionSSH(
@@ -115,7 +115,7 @@ object Main {
       hostKeyFile <- SSH.writeHostKey((bastionAddress, bastionHostKey), (targetAddress, targetHostKey))
     } yield SSH.sshCmdBastion(rawOutput)(privateKeyFile, bastionInstance, targetInstance, user, bastionAddress, targetAddress, bastionPortNumberOpt, bastionUser, targetInstancePortNumberOpt, useAgent, Some(hostKeyFile))
     val programResult = Await.result(fProgramResult.asFuture, Duration.Inf)
-    ProgramResult(programResult.map(UI.sshOutput(rawOutput)))
+    ProgramResult.convertErrorToResult(programResult.map(UI.sshOutput(rawOutput)))
   }
 
   private def setUpStandardScp(
@@ -150,7 +150,7 @@ object Main {
       SSH.scpCmdStandard(rawOutput)(privateKeyFile, instance, user, address, targetInstancePortNumberOpt, useAgent, Some(hostKeyFile), sourceFile, targetFile, profile, region, tunnelThroughSystemsManager)
     }
     val programResult = Await.result(fProgramResult.asFuture, Duration.Inf)
-    ProgramResult(programResult.map(UI.sshOutput(rawOutput)))
+    ProgramResult.convertErrorToResult(programResult.map(UI.sshOutput(rawOutput)))
   }
 
   private def execute(awsClients: AWSClients, executionTarget: ExecutionTarget, user: String, toExecute: String): ProgramResult = {
@@ -159,10 +159,9 @@ object Main {
       _ <- Attempt.fromEither(Logic.checkInstancesList(config))
       results <- IO.executeOnInstances(config.targets.map(i => i.id), user, toExecute, awsClients.ssmClient)
       incorrectInstancesFromInstancesTag = Logic.computeIncorrectInstances(executionTarget, results.map(_._1))
-      hasAnyCommandFailed = Logic.hasAnyCommandFailed(results)
-    } yield ResultsWithInstancesNotFound(results, incorrectInstancesFromInstancesTag, hasAnyCommandFailed)
+    } yield ResultsWithInstancesNotFound(results, incorrectInstancesFromInstancesTag)
 
     val programResult = Await.result(fProgramResult.asFuture, Duration.Inf)
-    ProgramResult(programResult.map(UI.output))
+    ProgramResult.convertErrorToResult(programResult.map(UI.output))
   }
 }

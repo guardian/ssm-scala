@@ -16,7 +16,7 @@ case class Verbose(text: String) extends Output
 
 case class ProgramResult(output: Seq[Output], nonZeroExitCode: Option[ExitCode] = None)
 object ProgramResult {
-  def apply(programResult: Either[FailedAttempt, ProgramResult]): ProgramResult = {
+  def convertErrorToResult(programResult: Either[FailedAttempt, ProgramResult]): ProgramResult = {
     programResult.fold (
       failedAttempt => ProgramResult(UI.outputFailure(failedAttempt), Some(failedAttempt.exitCode)),
       identity
@@ -60,7 +60,7 @@ object UI {
       }
     }
 
-    val nonZeroExitCode = if(extendedResults.anyCommandFailed) { Some(ErrorCode) } else { None }
+    val nonZeroExitCode = if (hasAnyCommandFailed(extendedResults.results)) Some(ErrorCode) else None
     ProgramResult(buffer.toList, nonZeroExitCode)
   }
 
@@ -76,6 +76,10 @@ object UI {
     failedAttempt.failures.flatMap { failure =>
       Seq(Err(failure.friendlyMessage, failure.throwable)) ++ failure.context.map(Verbose.apply)
     }
+  }
+
+  def hasAnyCommandFailed(ssmResults: List[(InstanceId, Either[CommandStatus, CommandResult])]): Boolean = {
+    ssmResults.exists { case(_, result) => result.exists(_.commandFailed) }
   }
 }
 

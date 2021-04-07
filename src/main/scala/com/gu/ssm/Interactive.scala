@@ -42,7 +42,7 @@ class InteractiveProgram(val awsClients: AWSClients)(implicit ec: ExecutionConte
   def executeCommand(command: String, instances: List[InstanceId], username: String, instancesNotFound: List[InstanceId]): Unit = {
     IO.executeOnInstances(instances, username, command, awsClients.ssmClient).onComplete {
       case Right(results) =>
-        ui.displayResults(instances, username, ResultsWithInstancesNotFound(results, instancesNotFound, Logic.hasAnyCommandFailed(results)))
+        ui.displayResults(instances, username, ResultsWithInstancesNotFound(results, instancesNotFound))
       case Left(fa) =>
         ui.displayError(fa)
     }
@@ -159,14 +159,14 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
   def ready(instances: List[InstanceId], username: String, instancesToReport: List[InstanceId]): Unit = {
     logger.trace("resolved instances and username, UI ready")
     textGUI.removeWindow(textGUI.getActiveWindow)
-    textGUI.addWindow(mainWindow(instances, username, ResultsWithInstancesNotFound(Nil, instancesToReport, anyCommandFailed = false)))
+    textGUI.addWindow(mainWindow(instances, username, ResultsWithInstancesNotFound(Nil, instancesToReport)))
     textGUI.updateScreen()
   }
 
   def searching(): Unit = {
     logger.trace("waiting to resolve instances and username, UI ready")
     textGUI.removeWindow(textGUI.getActiveWindow)
-    textGUI.addWindow(mainWindow(List(), "", ResultsWithInstancesNotFound(Nil, Nil, anyCommandFailed = false)))
+    textGUI.addWindow(mainWindow(List(), "", ResultsWithInstancesNotFound(Nil, Nil)))
     textGUI.updateScreen()
   }
 
