@@ -158,4 +158,23 @@ class LogicTest extends FreeSpec with Matchers with EitherValues {
       }
     }
   }
+
+  "hasAnyCommandFailed" - {
+    "returns false if no commands failed" in {
+      Logic.hasAnyCommandFailed(List(InstanceId("test") -> Right(CommandResult("", "", commandFailed = false)))) shouldBe false
+    }
+
+    "returns true if a single command failed" in {
+      Logic.hasAnyCommandFailed(List(InstanceId("test") -> Right(CommandResult("", "", commandFailed = true)))) shouldBe true
+    }
+
+    "returns true if at least one command failed" in {
+      val commands = List(
+        InstanceId("test1") -> Right(CommandResult("", "", commandFailed = true)),
+        InstanceId("test2") -> Right(CommandResult("", "", commandFailed = false))
+      )
+
+      Logic.hasAnyCommandFailed(commands) shouldBe true
+    }
+  }
 }

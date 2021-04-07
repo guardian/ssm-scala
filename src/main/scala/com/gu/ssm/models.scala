@@ -97,7 +97,11 @@ case class AWSClients (
   ec2Client: AmazonEC2Async
 )
 
-case class ResultsWithInstancesNotFound(results: List[(InstanceId, scala.Either[CommandStatus, CommandResult])], instancesNotFound: List[InstanceId])
+case class ResultsWithInstancesNotFound(
+  results: List[(InstanceId, scala.Either[CommandStatus, CommandResult])],
+  instancesNotFound: List[InstanceId],
+  anyCommandFailed: Boolean
+)
 
 sealed trait SingleInstanceSelectionMode
 case object SismNewest extends SingleInstanceSelectionMode

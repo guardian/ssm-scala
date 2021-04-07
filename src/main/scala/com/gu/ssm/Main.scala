@@ -58,7 +58,7 @@ object Main {
     useAgent: Option[Boolean],
     profile: Option[String],
     region: Region,
-    tunnelThroughSystemsManager: Boolean) = {
+    tunnelThroughSystemsManager: Boolean): ProgramResult = {
     val fProgramResult = for {
       config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, executionTarget)
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
@@ -91,7 +91,7 @@ object Main {
     bastionUser: String,
     targetInstancePortNumberOpt: Option[Int],
     useAgent: Option[Boolean],
-    preferredAlgs: List[String]) = {
+    preferredAlgs: List[String]): ProgramResult = {
     val fProgramResult = for {
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
       (privateKeyFile, publicKey) = sshArtifacts
@@ -132,7 +132,7 @@ object Main {
                                 targetFile: String,
                                 profile: Option[String],
                                 region: Region,
-                                tunnelThroughSystemsManager: Boolean) = {
+                                tunnelThroughSystemsManager: Boolean): ProgramResult = {
     val fProgramResult = for {
       config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, executionTarget)
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
@@ -159,14 +159,10 @@ object Main {
       _ <- Attempt.fromEither(Logic.checkInstancesList(config))
       results <- IO.executeOnInstances(config.targets.map(i => i.id), user, toExecute, awsClients.ssmClient)
       incorrectInstancesFromInstancesTag = Logic.computeIncorrectInstances(executionTarget, results.map(_._1))
-    } yield ResultsWithInstancesNotFound(results,incorrectInstancesFromInstancesTag)
+      hasAnyCommandFailed = Logic.hasAnyCommandFailed(results)
+    } yield ResultsWithInstancesNotFound(results, incorrectInstancesFromInstancesTag, hasAnyCommandFailed)
 
     val programResult = Await.result(fProgramResult.asFuture, Duration.Inf)
-    val programOutput = ProgramResult(programResult.map(UI.output))
-
-    val anyCommandFailed = programResult.exists(_.results.exists(_._2.map(_.commandFailed).getOrElse(false)))
-    val nonZeroExitCode = if(programOutput.nonZeroExitCode.isEmpty && anyCommandFailed) { Some(ErrorCode) } else { programOutput.nonZeroExitCode }
-
-    programOutput.copy(nonZeroExitCode = nonZeroExitCode)
+    ProgramResult(programResult.map(UI.output))
   }
 }

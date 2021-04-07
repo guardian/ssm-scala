@@ -1,8 +1,7 @@
 package com.gu.ssm
 
 import java.io.{ByteArrayOutputStream, PrintWriter}
-
-import com.gu.ssm.utils.attempt.{ExitCode, FailedAttempt}
+import com.gu.ssm.utils.attempt.{ErrorCode, ExitCode, FailedAttempt}
 
 import scala.collection.mutable
 
@@ -17,10 +16,10 @@ case class Verbose(text: String) extends Output
 
 case class ProgramResult(output: Seq[Output], nonZeroExitCode: Option[ExitCode] = None)
 object ProgramResult {
-  def apply(result: Either[FailedAttempt, Seq[Output]]): ProgramResult = {
-    result.fold[ProgramResult] (
-      failedAttempt => ProgramResult.apply(UI.outputFailure(failedAttempt), Some(failedAttempt.exitCode)),
-      output => ProgramResult.apply(output, None)
+  def apply(programResult: Either[FailedAttempt, ProgramResult]): ProgramResult = {
+    programResult.fold (
+      failedAttempt => ProgramResult(UI.outputFailure(failedAttempt), Some(failedAttempt.exitCode)),
+      identity
     )
   }
 }
@@ -41,7 +40,7 @@ object UI {
     }
   }
 
-  def output(extendedResults: ResultsWithInstancesNotFound): Seq[Output] = {
+  def output(extendedResults: ResultsWithInstancesNotFound): ProgramResult = {
     val buffer = mutable.Buffer.empty[Output]
     if(extendedResults.instancesNotFound.nonEmpty){
       buffer += Err(s"The following instance(s) could not be found: ${extendedResults.instancesNotFound.map(_.id).mkString(", ")}\n")
@@ -60,16 +59,18 @@ object UI {
         )
       }
     }
-    buffer.toList
+
+    val nonZeroExitCode = if(extendedResults.anyCommandFailed) { Some(ErrorCode) } else { None }
+    ProgramResult(buffer.toList, nonZeroExitCode)
   }
 
-  def sshOutput(rawOutput: Boolean)(result: (InstanceId, Seq[Output])): Seq[Output] = {
+  def sshOutput(rawOutput: Boolean)(result: (InstanceId, Seq[Output])): ProgramResult = ProgramResult(
     if (rawOutput){
       result._2
     } else {
       Metadata(s"========= ${result._1.id} =========") +: result._2
     }
-  }
+  )
 
   def outputFailure(failedAttempt: FailedAttempt): Seq[Output] = {
     failedAttempt.failures.flatMap { failure =>

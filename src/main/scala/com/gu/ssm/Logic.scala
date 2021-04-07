@@ -80,4 +80,8 @@ object Logic {
     }
   }
 
+  def hasAnyCommandFailed(ssmResults: List[(InstanceId, Either[CommandStatus, CommandResult])]): Boolean = {
+    ssmResults.exists { case(_, result) => result.exists(_.commandFailed) }
+  }
+
 }
