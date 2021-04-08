@@ -109,7 +109,7 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
           case Right(cmdResult) =>
             cmdResult
           case Left(status) =>
-            CommandResult("", status.toString)
+            CommandResult("", status.toString, commandFailed = true)
         }
         i -> outputStreams
       }.toMap
