@@ -28,7 +28,7 @@ object AwsAsyncHandler {
       if (e.getMessage.contains("Request has expired")) {
         Failure("expired AWS credentials", "Failed to request data from AWS, the temporary credentials have expired", AwsPermissionsError, e).attempt
       } else if (e.getMessage.contains("Unable to load AWS credentials from any provider in the chain")) {
-        Failure("Invalid AWS profile name (no credentials)", "No credentials found for the specified AWS profile", AwsPermissionsError, e).attempt
+        Failure("No AWS credentials found", "No AWS credentials found. Did you mean to set --profile?", AwsPermissionsError, e).attempt
       } else if (e.getMessage.contains("No AWS profile named")) {
         Failure("Invalid AWS profile name (does not exist)", "The specified AWS profile does not exist", AwsPermissionsError, e).attempt
       } else if (e.getMessage.contains("is not authorized to perform")) {
