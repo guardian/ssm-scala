@@ -228,7 +228,6 @@ object ArgumentParser {
       if (args.mode.isEmpty) Left("You must select a mode to use: cmd, repl or ssh")
       else if (args.toExecute.isEmpty && args.mode.contains(SsmCmd)) Left("You must provide commands to execute (src-file or cmd)")
       else if (args.executionTarget.isEmpty) Left("You must provide a list of target instances (-i) or instance App/Stage/Stack tags (-t)")
-      else if (args.profile.isEmpty && !System.getenv().containsKey("AWS_PROFILE")) Left("--profile switch or environment variable AWS_PROFILE expected")
       else Right(())
     }
   }

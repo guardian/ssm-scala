@@ -1,5 +1,6 @@
 package com.gu.ssm.aws
 
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import com.amazonaws.auth.profile.ProfileCredentialsProvider
 import com.amazonaws.regions.Region
 import com.amazonaws.services.ec2.model._
@@ -15,13 +16,13 @@ import scala.concurrent.ExecutionContext
 object EC2 {
   def client(profileName: Option[String], region: Region): AmazonEC2Async = {
 
-    val profileCredentialsProvider = profileName match {
+    val credentialsProvider = profileName match {
       case Some(profile) => new ProfileCredentialsProvider(profile)
-      case _ => new ProfileCredentialsProvider()
+      case _ => DefaultAWSCredentialsProviderChain.getInstance()
     }
 
     AmazonEC2AsyncClientBuilder.standard()
-      .withCredentials(profileCredentialsProvider)
+      .withCredentials(credentialsProvider)
       .withRegion(region.getName)
       .build()
   }
