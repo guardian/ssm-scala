@@ -1,7 +1,9 @@
 package com.gu.ssm
 
-import java.io.File
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
+import com.amazonaws.auth.profile.ProfileCredentialsProvider
 
+import java.io.File
 import com.amazonaws.regions.Region
 import com.amazonaws.services.ec2.AmazonEC2Async
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceAsync
@@ -40,10 +42,17 @@ object Logic {
     }
   }
 
-  def getClients(profile: Option[String], region: Region): AWSClients = {
-    val ssmClient: AWSSimpleSystemsManagementAsync = SSM.client(profile, region)
-    val stsClient: AWSSecurityTokenServiceAsync = STS.client(profile, region)
-    val ec2Client: AmazonEC2Async = EC2.client(profile, region)
+  def getClients(profile: Option[String], region: Region, useDefaultCredentialsProvider: Boolean): AWSClients = {
+    val credentialsProvider = profile match {
+      case _ if useDefaultCredentialsProvider => DefaultAWSCredentialsProviderChain.getInstance()
+      case Some(profile) => new ProfileCredentialsProvider(profile)
+      // In this case it's set using the AWS_PROFILE environment variable
+      case _ => new ProfileCredentialsProvider()
+    }
+
+    val ssmClient: AWSSimpleSystemsManagementAsync = SSM.client(credentialsProvider, region)
+    val stsClient: AWSSecurityTokenServiceAsync = STS.client(credentialsProvider, region)
+    val ec2Client: AmazonEC2Async = EC2.client(credentialsProvider, region)
     AWSClients(ssmClient, stsClient, ec2Client)
   }
 

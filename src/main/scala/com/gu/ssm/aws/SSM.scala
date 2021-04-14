@@ -1,26 +1,20 @@
 package com.gu.ssm.aws
 
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
-import com.amazonaws.auth.profile.ProfileCredentialsProvider
+import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.regions.Region
 import com.amazonaws.services.simplesystemsmanagement.model._
 import com.amazonaws.services.simplesystemsmanagement.{AWSSimpleSystemsManagementAsync, AWSSimpleSystemsManagementAsyncClientBuilder}
-import com.gu.ssm.{CommandStatus, _}
 import com.gu.ssm.aws.AwsAsyncHandler.{awsToScala, handleAWSErrs}
 import com.gu.ssm.utils.attempt.Attempt
+import com.gu.ssm.{CommandStatus, _}
 
-import collection.JavaConverters._
+import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 
 object SSM {
-  def client(profileName: Option[String], region: Region): AWSSimpleSystemsManagementAsync = {
-    val credentialsProvider = profileName match {
-      case Some(profile) => new ProfileCredentialsProvider(profile)
-      case _ => DefaultAWSCredentialsProviderChain.getInstance()
-    }
-
+  def client(credentialsProvider: AWSCredentialsProvider, region: Region): AWSSimpleSystemsManagementAsync = {
     AWSSimpleSystemsManagementAsyncClientBuilder.standard()
       .withCredentials(credentialsProvider)
       .withRegion(region.getName)
