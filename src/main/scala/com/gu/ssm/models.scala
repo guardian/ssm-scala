@@ -32,7 +32,8 @@ case class Arguments(
   hostKeyAlgPreference: List[String],
   sourceFile: Option[String],
   targetFile: Option[String],
-  tunnelThroughSystemsManager: Boolean
+  tunnelThroughSystemsManager: Boolean,
+  useDefaultCredentialsProvider: Boolean
 )
 
 object Arguments {
@@ -61,7 +62,8 @@ object Arguments {
     hostKeyAlgPreference = defaultHostKeyAlgPreference,
     sourceFile = None,
     targetFile = None,
-    tunnelThroughSystemsManager = true
+    tunnelThroughSystemsManager = true,
+    useDefaultCredentialsProvider = false
   )
 }
 

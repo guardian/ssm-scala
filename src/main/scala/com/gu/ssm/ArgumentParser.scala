@@ -51,6 +51,11 @@ object ArgumentParser {
     opt[Unit]("verbose").action( (_, c) =>
       c.copy(verbose = true) ).text("enable more verbose logging")
 
+    opt[Unit]("use-default-credentials-provider").optional()
+      .action((value, args) => args.copy(useDefaultCredentialsProvider = true))
+      .text("Use the default AWS credentials provider chain rather than profile credentials. " +
+            "This option is required when running within AWS itself.")
+
     cmd("cmd")
       .action((_, c) => c.copy(mode = Some(SsmCmd)))
       .text("Execute a single (bash) command, or a file containing bash commands")
@@ -228,7 +233,7 @@ object ArgumentParser {
       if (args.mode.isEmpty) Left("You must select a mode to use: cmd, repl or ssh")
       else if (args.toExecute.isEmpty && args.mode.contains(SsmCmd)) Left("You must provide commands to execute (src-file or cmd)")
       else if (args.executionTarget.isEmpty) Left("You must provide a list of target instances (-i) or instance App/Stage/Stack tags (-t)")
-      else if (args.profile.isEmpty && !System.getenv().containsKey("AWS_PROFILE")) Left("--profile switch or environment variable AWS_PROFILE expected")
+      else if (!args.useDefaultCredentialsProvider && args.profile.isEmpty && !System.getenv().containsKey("AWS_PROFILE")) Left("Expected --profile, --use-default-credentials-provider or AWS_PROFILE environment variable")
       else Right(())
     }
   }
