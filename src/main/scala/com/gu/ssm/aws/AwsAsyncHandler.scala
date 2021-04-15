@@ -37,11 +37,11 @@ object AwsAsyncHandler {
       } else if (e.getMessage.contains("InvalidInstanceId")) {
         Failure("InvalidInstanceId from AWS", "The specified instance(s) are not eligible targets (AWS said InvalidInstanceId)", AwsError, e).attempt
       } else {
-        val details = serviceNameOpt.fold(s"AWS unknown error, unknown service (check logs for stacktrace). ${e.getMessage}") { serviceName =>
-          s"AWS unknown error, service: $serviceName (check logs for stacktrace), ${e.getMessage}"
+        val details = serviceNameOpt.fold(s"AWS unknown error, unknown service (check logs for stacktrace). $e") { serviceName =>
+          s"AWS unknown error, service: $serviceName (check logs for stacktrace), $e"
         }
-        val friendlyMessage = serviceNameOpt.fold(s"Unknown error while making API calls to AWS. ${e.getMessage}") { serviceName =>
-          s"Unknown error while making an API call to AWS' $serviceName service, ${e.getMessage}"
+        val friendlyMessage = serviceNameOpt.fold(s"Unknown error while making API calls to AWS. $e") { serviceName =>
+          s"Unknown error while making an API call to AWS' $serviceName service, $e"
         }
         Failure(details, friendlyMessage, AwsError, e).attempt
       }
