@@ -1,10 +1,10 @@
 package com.gu.ssm.aws
 
 import com.amazonaws.auth.profile.ProfileCredentialsProvider
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.regions.Region
 import com.amazonaws.services.securitytoken.model.{GetCallerIdentityRequest, GetCallerIdentityResult}
 import com.amazonaws.services.securitytoken.{AWSSecurityTokenServiceAsync, AWSSecurityTokenServiceAsyncClientBuilder}
-import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsyncClientBuilder
 import com.gu.ssm.aws.AwsAsyncHandler.{awsToScala, handleAWSErrs}
 import com.gu.ssm.utils.attempt.Attempt
 
@@ -19,10 +19,11 @@ object STS {
       case _ => new ProfileCredentialsProvider()
     }
 
-  // STS is a global service so no region required
     AWSSecurityTokenServiceAsyncClientBuilder.standard()
       .withCredentials(profileCredentialsProvider)
-      .withRegion(region.getName)
+      // STS is a global service but you need to access the regional endpoint if using it through an endpoint in VPCs
+      // that have no outbound internet access. https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_enable-regions.html
+      .withEndpointConfiguration(new EndpointConfiguration(region.getServiceEndpoint("sts"), region.getName))
       .build()
   }
 
