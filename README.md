@@ -51,7 +51,7 @@ The readme is quite detailed (and shows how to do many more things than what wil
 
 ## Known issues
 
-If you get an error about Futures timed out after 25 seconds, then the SSM permissions may not be right, or you might need to recycle the instance since adding them.
+If you get an error about Futures timed out after 25 seconds, then the SSM permissions may not be right, or you might need to recycle the instance since adding the permissions.
 
 If the disk on which the keyfile is stored is full, then ssm-scala cannot add the public key identity prior to logging in to the box.  This is often found to be the case, and also can apparently cause the AWS SSM agent to stop.
 
