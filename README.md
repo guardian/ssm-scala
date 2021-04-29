@@ -51,6 +51,8 @@ The readme is quite detailed (and shows how to do many more things than what wil
 
 ## Known issues
 
+If you get an error about Futures timed out after 25 seconds, then the SSM permissions may not be right, or you might need to recycle the instance since adding the permissions.
+
 If the disk on which the keyfile is stored is full, then ssm-scala cannot add the public key identity prior to logging in to the box.  This is often found to be the case, and also can apparently cause the AWS SSM agent to stop.
 
 One potential workaround for this is rebooting the box using the EC2 console (may clear down logs, for example).
@@ -242,11 +244,20 @@ It is strongly encouraged to connect using the default SSM tunnel behaviour. To 
 Update the permissions of your instances so that they are allowed to do these things:
 
 ```
-- ssm:UpdateInstanceInformation
-- ssmmessages:CreateControlChannel
-- ssmmessages:CreateDataChannel
-- ssmmessages:OpenControlChannel
-- ssmmessages:OpenDataChannel
+              - ec2messages:AcknowledgeMessage
+              - ec2messages:DeleteMessage
+              - ec2messages:FailMessage
+              - ec2messages:GetEndpoint
+              - ec2messages:GetMessages
+              - ec2messages:SendReply
+              - ssm:UpdateInstanceInformation
+              - ssm:ListInstanceAssociations
+              - ssm:DescribeInstanceProperties
+              - ssm:DescribeDocumentParameters
+              - ssmmessages:CreateControlChannel
+              - ssmmessages:CreateDataChannel
+              - ssmmessages:OpenControlChannel
+              - ssmmessages:OpenDataChannel
 ```
 
 See [here](https://github.com/guardian/deploy-tools-platform/blob/master/cloudformation/nexus.template.yaml#L118) for an example complete policy.
@@ -270,10 +281,10 @@ You'll also need to install the systems manager plugin on your machine:
   brew cask install session-manager-plugin
 ```
 
-You can then SSH using SSM and the --ssm-tunnel command:
+You can then SSH using SSM with the default arguments:
 
 ```
-  ssm ssh -x -i i-0937fe9baa578095b -p deployTools --ssm-tunnel
+  ssm ssh -x -i i-0937fe9baa578095b -p deployTools
  ```
 
 (Useful tip - you can find the instance id using prism, e.g. `prism -f instanceName amigo`)
