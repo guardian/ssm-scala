@@ -6,7 +6,7 @@ Pull requests are welcome! Here are the rules of engagement:
 
 - The philosophy here is about communication, taking responsibility for your changes, and fast, incremental delivery.
 - Speak to the team before you decide to do anything major. We can probably help design the change to maximise the chances of it being accepted.
-- Pull requests made to master assume the change is ready to be released.
+- Pull requests made to main assume the change is ready to be released.
 - Many small requests will be reviewed/merged quicker than a giant lists of changes.
 - If you have a proposal, or want feedback on a branch under development, prefix `[WIP]` to the pull request title.
 
