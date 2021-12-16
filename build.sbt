@@ -20,4 +20,4 @@ libraryDependencies ++= Seq(
 )
 
 scalacOptions := Seq("-unchecked", "-deprecation")
-assemblyJarName in assembly := "ssm.jar"
+assembly / assemblyJarName := "ssm.jar"
