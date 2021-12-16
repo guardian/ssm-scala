@@ -1,8 +1,9 @@
 package com.gu.ssm
 
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class UITest extends FreeSpec with Matchers {
+class UITest extends AnyFreeSpec with Matchers {
   "hasAnyCommandFailed" - {
     "returns false if no commands failed" in {
       val command = CommandResult("", "", commandFailed = false)

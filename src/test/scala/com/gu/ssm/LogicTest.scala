@@ -1,11 +1,12 @@
 package com.gu.ssm
 
-import org.scalatest.{EitherValues, FreeSpec, Matchers}
+import org.scalatest.EitherValues
+
 import java.time.{Instant, LocalDateTime, ZoneId}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-import com.gu.ssm.utils.attempt.{FailedAttempt, Failure, NoHostKey}
-
-class LogicTest extends FreeSpec with Matchers with EitherValues {
+class LogicTest extends AnyFreeSpec with Matchers with EitherValues {
   "extractSASTags" - {
     import Logic.extractSASTags
 
