@@ -10,6 +10,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: lokkju/github-action-sbt@master
+      - name: Setup Java 8
+        uses: actions/setup-java@v2
         with:
-          commands: test
+          java-version: '8'
+          distribution: 'adopt'
+      - run: sbt test
