@@ -1,12 +1,14 @@
 package com.gu.ssm
 
-import org.scalatest.{EitherValues, FreeSpec, Matchers}
+import org.scalatest.EitherValues
+
 import java.io.File
 import java.time.Instant
-
 import com.amazonaws.regions.{Region, Regions}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class SSHTest extends FreeSpec with Matchers with EitherValues {
+class SSHTest extends AnyFreeSpec with Matchers with EitherValues {
   private val EU_WEST_1 = Region.getRegion(Regions.EU_WEST_1)
 
   "create add key command" - {

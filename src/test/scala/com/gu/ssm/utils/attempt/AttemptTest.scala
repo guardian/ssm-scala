@@ -1,16 +1,17 @@
 package com.gu.ssm.utils.attempt
 
 import java.util.concurrent.TimeoutException
-
-import org.scalatest.{EitherValues, FreeSpec, Matchers}
+import org.scalatest.EitherValues
 import Attempt.{Left, Right}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 
-class AttemptTest extends FreeSpec with Matchers with EitherValues with AttemptValues {
+class AttemptTest extends AnyFreeSpec with Matchers with EitherValues with AttemptValues {
   "traverse" - {
     "returns the first failure" in {
       def failOnFourAndSix(i: Int): Attempt[Int] = {

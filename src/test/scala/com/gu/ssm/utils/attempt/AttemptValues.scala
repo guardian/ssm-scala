@@ -1,9 +1,8 @@
 package com.gu.ssm.utils.attempt
 
 import java.io.{ByteArrayOutputStream, PrintWriter}
-
-import org.scalatest.Matchers
 import org.scalatest.exceptions.TestFailedException
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext}

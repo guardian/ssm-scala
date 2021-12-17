@@ -1,10 +1,12 @@
 package com.gu.ssm
 
-import org.scalatest.{EitherValues, FreeSpec, Matchers}
+import org.scalatest.EitherValues
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 import com.gu.ssm.Logic.computeIncorrectInstances
 
 
-class MainTest extends FreeSpec with Matchers with EitherValues {
+class MainTest extends AnyFreeSpec with Matchers with EitherValues {
 
   "computeIncorrectInstances" - {
     "should return empty list when matching list of Instance Ids" in {
