@@ -47,16 +47,16 @@ object UI {
     }
     extendedResults.results.flatMap { case (instance, result) =>
       buffer += Metadata(s"========= ${instance.id} =========")
-      if (result.isLeft) {
-        buffer += Err(result.left.get.toString)
-      } else {
-        val output = result.right.get
-        buffer ++= Seq(
-          Metadata(s"STDOUT:"),
-          Out(output.stdOut),
-          Metadata(s"STDERR:"),
-          Err(output.stdErr)
-        )
+      result match {
+        case Left(commandStatus) =>
+          buffer += Err(commandStatus.toString)
+        case Right(commandStatus) =>
+          buffer ++= Seq(
+            Metadata(s"STDOUT:"),
+            Out(commandStatus.stdOut),
+            Metadata(s"STDERR:"),
+            Err(commandStatus.stdErr)
+          )
       }
     }
 

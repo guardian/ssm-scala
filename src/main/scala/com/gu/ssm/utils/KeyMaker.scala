@@ -43,7 +43,7 @@ object KeyMaker {
     "ssh-rsa " + publicKeyEncoded + " " + description
   }
 
-  private def writePemFile(key: Key, description: String, file: File) {
+  private def writePemFile(key: Key, description: String, file: File): Unit = {
     val pemObject = new PemObject(description, key.getEncoded)
     val pemWriter = new PemWriter(new OutputStreamWriter(new FileOutputStream(file)))
     pemWriter.writeObject(pemObject)

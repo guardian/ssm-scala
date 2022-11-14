@@ -29,7 +29,7 @@ object Logic {
 
   def checkInstancesList(config: SSMConfig): Either[FailedAttempt, Unit] = config.targets match {
     case List() => Left(FailedAttempt(List(Failure("No instances found", "No instances found", ErrorCode))))
-    case _ => Right(Unit)
+    case _ => Right(())
   }
 
   def getSSHInstance(instances: List[Instance], sism: SingleInstanceSelectionMode): Either[FailedAttempt, Instance] = {
@@ -73,9 +73,12 @@ object Logic {
   def getHostKeyEntry(ssmResult: Either[CommandStatus, CommandResult], preferredAlgs: List[String]): Either[FailedAttempt, String] = {
     ssmResult match {
       case Right(result) =>
-        val resultLines = result.stdOut.lines
+        val resultLines = result.stdOut.linesIterator
         val preferredKeys = resultLines.filter(hostKey => preferredAlgs.exists(hostKey.startsWith))
-        val preferenceOrderedKeys = preferredKeys.toList.sortBy(hostKey => preferredAlgs.indexWhere(hostKey.startsWith))
+        val preferenceOrderedKeys: Seq[String] = preferredKeys.toList.sortBy(
+          hostKey => preferredAlgs.indexWhere(hostKey.startsWith)
+        )
+
         preferenceOrderedKeys.headOption match {
           case Some(hostKey) => Right(hostKey)
           case None => Left(Failure(
