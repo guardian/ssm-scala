@@ -1,7 +1,6 @@
 package com.gu.ssm.aws
 
-import com.amazonaws.auth.{AWSCredentialsProvider, DefaultAWSCredentialsProviderChain}
-import com.amazonaws.auth.profile.ProfileCredentialsProvider
+import com.amazonaws.auth.AWSCredentialsProvider
 import com.amazonaws.regions.Region
 import com.amazonaws.services.ec2.model._
 import com.amazonaws.services.ec2.{AmazonEC2Async, AmazonEC2AsyncClientBuilder}
@@ -9,8 +8,8 @@ import com.gu.ssm.aws.AwsAsyncHandler.{awsToScala, handleAWSErrs}
 import com.gu.ssm.utils.attempt.Attempt
 import com.gu.ssm.{Instance, InstanceId}
 
-import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
+import scala.jdk.CollectionConverters._
 
 
 object EC2 {
@@ -60,7 +59,7 @@ object EC2 {
     val request = new CreateTagsRequest()
       .withTags(new Tag(key, value))
       .withResources(id.id)
-    handleAWSErrs(awsToScala(client.createTagsAsync)(request)).map(_ => Unit)
+    handleAWSErrs(awsToScala(client.createTagsAsync)(request)).map(_ => ())
   }
 
 }

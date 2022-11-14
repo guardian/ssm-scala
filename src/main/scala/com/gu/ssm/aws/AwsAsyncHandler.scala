@@ -11,7 +11,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 object AwsAsyncHandler {
   private val ServiceName = ".*Service: ([^;]+);.*".r
   def awsToScala[R <: AmazonWebServiceRequest, T](sdkMethod: ( (R, AsyncHandler[R, T]) => java.util.concurrent.Future[T])): (R => Future[T]) = { req =>
-    val p = Promise[T]
+    val p = Promise[T]()
     sdkMethod(req, new AwsAsyncPromiseHandler(p))
     p.future
   }
