@@ -11,10 +11,10 @@ libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk-sts" % awsSdkVersion,
   "com.amazonaws" % "aws-java-sdk-ec2" % awsSdkVersion,
   "com.github.scopt" %% "scopt" % "4.1.0",
-  "com.googlecode.lanterna" % "lanterna" % "3.0.4",
+  "com.googlecode.lanterna" % "lanterna" % "3.1.1",
   "ch.qos.logback" %  "logback-classic" % "1.4.4",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
-  "com.fasterxml.jackson.core" % "jackson-databind" % "2.13.4.2",
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.14.0",
   "org.bouncycastle" % "bcpkix-jdk15on" % "1.70",
   "org.scalatest" %% "scalatest" % "3.2.14" % Test
 )
