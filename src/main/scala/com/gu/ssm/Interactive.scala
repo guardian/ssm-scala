@@ -118,10 +118,14 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
       errOutputBox.setForegroundColor(TextColor.ANSI.RED)
       val stdOutputBox = new Label(outputs(0).stdOut)
 
-      val instancesComboBox = new ComboBox(instances.map(_.id):_*).addListener { (selectedIndex: Int, _: Int) =>
-        errOutputBox.setText(outputs(selectedIndex).stdErr)
-        stdOutputBox.setText(outputs(selectedIndex).stdOut)
+      val listener = new ComboBox.Listener {
+        override def onSelectionChanged(selectedIndex: Int, previousSelection: Int, changedByUserInteraction: Boolean): Unit = {
+          errOutputBox.setText(outputs(selectedIndex).stdErr)
+          stdOutputBox.setText(outputs(selectedIndex).stdOut)
+        }
       }
+
+      val instancesComboBox: ComboBox[String] = new ComboBox(instances.map(_.id):_*).addListener(listener)
       contentPanel.addComponent(instancesComboBox)
 
       contentPanel.addComponent(new EmptySpace())
