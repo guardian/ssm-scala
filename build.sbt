@@ -19,5 +19,13 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.2.14" % Test
 )
 
+// Required as jackson causes a merge issue with sbt-assembly
+// See: https://github.com/sbt/sbt-assembly/issues/391
+assemblyMergeStrategy := {
+  case PathList("META-INF", _*) => MergeStrategy.discard
+  case _                        => MergeStrategy.first
+}
+assemblyJarName := "ssm.jar"
+
 scalacOptions := Seq("-unchecked", "-deprecation")
-assembly / assemblyJarName := "ssm.jar"
+
