@@ -1,9 +1,9 @@
 #!/bin/bash
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-SCALA_FOLDER="scala-2.12"
+SCALA_FOLDER="scala-2.13"
 cd $DIR
 sbt assembly
-cat "$DIR/generate-executable-prefix" "$DIR/target/$SCALA_FOLDER/ssm.jar" > "$DIR/target/$SCALA_FOLDER/ssm" 
+cat "$DIR/generate-executable-prefix" "$DIR/target/$SCALA_FOLDER/ssm.jar" > "$DIR/target/$SCALA_FOLDER/ssm"
 chmod +x "$DIR/target/$SCALA_FOLDER/ssm"
 echo "ssm executable now available at $DIR/target/$SCALA_FOLDER/ssm"
 cd "$DIR/target/$SCALA_FOLDER"
