@@ -16,7 +16,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
   "com.fasterxml.jackson.core" % "jackson-databind" % "2.14.1",
   "org.bouncycastle" % "bcpkix-jdk18on" % "1.72",
-  "org.scalatest" %% "scalatest" % "3.2.14" % Test
+  "org.scalatest" %% "scalatest" % "3.2.15" % Test
 )
 
 // Required as jackson causes a merge issue with sbt-assembly
