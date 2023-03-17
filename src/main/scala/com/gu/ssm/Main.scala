@@ -59,13 +59,13 @@ object Main {
     profile: Option[String],
     region: Region,
     tunnelThroughSystemsManager: Boolean,
-    maybeTunnelTarget: Option[TunnelTarget]): ProgramResult = {
+    tunnelTarget: Option[TunnelTarget]): ProgramResult = {
     val fProgramResult = for {
       config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, executionTarget)
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
       (privateKeyFile, publicKey) = sshArtifacts
       addPublicKeyCommand = SSH.addTaintedCommand(config.name) + SSH.addPublicKeyCommand(user, publicKey) + SSH.outputHostKeysCommand()
-      tunnelTarget <- Attempt.sequence(maybeTunnelTarget.toList.map {
+      resolvedTunnelTarget <- Attempt.sequence(tunnelTarget.toList.map {
         case t: TunnelTargetWithRDSTags => IO.resolveRDSTunnelTarget(t, awsClients.rdsClient)
         case t: TunnelTargetWithHostName => Attempt.Right(t)
       })
@@ -78,7 +78,7 @@ object Main {
       address <- Attempt.fromEither(Logic.getAddress(instance, onlyUsePrivateIP))
       hostKeyFile <- SSH.writeHostKey((address, hostKey))
     } yield {
-      SSH.sshCmdStandard(rawOutput)(privateKeyFile, instance, user, address, targetInstancePortNumberOpt, Some(hostKeyFile), useAgent, profile, region, tunnelThroughSystemsManager, tunnelTarget.headOption)
+      SSH.sshCmdStandard(rawOutput)(privateKeyFile, instance, user, address, targetInstancePortNumberOpt, Some(hostKeyFile), useAgent, profile, region, tunnelThroughSystemsManager, resolvedTunnelTarget.headOption)
     }
     val programResult = Await.result(fProgramResult.asFuture, Duration.Inf)
     ProgramResult.convertErrorToResult(programResult.map(UI.sshOutput(rawOutput)))

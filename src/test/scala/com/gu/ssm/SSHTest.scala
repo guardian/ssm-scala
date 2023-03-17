@@ -115,7 +115,7 @@ class SSHTest extends AnyFreeSpec with Matchers with EitherValues {
       "ssh tunnel to remote host" - {
         "is correctly formed" in {
           val (_, command) = sshCmdStandard(true)(file, instance, "user4", "34.1.1.10", None, None, Some(false), None, EU_WEST_1, tunnelThroughSystemsManager = true, tunnelTarget = Some(TunnelTargetWithHostName(5000, "example-hostname.com", 5432)))
-          command.head.text should equal ("""ssh -o "IdentitiesOnly yes" -a -o "ProxyCommand sh -c \"aws ssm start-session --target raspberry --document-name AWS-StartSSHSession --parameters 'portNumber=22' --region eu-west-1 \"" -i /banana -t -t user4@34.1.1.10 -L 5000:example-hostname.com:5432""")
+          command.head.text should equal ("""ssh -o "IdentitiesOnly yes" -a -o "ProxyCommand sh -c \"aws ssm start-session --target raspberry --document-name AWS-StartSSHSession --parameters 'portNumber=22' --region eu-west-1 \"" -i /banana -t -t user4@34.1.1.10 -L 5000:example-hostname.com:5432 -N -f""")
         }
       }
     }

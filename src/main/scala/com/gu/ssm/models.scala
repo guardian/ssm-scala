@@ -118,5 +118,5 @@ case object SismOldest extends SingleInstanceSelectionMode
 case object SismUnspecified extends SingleInstanceSelectionMode
 
 sealed trait TunnelTarget
-case class TunnelTargetWithHostName(localPort: Int, remoteHostName: String, remotePort: Int) extends TunnelTarget
 case class TunnelTargetWithRDSTags(localPort: Int, remoteTags: Seq[String]) extends TunnelTarget
+case class TunnelTargetWithHostName(localPort: Int, remoteHostName: String, remotePort: Int) extends TunnelTarget

@@ -103,7 +103,7 @@ object SSH {
     }
     val hostsFileString = hostsFile.map(file => s""" -o "UserKnownHostsFile $file" -o "StrictHostKeyChecking yes"""").getOrElse("")
     val proxyFragment = if(tunnelThroughSystemsManager) { s""" -o "ProxyCommand sh -c \\"aws ssm start-session --target ${instance.id.id} --document-name AWS-StartSSHSession --parameters 'portNumber=22' --region $region ${profile.map("--profile " + _).getOrElse("")}\\""""" } else { "" }
-    val tunnelString = tunnelTarget.map(t => s"-L ${t.localPort}:${t.remoteHostName}:${t.remotePort}").getOrElse("")
+    val tunnelString = tunnelTarget.map(t => s"-L ${t.localPort}:${t.remoteHostName}:${t.remotePort} -N -f").getOrElse("")
     val connectionString = s"""ssh -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString$targetPortSpecifications$proxyFragment -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $user@$ipAddress $tunnelString""".trim()
 
     val cmd = if (rawOutput) {
