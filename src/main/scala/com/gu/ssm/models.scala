@@ -37,7 +37,8 @@ case class Arguments(
   targetFile: Option[String],
   tunnelThroughSystemsManager: Boolean,
   useDefaultCredentialsProvider: Boolean,
-  tunnelTarget: Option[TunnelTarget]
+  tunnelTarget: Option[TunnelTargetWithHostName],
+  rdsTunnelTarget: Option[TunnelTargetWithRDSTags]
 )
 
 object Arguments {
@@ -68,7 +69,8 @@ object Arguments {
     targetFile = None,
     tunnelThroughSystemsManager = true,
     useDefaultCredentialsProvider = false,
-    tunnelTarget = None
+    tunnelTarget = None,
+    rdsTunnelTarget = None
   )
 }
 
@@ -116,13 +118,5 @@ case object SismOldest extends SingleInstanceSelectionMode
 case object SismUnspecified extends SingleInstanceSelectionMode
 
 sealed trait TunnelTarget
-case class TunnelTargetWithHostName(
-  localPort: Int,
-  remoteHostName: String,
-  remotePort: Int,
-) extends TunnelTarget
-case class TunnelTargetWithTags(
-  localPort: Int,
-  remoteTags: Seq[String],
-  remotePort: Int,
-) extends TunnelTarget
+case class TunnelTargetWithHostName(localPort: Int, remoteHostName: String, remotePort: Int) extends TunnelTarget
+case class TunnelTargetWithRDSTags(localPort: Int, remoteTags: Seq[String]) extends TunnelTarget

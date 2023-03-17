@@ -30,21 +30,33 @@ object Logic {
     else Right(tags.toList)
   }
 
-  val tunnelValidationErrorMsg = "Please specify a tunnel target in the format port:host_or_tags:hostport, where host_or_tags is either a hostname or a comma-separated list of tags."
+  val tunnelValidationErrorMsg = "Please specify a tunnel target in the format localPort:host:remotePort."
 
-  def extractTunnelConfig(tunnelStr: String): Either[String, TunnelTarget] = {
+  def extractTunnelConfig(tunnelStr: String): Either[String, TunnelTargetWithHostName] = {
     tunnelStr.split(":").toList match {
       case localPortStr :: targetStr :: remotePortStr :: Nil =>
         (localPortStr.toIntOption, targetStr, remotePortStr.toIntOption) match {
           case (Some(localPort), targetStr, Some(remotePort)) =>
-            if (targetStr.contains(','))
-              extractSASTags(targetStr.split(",")).flatMap { tags =>
-                Right(TunnelTargetWithTags(localPort, tags, remotePort))
-              }
-            else Right(TunnelTargetWithHostName(localPort, targetStr, remotePort))
-          case _ => Left(tunnelValidationErrorMsg)
+            Right(TunnelTargetWithHostName(localPort, targetStr, remotePort))
+          case _ => Left(s"$tunnelValidationErrorMsg Ports must be integers.")
         }
       case _ => Left(tunnelValidationErrorMsg)
+    }
+  }
+
+  val rdsTunnelValidationErrorMsg = "Please specify a tunnel target in the format localPort:tags, where tags is a comma-separated list of tag values."
+
+  def extractRDSTunnelConfig(tunnelStr: String): Either[String, TunnelTargetWithRDSTags] = {
+    tunnelStr.split(":").toList match {
+      case localPortStr :: tagsStr :: Nil =>
+        localPortStr.toIntOption match {
+          case Some(localPort) =>
+            extractSASTags(tagsStr.split(",")).flatMap { tags =>
+              Right(TunnelTargetWithRDSTags(localPort, tags))
+            }
+          case None => Left(rdsTunnelValidationErrorMsg)
+        }
+      case _ => Left(rdsTunnelValidationErrorMsg)
     }
   }
 

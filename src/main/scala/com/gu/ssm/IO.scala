@@ -20,15 +20,13 @@ object IO {
     }.getOrElse(Attempt.Left(Failure("Unable to resolve execution target", "You must provide an execution target (instance(s) or tags)", ArgumentsError)))
   }
 
-  def resolveTunnelTarget(tunnelTarget: TunnelTarget, rdsClient: AmazonRDSAsync)(implicit ec: ExecutionContext): Attempt[TunnelTargetWithHostName] = tunnelTarget match {
-    case TunnelTargetWithTags(localPort, remoteTags, remotePort) =>
-      RDS.resolveByTags(remoteTags.toList, rdsClient).flatMap {
-        case rdsInstance :: Nil => Attempt.Right(TunnelTargetWithHostName(localPort, rdsInstance.hostname, remotePort))
-        case Nil => Attempt.Left(Failure("Could not find target from tags", s"We could not find an RDS instance with the tags: ${remoteTags.mkString(", ")}", ArgumentsError))
-        case tooManyInstances =>
-          Attempt.Left(Failure("More than one tunnel target resolved from tags", s"We expected to find a single target, but there was more than one tunnel target resolved from the tags: ${remoteTags.mkString(", ")}", ArgumentsError))
-      }
-    case hostTarget: TunnelTargetWithHostName => Attempt.Right(hostTarget)
+  def resolveRDSTunnelTarget(target: TunnelTargetWithRDSTags, rdsClient: AmazonRDSAsync)(implicit ec: ExecutionContext): Attempt[TunnelTargetWithHostName] = {
+    RDS.resolveByTags(target.remoteTags.toList, rdsClient).flatMap {
+      case rdsInstance :: Nil => Attempt.Right(TunnelTargetWithHostName(target.localPort, rdsInstance.hostname, rdsInstance.port))
+      case Nil => Attempt.Left(Failure("Could not find target from tags", s"We could not find an RDS instance with the tags: ${target.remoteTags.mkString(", ")}", ArgumentsError))
+      case tooManyInstances =>
+        Attempt.Left(Failure("More than one tunnel target resolved from tags", s"We expected to find a single target, but there was more than one tunnel target resolved from the tags: ${target.remoteTags.mkString(", ")}", ArgumentsError))
+    }
   }
 
   def executeOnInstances(instanceIds: List[InstanceId], username: String, cmd: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[List[(InstanceId, Either[CommandStatus, CommandResult])]] = {

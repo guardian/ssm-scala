@@ -34,18 +34,22 @@ class LogicTest extends AnyFreeSpec with Matchers with EitherValues {
       extractTunnelConfig(s"5432:$hostname:5432") shouldBe expected
     }
 
-    "extracts tunnel config given ports and tags" in {
-      val expected = Right(TunnelTargetWithTags(5432, List("APP", "STACK", "STAGE"), 5432))
-      extractTunnelConfig(s"5432:APP,STACK,STAGE:5432") shouldBe expected
-    }
-
-    "returns error if no tags are given" in {
-      extractTunnelConfig(s"5432:,:5432").isLeft shouldBe true
-    }
-
     "returns error if ports are not integers" in {
       extractTunnelConfig(s"5432i:$hostname:5432").isLeft shouldBe true
       extractTunnelConfig(s"5432:$hostname:5432i").isLeft shouldBe true
+    }
+  }
+
+  "extractRDSTunnelConfig" - {
+    import Logic.extractRDSTunnelConfig
+
+    "extracts tunnel config given ports and tags" in {
+      val expected = Right(TunnelTargetWithRDSTags(5432, List("APP", "STACK", "STAGE")))
+      extractRDSTunnelConfig(s"5432:APP,STACK,STAGE") shouldBe expected
+    }
+
+    "returns error if no tags are given" in {
+      extractRDSTunnelConfig(s"5432:,").isLeft shouldBe true
     }
   }
 
