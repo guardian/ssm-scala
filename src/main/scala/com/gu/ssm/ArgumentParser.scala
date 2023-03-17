@@ -160,10 +160,20 @@ object ArgumentParser {
           .text(s"The preferred host key algorithms, can be specified multiple times - last is preferred (default: ${defaultHostKeyAlgPreference.mkString(", ")})"),
         opt[Unit]("ssm-tunnel").optional()
           .text("[deprecated]"),
-
         opt[Unit]("no-ssm-proxy").optional()
           .action((_, args) => args.copy(tunnelThroughSystemsManager = false))
           .text("Do not connect to the host proxying via AWS Systems Manager - go direct to port 22. Useful for  instances running old versions of systems manager (< 2.3.672.0)"),
+        opt[String]("tunnel").optional()
+          .validate { tunnelStr =>
+            Logic.extractTunnelConfig(tunnelStr).map(_ => ())
+          }
+          .action((tunnelStr, args) => {
+            Logic.extractTunnelConfig(tunnelStr)
+              .fold(
+                _ => args,
+                tunnelTarget => args.copy(tunnelTarget = Some(tunnelTarget)))
+          })
+          .text("Forward traffic from the given local port to the given host port on the remote side. Accepts the format port:host_or_tags:hostport, where host_or_tags can either be an address or a comma-separated list of tags identifying a resource. Tag lookup currently only supports RDS"),
 
         checkConfig( c =>
           if (c.isSelectionModeOldest && c.isSelectionModeNewest) failure("You cannot both specify --newest and --oldest")

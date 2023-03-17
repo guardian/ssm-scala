@@ -33,7 +33,8 @@ case class Arguments(
   sourceFile: Option[String],
   targetFile: Option[String],
   tunnelThroughSystemsManager: Boolean,
-  useDefaultCredentialsProvider: Boolean
+  useDefaultCredentialsProvider: Boolean,
+  tunnelTarget: Option[TunnelTarget]
 )
 
 object Arguments {
@@ -63,7 +64,8 @@ object Arguments {
     sourceFile = None,
     targetFile = None,
     tunnelThroughSystemsManager = true,
-    useDefaultCredentialsProvider = false
+    useDefaultCredentialsProvider = false,
+    tunnelTarget = None
   )
 }
 
@@ -108,3 +110,15 @@ sealed trait SingleInstanceSelectionMode
 case object SismNewest extends SingleInstanceSelectionMode
 case object SismOldest extends SingleInstanceSelectionMode
 case object SismUnspecified extends SingleInstanceSelectionMode
+
+sealed trait TunnelTarget
+case class TunnelTargetWithHostName(
+  localPort: Int,
+  remoteHostName: String,
+  remotePort: Int,
+) extends TunnelTarget
+case class TunnelTargetWithTags(
+  localPort: Int,
+  remoteTags: Seq[String],
+  remotePort: Int,
+) extends TunnelTarget

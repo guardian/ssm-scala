@@ -27,6 +27,24 @@ object Logic {
     else Right(tags.toList)
   }
 
+  val tunnelValidationErrorMsg = "Please specify a tunnel target in the format port:host_or_tags:hostport, where host_or_tags is either a hostname or a comma-separated list of tags."
+
+  def extractTunnelConfig(tunnelStr: String): Either[String, TunnelTarget] = {
+    tunnelStr.split(":").toList match {
+      case localPortStr :: targetStr :: remotePortStr :: Nil =>
+        (localPortStr.toIntOption, targetStr, remotePortStr.toIntOption) match {
+          case (Some(localPort), targetStr, Some(remotePort)) =>
+            if (targetStr.contains(','))
+              extractSASTags(targetStr.split(",")).flatMap { tags =>
+                Right(TunnelTargetWithTags(localPort, tags, remotePort))
+              }
+            else Right(TunnelTargetWithHostName(localPort, targetStr, remotePort))
+          case _ => Left(tunnelValidationErrorMsg)
+        }
+      case _ => Left(tunnelValidationErrorMsg)
+    }
+  }
+
   def checkInstancesList(config: SSMConfig): Either[FailedAttempt, Unit] = config.targets match {
     case List() => Left(FailedAttempt(List(Failure("No instances found", "No instances found", ErrorCode))))
     case _ => Right(())
