@@ -12,6 +12,9 @@ import com.gu.ssm.aws.{EC2, SSM, STS}
 import com.gu.ssm.utils.attempt._
 
 import scala.io.Source
+import com.amazonaws.services.rds.AmazonRDSClient
+import com.amazonaws.services.rds.AmazonRDSAsync
+import com.gu.ssm.aws.RDS
 
 object Logic {
   def generateScript(toExecute: Either[String, File]): String = {
@@ -71,7 +74,8 @@ object Logic {
     val ssmClient: AWSSimpleSystemsManagementAsync = SSM.client(credentialsProvider, region)
     val stsClient: AWSSecurityTokenServiceAsync = STS.client(credentialsProvider, region)
     val ec2Client: AmazonEC2Async = EC2.client(credentialsProvider, region)
-    AWSClients(ssmClient, stsClient, ec2Client)
+    val rdsClient: AmazonRDSAsync = RDS.client(credentialsProvider, region)
+    AWSClients(ssmClient, stsClient, ec2Client, rdsClient)
   }
 
   def computeIncorrectInstances(executionTarget: ExecutionTarget, instanceIds: List[InstanceId]): List[InstanceId] =

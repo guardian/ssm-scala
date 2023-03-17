@@ -24,7 +24,7 @@ object Main {
               case _ => fail
             }
           case SsmSsh => bastionInstanceIdOpt match {
-            case None => setUpStandardSSH(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, targetInstancePortNumberOpt, preferredAlgs, useAgent, profile, region, tunnelThroughSystemsManager)
+            case None => setUpStandardSSH(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, targetInstancePortNumberOpt, preferredAlgs, useAgent, profile, region, tunnelThroughSystemsManager, tunnelTarget)
             case Some(bastionInstance) => setUpBastionSSH(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, bastionInstance, bastionPortNumberOpt, bastionUser, targetInstancePortNumberOpt, useAgent, preferredAlgs)
           }
           case SsmScp => (sourceFileOpt, targetFileOpt) match {
@@ -58,12 +58,14 @@ object Main {
     useAgent: Option[Boolean],
     profile: Option[String],
     region: Region,
-    tunnelThroughSystemsManager: Boolean): ProgramResult = {
+    tunnelThroughSystemsManager: Boolean,
+    maybeTunnelTarget: Option[TunnelTarget]): ProgramResult = {
     val fProgramResult = for {
       config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, executionTarget)
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
       (privateKeyFile, publicKey) = sshArtifacts
       addPublicKeyCommand = SSH.addTaintedCommand(config.name) + SSH.addPublicKeyCommand(user, publicKey) + SSH.outputHostKeysCommand()
+      tunnelTarget = maybeTunnelTarget.map { t => IO.resolveTunnelTarget(t, awsClients.rdsClient) }
       removePublicKeyCommand = SSH.removePublicKeyCommand(user, publicKey)
       instance <- Attempt.fromEither(Logic.getSSHInstance(config.targets, sism))
       _ <- IO.tagAsTainted(instance.id, config.name, awsClients.ec2Client)

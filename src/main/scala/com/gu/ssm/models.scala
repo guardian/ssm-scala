@@ -5,6 +5,7 @@ import com.amazonaws.services.ec2.AmazonEC2Async
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceAsync
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
 import java.time.Instant
+import com.amazonaws.services.rds.AmazonRDSAsync
 
 case class InstanceId(id: String) extends AnyVal
 case class Instance(id: InstanceId, publicDomainNameOpt: Option[String], publicIpAddressOpt: Option[String], privateIpAddress: String, launchInstant: Instant)
@@ -100,7 +101,8 @@ case class SSMConfig (
 case class AWSClients (
   ssmClient: AWSSimpleSystemsManagementAsync,
   stsClient: AWSSecurityTokenServiceAsync,
-  ec2Client: AmazonEC2Async
+  ec2Client: AmazonEC2Async,
+  rdsClient: AmazonRDSAsync
 )
 
 case class ResultsWithInstancesNotFound(
