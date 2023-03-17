@@ -4,10 +4,11 @@ import com.amazonaws.regions.Region
 import com.amazonaws.services.ec2.AmazonEC2Async
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceAsync
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
-import com.gu.ssm.aws.{EC2, SSM, STS}
+import com.gu.ssm.aws.{EC2, SSM, STS, RDS}
 import com.gu.ssm.utils.attempt.{ArgumentsError, Attempt, Failure}
 
 import scala.concurrent.ExecutionContext
+import com.amazonaws.services.rds.AmazonRDSAsync
 
 
 object IO {
@@ -17,6 +18,11 @@ object IO {
     ).orElse {
       executionTarget.tagValues.map(EC2.resolveByTags(_, ec2Client))
     }.getOrElse(Attempt.Left(Failure("Unable to resolve execution target", "You must provide an execution target (instance(s) or tags)", ArgumentsError)))
+  }
+
+  def resolveRDSInstances(tunnelTarget: TunnelTarget, rdsClient: AmazonRDSAsync)(implicit ec: ExecutionContext): Attempt[List[RDSInstance]] = tunnelTarget match {
+    case TunnelTargetWithTags(_, remoteTags, _) =>
+      RDS.resolveByTags(remoteTags.toList, rdsClient)
   }
 
   def executeOnInstances(instanceIds: List[InstanceId], username: String, cmd: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[List[(InstanceId, Either[CommandStatus, CommandResult])]] = {
