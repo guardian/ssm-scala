@@ -24,8 +24,9 @@ object IO {
     case TunnelTargetWithTags(localPort, remoteTags, remotePort) =>
       RDS.resolveByTags(remoteTags.toList, rdsClient).flatMap {
         case rdsInstance :: Nil => Attempt.Right(TunnelTargetWithHostName(localPort, rdsInstance.hostname, remotePort))
-        case tooManyInstances => Attempt.Left(Failure("More than one tunnel target resolved from tags", s"We expected to find a single target, but there was more than one tunnel target resolved from the tags: ${remoteTags.mkString(", ")}", ArgumentsError))
-        case Nil => Attempt.Left(Failure("Could not find target from tags", s"We expected to find a single target, but there was more than one tunnel target resolved from the tags: ${remoteTags.mkString(", ")}", ArgumentsError))
+        case Nil => Attempt.Left(Failure("Could not find target from tags", s"We could not find an RDS instance with the tags: ${remoteTags.mkString(", ")}", ArgumentsError))
+        case tooManyInstances =>
+          Attempt.Left(Failure("More than one tunnel target resolved from tags", s"We expected to find a single target, but there was more than one tunnel target resolved from the tags: ${remoteTags.mkString(", ")}", ArgumentsError))
       }
     case hostTarget: TunnelTargetWithHostName => Attempt.Right(hostTarget)
   }

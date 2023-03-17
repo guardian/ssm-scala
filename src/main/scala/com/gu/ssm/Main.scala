@@ -65,7 +65,7 @@ object Main {
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
       (privateKeyFile, publicKey) = sshArtifacts
       addPublicKeyCommand = SSH.addTaintedCommand(config.name) + SSH.addPublicKeyCommand(user, publicKey) + SSH.outputHostKeysCommand()
-      tunnelTarget = maybeTunnelTarget.map { t => IO.resolveTunnelTarget(t, awsClients.rdsClient) }
+      tunnelTarget <- Attempt.sequence(maybeTunnelTarget.toList.map(t => IO.resolveTunnelTarget(t, awsClients.rdsClient)))
       removePublicKeyCommand = SSH.removePublicKeyCommand(user, publicKey)
       instance <- Attempt.fromEither(Logic.getSSHInstance(config.targets, sism))
       _ <- IO.tagAsTainted(instance.id, config.name, awsClients.ec2Client)
@@ -75,7 +75,7 @@ object Main {
       address <- Attempt.fromEither(Logic.getAddress(instance, onlyUsePrivateIP))
       hostKeyFile <- SSH.writeHostKey((address, hostKey))
     } yield {
-      SSH.sshCmdStandard(rawOutput)(privateKeyFile, instance, user, address, targetInstancePortNumberOpt, Some(hostKeyFile), useAgent, profile, region, tunnelThroughSystemsManager)
+      SSH.sshCmdStandard(rawOutput)(privateKeyFile, instance, user, address, targetInstancePortNumberOpt, Some(hostKeyFile), useAgent, profile, region, tunnelThroughSystemsManager, tunnelTarget.headOption)
     }
     val programResult = Await.result(fProgramResult.asFuture, Duration.Inf)
     ProgramResult.convertErrorToResult(programResult.map(UI.sshOutput(rawOutput)))

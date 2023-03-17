@@ -33,7 +33,7 @@ object RDS {
   }
 
   private def hasTagList(tagValues: List[String])(awsInstance: DBInstance): Boolean = {
-    val instanceTags = awsInstance.getTagList().asScala.toList.map(_.getKey())
+    val instanceTags = awsInstance.getTagList().asScala.toList.map(_.getValue())
     tagValues.forall(requiredTag => instanceTags.contains(requiredTag))
   }
 
