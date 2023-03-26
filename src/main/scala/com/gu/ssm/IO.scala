@@ -22,7 +22,7 @@ object IO {
 
   def resolveRDSTunnelTarget(target: TunnelTargetWithRDSTags, rdsClient: AmazonRDSAsync)(implicit ec: ExecutionContext): Attempt[TunnelTargetWithHostName] = {
     RDS.resolveByTags(target.remoteTags.toList, rdsClient).flatMap {
-      case rdsInstance :: Nil => Attempt.Right(TunnelTargetWithHostName(target.localPort, rdsInstance.hostname, rdsInstance.port))
+      case rdsInstance :: Nil => Attempt.Right(TunnelTargetWithHostName(target.localPort, rdsInstance.hostname, rdsInstance.port, target.remoteTags))
       case Nil => Attempt.Left(Failure("Could not find target from tags", s"We could not find an RDS instance with the tags: ${target.remoteTags.mkString(", ")}", ArgumentsError))
       case tooManyInstances =>
         Attempt.Left(Failure("More than one tunnel target resolved from tags", s"We expected to find a single target, but there was more than one tunnel target resolved from the tags: ${target.remoteTags.mkString(", ")}", ArgumentsError))
