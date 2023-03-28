@@ -160,13 +160,36 @@ object ArgumentParser {
           .text(s"The preferred host key algorithms, can be specified multiple times - last is preferred (default: ${defaultHostKeyAlgPreference.mkString(", ")})"),
         opt[Unit]("ssm-tunnel").optional()
           .text("[deprecated]"),
-
         opt[Unit]("no-ssm-proxy").optional()
           .action((_, args) => args.copy(tunnelThroughSystemsManager = false))
           .text("Do not connect to the host proxying via AWS Systems Manager - go direct to port 22. Useful for  instances running old versions of systems manager (< 2.3.672.0)"),
-
+        opt[String]("tunnel").optional()
+          .validate { tunnelStr =>
+            Logic.extractTunnelConfig(tunnelStr).map(_ => ())
+          }
+          .action((tunnelStr, args) => {
+            Logic.extractTunnelConfig(tunnelStr)
+              .fold(
+                _ => args,
+                tunnelTarget => args.copy(tunnelTarget = Some(tunnelTarget)))
+          })
+          .text("Forward traffic from the given local port to the given host and port on the remote side. Accepts the format `localPort:host:remotePort`, " +
+            "e.g. --tunnel 5000:a.remote.host.com:5000"),
+        opt[String]("rds-tunnel").optional()
+          .validate { tunnelStr =>
+            Logic.extractRDSTunnelConfig(tunnelStr).map(_ => ())
+          }
+          .action((tunnelStr, args) => {
+            Logic.extractRDSTunnelConfig(tunnelStr)
+              .fold(
+                _ => args,
+                tunnelTarget => args.copy(rdsTunnelTarget = Some(tunnelTarget)))
+          })
+          .text("Forward traffic from a given local port to a RDS database specified by tags. Accepts the format `localPort:tags`, where `tags` is a comma-separated list of tag values, " +
+            "e.g. --rds-tunnel 5000:app,stack,stage"),
         checkConfig( c =>
           if (c.isSelectionModeOldest && c.isSelectionModeNewest) failure("You cannot both specify --newest and --oldest")
+          else if (c.tunnelTarget.isDefined && c.rdsTunnelTarget.isDefined) failure("You cannot specify both --tunnel and --rdsTunnel")
           else success )
       )
 

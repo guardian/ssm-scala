@@ -91,7 +91,7 @@ object SSH {
        | for hostkey in $(sshd -T 2> /dev/null |grep "^hostkey " | cut -d ' ' -f 2); do cat $hostkey.pub; done
      """.stripMargin
 
-  def sshCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], hostsFile: Option[File], useAgent: Option[Boolean], profile: Option[String], region: Region, tunnelThroughSystemsManager: Boolean): (InstanceId, Seq[Output]) = {
+  def sshCmdStandard(rawOutput: Boolean)(privateKeyFile: File, instance: Instance, user: String, ipAddress: String, targetInstancePortNumberOpt: Option[Int], hostsFile: Option[File], useAgent: Option[Boolean], profile: Option[String], region: Region, tunnelThroughSystemsManager: Boolean, tunnelTarget: Option[TunnelTargetWithHostName]): (InstanceId, Seq[Output]) = {
     val targetPortSpecifications = targetInstancePortNumberOpt match {
       case Some(portNumber) => s" -p ${portNumber}"
       case _ => ""
@@ -103,10 +103,22 @@ object SSH {
     }
     val hostsFileString = hostsFile.map(file => s""" -o "UserKnownHostsFile $file" -o "StrictHostKeyChecking yes"""").getOrElse("")
     val proxyFragment = if(tunnelThroughSystemsManager) { s""" -o "ProxyCommand sh -c \\"aws ssm start-session --target ${instance.id.id} --document-name AWS-StartSSHSession --parameters 'portNumber=22' --region $region ${profile.map("--profile " + _).getOrElse("")}\\""""" } else { "" }
-    val connectionString = s"""ssh -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString$targetPortSpecifications$proxyFragment -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $user@$ipAddress"""
+
+    val (tunnelString, tunnelMeta) = tunnelTarget.map(t => (
+      s"-L ${t.localPort}:${t.remoteHostName}:${t.remotePort} -N -f",
+      Seq(
+        Metadata(s"# If the command succeeded, a tunnel has been established."),
+        Metadata(s"# Local port: ${t.localPort}"),
+        Metadata(s"# Remote address: ${t.remoteHostName}:${t.remotePort}")
+      ) ++ t.remoteTags.map(_.toLowerCase).find(_.contains("prod")).map { _ =>
+        Metadata(s"# The tags indicate that this is a PRODUCTION resource. Please take care! Perhaps bring a pair?")
+      }
+    )).getOrElse(("", Seq.empty))
+
+    val connectionString = s"""ssh -o "IdentitiesOnly yes"$useAgentFragment$hostsFileString$targetPortSpecifications$proxyFragment -i ${privateKeyFile.getCanonicalFile.toString}${theTTOptions} $user@$ipAddress $tunnelString""".trim()
 
     val cmd = if (rawOutput) {
-      Seq(Out(s"$connectionString", newline = false))
+      Seq(Out(s"$connectionString", newline = false)) ++ tunnelMeta.toList
     } else {
       Seq(
         Metadata(s"# Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:"),

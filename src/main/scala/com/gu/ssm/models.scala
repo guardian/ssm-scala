@@ -5,11 +5,14 @@ import com.amazonaws.services.ec2.AmazonEC2Async
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceAsync
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
 import java.time.Instant
+import com.amazonaws.services.rds.AmazonRDSAsync
 
 case class InstanceId(id: String) extends AnyVal
 case class Instance(id: InstanceId, publicDomainNameOpt: Option[String], publicIpAddressOpt: Option[String], privateIpAddress: String, launchInstant: Instant)
 case class AppStackStage(app: String, stack: String, stage: String)
 case class ExecutionTarget(instances: Option[List[InstanceId]] = None, tagValues: Option[List[String]] = None)
+case class RDSInstanceId(id: String) extends AnyVal
+case class RDSInstance(id: RDSInstanceId, hostname: String, port: Int)
 
 case class Arguments(
   verbose: Boolean,
@@ -33,7 +36,9 @@ case class Arguments(
   sourceFile: Option[String],
   targetFile: Option[String],
   tunnelThroughSystemsManager: Boolean,
-  useDefaultCredentialsProvider: Boolean
+  useDefaultCredentialsProvider: Boolean,
+  tunnelTarget: Option[TunnelTargetWithHostName],
+  rdsTunnelTarget: Option[TunnelTargetWithRDSTags]
 )
 
 object Arguments {
@@ -63,7 +68,9 @@ object Arguments {
     sourceFile = None,
     targetFile = None,
     tunnelThroughSystemsManager = true,
-    useDefaultCredentialsProvider = false
+    useDefaultCredentialsProvider = false,
+    tunnelTarget = None,
+    rdsTunnelTarget = None
   )
 }
 
@@ -96,7 +103,8 @@ case class SSMConfig (
 case class AWSClients (
   ssmClient: AWSSimpleSystemsManagementAsync,
   stsClient: AWSSecurityTokenServiceAsync,
-  ec2Client: AmazonEC2Async
+  ec2Client: AmazonEC2Async,
+  rdsClient: AmazonRDSAsync
 )
 
 case class ResultsWithInstancesNotFound(
@@ -108,3 +116,7 @@ sealed trait SingleInstanceSelectionMode
 case object SismNewest extends SingleInstanceSelectionMode
 case object SismOldest extends SingleInstanceSelectionMode
 case object SismUnspecified extends SingleInstanceSelectionMode
+
+sealed trait TunnelTarget
+case class TunnelTargetWithRDSTags(localPort: Int, remoteTags: Seq[String]) extends TunnelTarget
+case class TunnelTargetWithHostName(localPort: Int, remoteHostName: String, remotePort: Int, remoteTags: Seq[String] = Seq.empty) extends TunnelTarget

@@ -4,10 +4,11 @@ import com.amazonaws.regions.Region
 import com.amazonaws.services.ec2.AmazonEC2Async
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceAsync
 import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
-import com.gu.ssm.aws.{EC2, SSM, STS}
+import com.gu.ssm.aws.{EC2, SSM, STS, RDS}
 import com.gu.ssm.utils.attempt.{ArgumentsError, Attempt, Failure}
 
 import scala.concurrent.ExecutionContext
+import com.amazonaws.services.rds.AmazonRDSAsync
 
 
 object IO {
@@ -17,6 +18,15 @@ object IO {
     ).orElse {
       executionTarget.tagValues.map(EC2.resolveByTags(_, ec2Client))
     }.getOrElse(Attempt.Left(Failure("Unable to resolve execution target", "You must provide an execution target (instance(s) or tags)", ArgumentsError)))
+  }
+
+  def resolveRDSTunnelTarget(target: TunnelTargetWithRDSTags, rdsClient: AmazonRDSAsync)(implicit ec: ExecutionContext): Attempt[TunnelTargetWithHostName] = {
+    RDS.resolveByTags(target.remoteTags.toList, rdsClient).flatMap {
+      case rdsInstance :: Nil => Attempt.Right(TunnelTargetWithHostName(target.localPort, rdsInstance.hostname, rdsInstance.port, target.remoteTags))
+      case Nil => Attempt.Left(Failure("Could not find target from tags", s"We could not find an RDS instance with the tags: ${target.remoteTags.mkString(", ")}", ArgumentsError))
+      case tooManyInstances =>
+        Attempt.Left(Failure("More than one tunnel target resolved from tags", s"We expected to find a single target, but there was more than one tunnel target resolved from the tags: ${target.remoteTags.mkString(", ")}", ArgumentsError))
+    }
   }
 
   def executeOnInstances(instanceIds: List[InstanceId], username: String, cmd: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[List[(InstanceId, Either[CommandStatus, CommandResult])]] = {

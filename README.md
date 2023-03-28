@@ -230,6 +230,26 @@ ssm ssh --profile security -t security-hq,security,PROD --newest --execute
 
 instead of the example given in the previous `--raw` section.
 
+### --tunnel
+
+This flag forwards traffic from a local port through the instance to the specified hostname and port. For example,
+
+```
+ssm ssh --profile security -t security-hq,security,PROD --newest -x --tunnel 5000:example.com:6000
+```
+
+would forward all traffic on your machine through the remote instance to example.com:6000.
+
+### ---rds-tunnel
+
+Similar to `tunnel`, this flag forwards traffic from a local port to an AWS RDS database specified by the given tags. For example,
+
+```
+ssm ssh --profile security -t security-hq,security,PROD --newest -x --rds-tunnel 5000:example-db,security,CODE
+```
+
+would try to find a single RDS instance with the tags `example-db,security,CODE`, and forward traffic from port 5000 to that RDS instance via the remote instance.
+
 ## Disabling SSM Tunnel
 **By default, SSM proxies your connection via AWS systems manager**, which saves you from opening up port 22, connecting to
 the VPN, or using bastion hosts. This requires a recent version of systems manager to be runnning on your machine and

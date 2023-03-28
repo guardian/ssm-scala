@@ -12,7 +12,7 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     val (result, verbose) = argParser.parse(args, Arguments.empty()) match {
-      case Some(Arguments(verbose, Some(executionTarget), toExecuteOpt, profile, region, Some(mode), Some(user), sism, _, _, onlyUsePrivateIP, rawOutput, bastionInstanceIdOpt, bastionPortNumberOpt, Some(bastionUser), targetInstancePortNumberOpt, useAgent, preferredAlgs, sourceFileOpt, targetFileOpt, tunnelThroughSystemsManager, useDefaultCredentialsProvider)) =>
+      case Some(Arguments(verbose, Some(executionTarget), toExecuteOpt, profile, region, Some(mode), Some(user), sism, _, _, onlyUsePrivateIP, rawOutput, bastionInstanceIdOpt, bastionPortNumberOpt, Some(bastionUser), targetInstancePortNumberOpt, useAgent, preferredAlgs, sourceFileOpt, targetFileOpt, tunnelThroughSystemsManager, useDefaultCredentialsProvider, tunnelTarget, rdsTunnelTarget)) =>
         val awsClients = Logic.getClients(profile, region, useDefaultCredentialsProvider)
         val r = mode match {
           case SsmRepl =>
@@ -24,7 +24,7 @@ object Main {
               case _ => fail
             }
           case SsmSsh => bastionInstanceIdOpt match {
-            case None => setUpStandardSSH(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, targetInstancePortNumberOpt, preferredAlgs, useAgent, profile, region, tunnelThroughSystemsManager)
+            case None => setUpStandardSSH(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, targetInstancePortNumberOpt, preferredAlgs, useAgent, profile, region, tunnelThroughSystemsManager, tunnelTarget.orElse(rdsTunnelTarget))
             case Some(bastionInstance) => setUpBastionSSH(awsClients, executionTarget, user, sism, onlyUsePrivateIP, rawOutput, bastionInstance, bastionPortNumberOpt, bastionUser, targetInstancePortNumberOpt, useAgent, preferredAlgs)
           }
           case SsmScp => (sourceFileOpt, targetFileOpt) match {
@@ -58,12 +58,17 @@ object Main {
     useAgent: Option[Boolean],
     profile: Option[String],
     region: Region,
-    tunnelThroughSystemsManager: Boolean): ProgramResult = {
+    tunnelThroughSystemsManager: Boolean,
+    tunnelTarget: Option[TunnelTarget]): ProgramResult = {
     val fProgramResult = for {
       config <- IO.getSSMConfig(awsClients.ec2Client, awsClients.stsClient, executionTarget)
       sshArtifacts <- Attempt.fromEither(SSH.createKey())
       (privateKeyFile, publicKey) = sshArtifacts
       addPublicKeyCommand = SSH.addTaintedCommand(config.name) + SSH.addPublicKeyCommand(user, publicKey) + SSH.outputHostKeysCommand()
+      resolvedTunnelTarget <- Attempt.sequence(tunnelTarget.toList.map {
+        case t: TunnelTargetWithRDSTags => IO.resolveRDSTunnelTarget(t, awsClients.rdsClient)
+        case t: TunnelTargetWithHostName => Attempt.Right(t)
+      })
       removePublicKeyCommand = SSH.removePublicKeyCommand(user, publicKey)
       instance <- Attempt.fromEither(Logic.getSSHInstance(config.targets, sism))
       _ <- IO.tagAsTainted(instance.id, config.name, awsClients.ec2Client)
@@ -73,7 +78,7 @@ object Main {
       address <- Attempt.fromEither(Logic.getAddress(instance, onlyUsePrivateIP))
       hostKeyFile <- SSH.writeHostKey((address, hostKey))
     } yield {
-      SSH.sshCmdStandard(rawOutput)(privateKeyFile, instance, user, address, targetInstancePortNumberOpt, Some(hostKeyFile), useAgent, profile, region, tunnelThroughSystemsManager)
+      SSH.sshCmdStandard(rawOutput)(privateKeyFile, instance, user, address, targetInstancePortNumberOpt, Some(hostKeyFile), useAgent, profile, region, tunnelThroughSystemsManager, resolvedTunnelTarget.headOption)
     }
     val programResult = Await.result(fProgramResult.asFuture, Duration.Inf)
     ProgramResult.convertErrorToResult(programResult.map(UI.sshOutput(rawOutput)))

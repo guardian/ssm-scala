@@ -11,8 +11,8 @@ class LogicTest extends AnyFreeSpec with Matchers with EitherValues {
     import Logic.extractSASTags
 
     "extracts stack app and stage from valid input" in {
-      val expected = List("app", "stack", "stage")
-      extractSASTags(Seq("app", "stack", "stage")).right.value shouldEqual expected
+      val expected = Right(List("app", "stack", "stage"))
+      extractSASTags(Seq("app", "stack", "stage")) shouldEqual expected
     }
 
     "provides error if nothing is provided" in {
@@ -21,6 +21,35 @@ class LogicTest extends AnyFreeSpec with Matchers with EitherValues {
 
     "returns error if more than 3 tags are provided" in {
       extractSASTags(Seq("a", "b", "c", "d")).isLeft shouldEqual true
+    }
+  }
+
+  "extractTunnelConfig" - {
+    import Logic.extractTunnelConfig
+
+    val hostname = "example-db.rds.amazonaws.com"
+
+    "extracts tunnel config given ports and hostname" in {
+      val expected = Right(TunnelTargetWithHostName(5432, hostname, 5432))
+      extractTunnelConfig(s"5432:$hostname:5432") shouldBe expected
+    }
+
+    "returns error if ports are not integers" in {
+      extractTunnelConfig(s"5432i:$hostname:5432").isLeft shouldBe true
+      extractTunnelConfig(s"5432:$hostname:5432i").isLeft shouldBe true
+    }
+  }
+
+  "extractRDSTunnelConfig" - {
+    import Logic.extractRDSTunnelConfig
+
+    "extracts tunnel config given ports and tags" in {
+      val expected = Right(TunnelTargetWithRDSTags(5432, List("APP", "STACK", "STAGE")))
+      extractRDSTunnelConfig(s"5432:APP,STACK,STAGE") shouldBe expected
+    }
+
+    "returns error if no tags are given" in {
+      extractRDSTunnelConfig(s"5432:,").isLeft shouldBe true
     }
   }
 
@@ -49,17 +78,17 @@ class LogicTest extends AnyFreeSpec with Matchers with EitherValues {
     "Given one instance" - {
       "If single instance selection mode is SismNewest, returns argument" in {
         val i = makeInstance("X", Some("127.0.0.1"), "10.1.1.10", 0)
-        getSSHInstance(List(i), SismNewest).right.get shouldEqual i
+        getSSHInstance(List(i), SismNewest).value shouldEqual i
       }
 
       "If single instance selection mode is SismOldest, returns argument" in {
         val i = makeInstance("X", Some("127.0.0.1"), "10.1.1.10", 0)
-        getSSHInstance(List(i), SismOldest).right.get shouldEqual i
+        getSSHInstance(List(i), SismOldest).value shouldEqual i
       }
 
       "If single instance selection mode is SismUnspecified, returns argument" in {
         val i = makeInstance("X", Some("127.0.0.1"), "10.1.1.10", 0)
-        getSSHInstance(List(i), SismUnspecified).right.get shouldEqual i
+        getSSHInstance(List(i), SismUnspecified).value shouldEqual i
       }
     }
 
@@ -69,11 +98,11 @@ class LogicTest extends AnyFreeSpec with Matchers with EitherValues {
       val i3 = makeInstance("Z", Some("127.0.0.1"), "10.1.1.10", 0)
 
       "If single instance selection mode is SismNewest, selects the newest instance with public IP" in {
-        getSSHInstance(List(i1, i2, i3), SismNewest).right.get shouldEqual i3
+        getSSHInstance(List(i1, i2, i3), SismNewest).value shouldEqual i3
       }
 
       "If single instance selection mode is SismOldest, selects the oldest instance with public IP" in {
-        getSSHInstance(List(i1, i2, i3), SismOldest).right.get shouldEqual i1
+        getSSHInstance(List(i1, i2, i3), SismOldest).value shouldEqual i1
       }
 
       "If single instance selection mode is SismUnspecified, should be Left" in {
@@ -96,29 +125,29 @@ class LogicTest extends AnyFreeSpec with Matchers with EitherValues {
     "specifying we want private IP" - {
       "return private if only private exists" in {
         val result = getAddress(instanceWithPrivateIpOnly, onlyUsePrivateIP = true)
-        result.right.value shouldEqual "10.1.1.10"
+        result.value shouldEqual "10.1.1.10"
       }
 
       "return private if public and private exists" in {
         val result = getAddress(instanceWithPublicIpAndPrivateIp, onlyUsePrivateIP = true)
-        result.right.value shouldEqual "10.1.1.10"
+        result.value shouldEqual "10.1.1.10"
       }
     }
 
     "not specifying we want private IP" - {
       "return public if it exists" in {
         val result = getAddress(instanceWithPublicIpAndPrivateIp, onlyUsePrivateIP = false)
-        result.right.value shouldEqual "34.1.1.10"
+        result.value shouldEqual "34.1.1.10"
       }
 
       "return private if no public and no dns" in {
         val result = getAddress(instanceWithPrivateIpOnly, onlyUsePrivateIP = false)
-        result.right.value shouldEqual "10.1.1.10"
+        result.value shouldEqual "10.1.1.10"
       }
 
       "return public IP if it exists, even if public DNS exists" in {
         val result = getAddress(instanceWithPublicDnsAndPublicIPAndPrivateIp, onlyUsePrivateIP = false)
-        result.right.value shouldEqual "34.1.1.10"
+        result.value shouldEqual "34.1.1.10"
       }
     }
   }
@@ -138,12 +167,12 @@ class LogicTest extends AnyFreeSpec with Matchers with EitherValues {
 
       "return the host key using the first algorithm when there is a match" in {
         val hostKey = Logic.getHostKeyEntry(Right(CommandResult(results, "", true)), List("ecdsa-sha2-nistp256", "ssh-rsa"))
-        hostKey.right.value shouldBe "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKDHXJ6sXLoKprcNzMDLF6YVroaf5ycshemnS1TJggIA6cf/FW5EmdzUlf+P0QfBdLsqjBVBxQhyWTtHXD4Byds= root@ip-10-248-50-51"
+        hostKey.value shouldBe "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKDHXJ6sXLoKprcNzMDLF6YVroaf5ycshemnS1TJggIA6cf/FW5EmdzUlf+P0QfBdLsqjBVBxQhyWTtHXD4Byds= root@ip-10-248-50-51"
       }
 
       "return the host key using the second algorithm when there is a match for the first" in {
         val hostKey = Logic.getHostKeyEntry(Right(CommandResult(results, "", true)), List("ecdsa-idontexist", "ssh-rsa"))
-        hostKey.right.value shouldBe "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCgfV3YLgQ6PKhz3NHwFOhQA1ZgBBxYq9duNF0RdHezuBDQAdz51UKssvsIBi74/DuHk7RjaPPMZaC6yNkAuRMTyJk82S93GGow36iMTQD4HTpDuUFloT+SiTrjez/mkS2Wk+fm4brhjo9Xb8M3TXpOn65AXC/3mrB8JrZwx5Y9d2IwEQT1/r6aM1mUo2JJrSQJ1zv+3+ZFKfij1UncjG7rXsUegmR0lmt8bfAkpef1I+LK3CERgxRNCcuM80ptTws3vgxyP9cS60IiF7W1lwuwtvDvZ9LuDnHlrMi+t1t5EvwRm1CE9eLw9+qTQQijBFVjZlXT03St/6IJLMvBazI7 root@ip-10-248-50-51"
+        hostKey.value shouldBe "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCgfV3YLgQ6PKhz3NHwFOhQA1ZgBBxYq9duNF0RdHezuBDQAdz51UKssvsIBi74/DuHk7RjaPPMZaC6yNkAuRMTyJk82S93GGow36iMTQD4HTpDuUFloT+SiTrjez/mkS2Wk+fm4brhjo9Xb8M3TXpOn65AXC/3mrB8JrZwx5Y9d2IwEQT1/r6aM1mUo2JJrSQJ1zv+3+ZFKfij1UncjG7rXsUegmR0lmt8bfAkpef1I+LK3CERgxRNCcuM80ptTws3vgxyP9cS60IiF7W1lwuwtvDvZ9LuDnHlrMi+t1t5EvwRm1CE9eLw9+qTQQijBFVjZlXT03St/6IJLMvBazI7 root@ip-10-248-50-51"
       }
 
       "error when there are no suitable host keys" in {

@@ -12,6 +12,9 @@ import com.gu.ssm.aws.{EC2, SSM, STS}
 import com.gu.ssm.utils.attempt._
 
 import scala.io.Source
+import com.amazonaws.services.rds.AmazonRDSClient
+import com.amazonaws.services.rds.AmazonRDSAsync
+import com.gu.ssm.aws.RDS
 
 object Logic {
   def generateScript(toExecute: Either[String, File]): String = {
@@ -25,6 +28,36 @@ object Logic {
     if (tags.length > 3 || tags.isEmpty || tags.head.length == 0) Left("Please supply at least one and no more than 3 tags. " +
       "If you specify less than 3 tags order assumed is app,stage,stack")
     else Right(tags.toList)
+  }
+
+  val tunnelValidationErrorMsg = "Please specify a tunnel target in the format localPort:host:remotePort."
+
+  def extractTunnelConfig(tunnelStr: String): Either[String, TunnelTargetWithHostName] = {
+    tunnelStr.split(":").toList match {
+      case localPortStr :: targetStr :: remotePortStr :: Nil =>
+        (localPortStr.toIntOption, targetStr, remotePortStr.toIntOption) match {
+          case (Some(localPort), targetStr, Some(remotePort)) =>
+            Right(TunnelTargetWithHostName(localPort, targetStr, remotePort))
+          case _ => Left(s"$tunnelValidationErrorMsg Ports must be integers.")
+        }
+      case _ => Left(tunnelValidationErrorMsg)
+    }
+  }
+
+  val rdsTunnelValidationErrorMsg = "Please specify a tunnel target in the format localPort:tags, where tags is a comma-separated list of tag values."
+
+  def extractRDSTunnelConfig(tunnelStr: String): Either[String, TunnelTargetWithRDSTags] = {
+    tunnelStr.split(":").toList match {
+      case localPortStr :: tagsStr :: Nil =>
+        localPortStr.toIntOption match {
+          case Some(localPort) =>
+            extractSASTags(tagsStr.split(",")).flatMap { tags =>
+              Right(TunnelTargetWithRDSTags(localPort, tags))
+            }
+          case None => Left(rdsTunnelValidationErrorMsg)
+        }
+      case _ => Left(rdsTunnelValidationErrorMsg)
+    }
   }
 
   def checkInstancesList(config: SSMConfig): Either[FailedAttempt, Unit] = config.targets match {
@@ -53,7 +86,8 @@ object Logic {
     val ssmClient: AWSSimpleSystemsManagementAsync = SSM.client(credentialsProvider, region)
     val stsClient: AWSSecurityTokenServiceAsync = STS.client(credentialsProvider, region)
     val ec2Client: AmazonEC2Async = EC2.client(credentialsProvider, region)
-    AWSClients(ssmClient, stsClient, ec2Client)
+    val rdsClient: AmazonRDSAsync = RDS.client(credentialsProvider, region)
+    AWSClients(ssmClient, stsClient, ec2Client, rdsClient)
   }
 
   def computeIncorrectInstances(executionTarget: ExecutionTarget, instanceIds: List[InstanceId]): List[InstanceId] =
