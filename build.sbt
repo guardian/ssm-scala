@@ -16,7 +16,7 @@ libraryDependencies ++= Seq(
   "ch.qos.logback" %  "logback-classic" % "1.4.6",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
   "com.fasterxml.jackson.core" % "jackson-databind" % "2.14.2",
-  "org.bouncycastle" % "bcpkix-jdk18on" % "1.72",
+  "org.bouncycastle" % "bcpkix-jdk18on" % "1.73",
   "org.scalatest" %% "scalatest" % "3.2.15" % Test
 )
 
