@@ -4,7 +4,7 @@ name := "ssm-scala"
 organization := "com.gu"
 version := "2.4.0"
 
-val awsSdkVersion = "1.12.446"
+val awsSdkVersion = "1.12.459"
 
 libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk-ssm" % awsSdkVersion,
@@ -15,8 +15,8 @@ libraryDependencies ++= Seq(
   "com.googlecode.lanterna" % "lanterna" % "3.1.1",
   "ch.qos.logback" %  "logback-classic" % "1.4.6",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
-  "com.fasterxml.jackson.core" % "jackson-databind" % "2.14.2",
-  "org.bouncycastle" % "bcpkix-jdk18on" % "1.72",
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.15.0",
+  "org.bouncycastle" % "bcpkix-jdk18on" % "1.73",
   "org.scalatest" %% "scalatest" % "3.2.15" % Test
 )
 
