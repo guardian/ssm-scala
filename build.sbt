@@ -13,11 +13,11 @@ libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk-rds" % awsSdkVersion,
   "com.github.scopt" %% "scopt" % "4.1.0",
   "com.googlecode.lanterna" % "lanterna" % "3.1.1",
-  "ch.qos.logback" %  "logback-classic" % "1.4.6",
+  "ch.qos.logback" %  "logback-classic" % "1.4.7",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
-  "com.fasterxml.jackson.core" % "jackson-databind" % "2.15.0",
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.15.2",
   "org.bouncycastle" % "bcpkix-jdk18on" % "1.73",
-  "org.scalatest" %% "scalatest" % "3.2.15" % Test
+  "org.scalatest" %% "scalatest" % "3.2.16" % Test
 )
 
 // Required as jackson causes a merge issue with sbt-assembly
