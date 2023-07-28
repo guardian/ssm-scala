@@ -4,7 +4,7 @@ name := "ssm-scala"
 organization := "com.gu"
 version := "2.4.0"
 
-val awsSdkVersion = "1.12.515"
+val awsSdkVersion = "1.12.517"
 
 libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk-ssm" % awsSdkVersion,
