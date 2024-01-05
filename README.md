@@ -86,7 +86,7 @@ Create and upload a temporary ssh key
   --newest                 Selects the newest instance if more than one instance was specified
   --oldest                 Selects the oldest instance if more than one instance was specified
   --private                Use private IP address (must be routable via VPN Gateway)
-  --raw                    Unix pipe-able ssh connection string - note: you must use 'eval' to execute this due to nested quoting
+  --raw                    Unix pipe-able ssh connection string. Note: disables automatic execution. You must use 'eval' to execute this due to nested quoting
   -x, --execute            [Deprecated - new default behaviour] Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)
   -d, --dryrun             Generate SSH command but do not execute (previous default behaviour)
   -A, --agent              Use the local ssh agent to register the private key (and do not use -i); only bastion connections
@@ -110,7 +110,8 @@ Secure Copy
   --oldest                 Selects the oldest instance if more than one instance was specified
   --private                Use private IP address (must be routable via VPN Gateway)
   --raw                    Unix pipe-able scp connection string
-  -x, --execute            Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)
+  -x, --execute            [Deprecated - new default behaviour] Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)
+  -d, --dryrun             Generate SCP command but do not execute (previous default behaviour)
   --ssm-tunnel             [deprecated]
   --no-ssm-proxy           Do not connect to the host proxying via AWS Systems Manager - go direct to port 22. Useful for instances running old versions of systems manager (< 2.3.672.0)
   [:]<sourceFile>...       Source file for the scp sub command. See README for details
