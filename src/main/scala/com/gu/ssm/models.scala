@@ -44,7 +44,7 @@ case class Arguments(
 object Arguments {
   val targetInstanceDefaultUser = "ubuntu"
   val bastionDefaultUser = "ubuntu"
-  val defaultHostKeyAlgPreference = List("ecdsa-sha2-nistp256", "ssh-rsa")
+  val defaultHostKeyAlgPreference: List[String] = List("ecdsa-sha2-nistp256", "ssh-rsa")
 
   def empty(): Arguments = Arguments(
     verbose = false,

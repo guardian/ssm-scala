@@ -21,7 +21,7 @@ case class Failure(
   context: Option[String] = None,
   throwable: Option[Throwable] = None
 ) {
-  def attempt = FailedAttempt(this)
+  def attempt: FailedAttempt = FailedAttempt(this)
 }
 object Failure {
   def apply(message: String,
