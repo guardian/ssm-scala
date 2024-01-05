@@ -6,10 +6,10 @@ if test -n "$JAVA_HOME"; then
     java="$JAVA_HOME/bin/java"
 fi
 
-EXECUTE_FLAG=0
+EXECUTE_FLAG=1
 for param in $@; do
-  test "$param" = "-x" && EXECUTE_FLAG=1
-  test "$param" = "--execute" && EXECUTE_FLAG=1
+  test "$param" = "-d" && EXECUTE_FLAG=0
+  test "$param" = "--dryrun" && EXECUTE_FLAG=0
 done
 
 if (test $EXECUTE_FLAG -eq 0); then

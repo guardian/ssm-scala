@@ -121,7 +121,7 @@ object SSH {
       Seq(Out(s"$connectionString", newline = false)) ++ tunnelMeta.toList
     } else {
       Seq(
-        Metadata(s"# Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:"),
+        Metadata(s"# Dryrun mode. The command below will remain valid for $sshCredentialsLifetimeSeconds seconds:"),
         Out(s"$connectionString;")
       )
     }
@@ -145,7 +145,7 @@ object SSH {
       Seq(Out(s"$connectionString", newline = false))
     }else{
       Seq(
-        Metadata(s"# Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:"),
+        Metadata(s"# Dryrun mode. The command below will remain valid for $sshCredentialsLifetimeSeconds seconds:"),
         Out(s"$connectionString;")
       )
     }
@@ -188,7 +188,7 @@ object SSH {
         Seq(Out(s"$connectionString", newline = false))
       }else{
         Seq(
-          Metadata(s"# Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:"),
+          Metadata(s"# Dryrun mode. The command below will remain valid for $sshCredentialsLifetimeSeconds seconds:"),
           Out(s"$connectionString;")
         )
       }

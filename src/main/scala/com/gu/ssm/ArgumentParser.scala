@@ -114,9 +114,15 @@ object ArgumentParser {
         opt[Unit]('x', "execute").optional()
           .action((_, args) => {
             args.copy(
-              rawOutput = true)
+              rawOutput = false)
           })
-          .text("Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)"),
+          .text("[Deprecated - new default behaviour] Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)"),
+        opt[Unit]('d', "dryrun").optional()
+          .action((_, args) => {
+            args.copy(
+              rawOutput = false)
+          })
+          .text("Generate SSH command but do not execute (previous default behaviour)"),
         opt[Unit]('A', "agent").optional()
           .action((_, args) => {
             args.copy(
