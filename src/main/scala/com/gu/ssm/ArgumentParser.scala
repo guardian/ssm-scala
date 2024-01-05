@@ -114,7 +114,7 @@ object ArgumentParser {
         opt[Unit]('x', "execute").optional()
           .action((_, args) => {
             args.copy(
-              rawOutput = false)
+              rawOutput = true)
           })
           .text("[Deprecated - new default behaviour] Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)"),
         opt[Unit]('d', "dryrun").optional()
@@ -238,7 +238,7 @@ object ArgumentParser {
         opt[Unit]('x', "execute").optional()
           .action((_, args) => {
             args.copy(
-              rawOutput = false)
+              rawOutput = true)
           })
           .text("[Deprecated - new default behaviour] Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)"),
         opt[Unit]('d', "dryrun").optional()
