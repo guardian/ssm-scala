@@ -67,9 +67,11 @@ Usage: ssm [cmd|repl|ssh|scp] [options] <args>...
 
   -p, --profile <value>    The AWS profile name to use for authenticating this execution
   -i, --instances <value>  Specify the instance ID(s) on which the specified command(s) should execute
-  -t, --tags <value>       Search for instances by tag e.g. '--tags app,stage,stack'
+  -t, --tags <value>       Search for instances by tag. If you provide less than 3 tags assumed order is app,stage,stack. e.g. '--tags riff-raff,prod' or '--tags grafana' Upper/lowercase variations will be tried.
   -r, --region <value>     AWS region name (defaults to eu-west-1)
   --verbose                enable more verbose logging
+  --use-default-credentials-provider
+                           Use the default AWS credentials provider chain rather than profile credentials. This option is required when running within AWS itself.
 Command: cmd [options]
 Execute a single (bash) command, or a file containing bash commands
   -u, --user <value>       Execute command on remote host as this user (default: ubuntu)
@@ -85,7 +87,8 @@ Create and upload a temporary ssh key
   --oldest                 Selects the oldest instance if more than one instance was specified
   --private                Use private IP address (must be routable via VPN Gateway)
   --raw                    Unix pipe-able ssh connection string - note: you must use 'eval' to execute this due to nested quoting
-  -x, --execute            Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)
+  -x, --execute            [Deprecated - new default behaviour] Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)
+  -d, --dryrun             Generate SSH command but do not execute (previous default behaviour)
   -A, --agent              Use the local ssh agent to register the private key (and do not use -i); only bastion connections
   -a, --no-agent           Do not use the local ssh agent
   -b, --bastion <value>    Connect through the given bastion specified by its instance id; implies -A (use agent) unless followed by -a.
@@ -95,7 +98,10 @@ Create and upload a temporary ssh key
   --bastion-user <value>   Connect to bastion as this user (default: ubuntu).
   --host-key-alg-preference <value>
                            The preferred host key algorithms, can be specified multiple times - last is preferred (default: ecdsa-sha2-nistp256, ssh-rsa)
+  --ssm-tunnel             [deprecated]
   --no-ssm-proxy           Do not connect to the host proxying via AWS Systems Manager - go direct to port 22. Useful for  instances running old versions of systems manager (< 2.3.672.0)
+  --tunnel <value>         Forward traffic from the given local port to the given host and port on the remote side. Accepts the format `localPort:host:remotePort`, e.g. --tunnel 5000:a.remote.host.com:5000
+  --rds-tunnel <value>     Forward traffic from a given local port to a RDS database specified by tags. Accepts the format `localPort:tags`, where `tags` is a comma-separated list of tag values, e.g. --rds-tunnel 5000:app,stack,stage
 Command: scp [options] [:]<sourceFile>... [:]<targetFile>...
 Secure Copy
   -u, --user <value>       Connect to remote host as this user (default: ubuntu)
@@ -105,6 +111,7 @@ Secure Copy
   --private                Use private IP address (must be routable via VPN Gateway)
   --raw                    Unix pipe-able scp connection string
   -x, --execute            Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)
+  --ssm-tunnel             [deprecated]
   --no-ssm-proxy           Do not connect to the host proxying via AWS Systems Manager - go direct to port 22. Useful for instances running old versions of systems manager (< 2.3.672.0)
   [:]<sourceFile>...       Source file for the scp sub command. See README for details
   [:]<targetFile>...       Target file for the scp sub command. See README for details

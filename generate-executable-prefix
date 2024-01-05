@@ -10,6 +10,8 @@ EXECUTE_FLAG=1
 for param in $@; do
   test "$param" = "-d" && EXECUTE_FLAG=0
   test "$param" = "--dryrun" && EXECUTE_FLAG=0
+  # raw mode makes no sense if immediately executing the command
+  test "$param" = "--raw" && EXECUTE_FLAG=0
 done
 
 if (test $EXECUTE_FLAG -eq 0); then
