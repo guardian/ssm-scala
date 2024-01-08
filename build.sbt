@@ -2,7 +2,7 @@ scalaVersion := "2.13.12"
 
 name := "ssm-scala"
 organization := "com.gu"
-version := "2.4.0"
+version := "3.4.0"
 
 val awsSdkVersion = "1.12.627"
 
