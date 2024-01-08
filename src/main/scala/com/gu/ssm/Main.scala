@@ -11,7 +11,7 @@ object Main {
   implicit val ec: ExecutionContextExecutor = ExecutionContext.global
 
   def main(args: Array[String]): Unit = {
-    val (result, verbose) = argParser.parse(args, Arguments.empty().copy(rawOutput = true)) match {
+    val (result, verbose) = argParser.parse(args, Arguments.empty()) match {
       case Some(Arguments(verbose, Some(executionTarget), toExecuteOpt, profile, region, Some(mode), Some(user), sism, _, _, onlyUsePrivateIP, rawOutput, bastionInstanceIdOpt, bastionPortNumberOpt, Some(bastionUser), targetInstancePortNumberOpt, useAgent, preferredAlgs, sourceFileOpt, targetFileOpt, tunnelThroughSystemsManager, useDefaultCredentialsProvider, tunnelTarget, rdsTunnelTarget)) =>
         val awsClients = Logic.getClients(profile, region, useDefaultCredentialsProvider)
         val r = mode match {
