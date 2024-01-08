@@ -134,7 +134,7 @@ class SSHTest extends AnyFreeSpec with Matchers with EitherValues {
       "user command" - {
         "contains the user instructions" in {
           val (_, command) = sshCmdBastion(false)(file, bastionInstance, targetInstance, "user5", "34.1.1.10", "10.1.1.11", None, "bastionuser", None, Some(false), None)
-          command should contain (Metadata(s"# Execute the following command within the next $sshCredentialsLifetimeSeconds seconds:"))
+          command should contain (Metadata(s"# Dryrun mode. The command below will remain valid for $sshCredentialsLifetimeSeconds seconds:"))
         }
 
         "contains the ssh command" in {

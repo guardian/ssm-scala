@@ -58,7 +58,7 @@ object Arguments {
     isSelectionModeNewest = false,
     isSelectionModeOldest = false,
     usePrivateIpAddress = false,
-    rawOutput = false,
+    rawOutput = true,
     bastionInstance = None,
     bastionPortNumber = None,
     bastionUser = Some(bastionDefaultUser),

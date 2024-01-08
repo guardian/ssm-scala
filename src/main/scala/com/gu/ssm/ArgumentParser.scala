@@ -110,13 +110,19 @@ object ArgumentParser {
             args.copy(
               rawOutput = true)
           })
-          .text("Unix pipe-able ssh connection string - note: you must use 'eval' to execute this due to nested quoting"),
+          .text("Unix pipe-able ssh connection string. Note: disables automatic execution. You must use 'eval' to execute this due to nested quoting"),
         opt[Unit]('x', "execute").optional()
           .action((_, args) => {
             args.copy(
               rawOutput = true)
           })
-          .text("Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)"),
+          .text("[Deprecated - new default behaviour] Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)"),
+        opt[Unit]('d', "dryrun").optional()
+          .action((_, args) => {
+            args.copy(
+              rawOutput = false)
+          })
+          .text("Generate SSH command but do not execute (previous default behaviour)"),
         opt[Unit]('A', "agent").optional()
           .action((_, args) => {
             args.copy(
@@ -234,7 +240,13 @@ object ArgumentParser {
             args.copy(
               rawOutput = true)
           })
-          .text("Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)"),
+          .text("[Deprecated - new default behaviour] Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)"),
+        opt[Unit]('d', "dryrun").optional()
+          .action((_, args) => {
+            args.copy(
+              rawOutput = false)
+          })
+          .text("Generate SCP command but do not execute (previous default behaviour)"),
         opt[Unit]("ssm-tunnel").optional()
           .text("[deprecated]"),
         opt[Unit]("no-ssm-proxy").optional()

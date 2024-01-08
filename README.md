@@ -1,7 +1,7 @@
 SSM-Scala
 =========
 
-SSM-Scala is a command-line tool, written in Scala, for executing commands on EC2 servers using AWS's EC2 Run command. It provides the user with: 
+SSM-Scala is a command-line tool, written in Scala, for executing commands on EC2 servers using AWS's EC2 Run command. It provides the user with:
 
 1. standard `ssh` access using short lived RSA keys
 2. an _alternative_ to `ssh` for running commands on the target
@@ -37,16 +37,17 @@ The readme is quite detailed (and shows how to do many more things than what wil
 3. At your console type
 
 	```
-	ssm ssh -i i-00032c76140bc9140 -p frontend -x
+	ssm ssh -i i-00032c76140bc9140 -p frontend
 	```
-	
+
 	and more generally
 
 	```
-	ssm ssh -i <instance-id> -p <accountName> -x
+	ssm ssh -i <instance-id> -p <accountName>
+	ssm ssh -i <instance-id> -p <accountName>
 	```
 
-5. And that's it! If all went well you have been ssh'ed to the box. 
+5. And that's it! If all went well you have been ssh'ed to the box.
 
 
 ## Known issues
@@ -66,9 +67,11 @@ Usage: ssm [cmd|repl|ssh|scp] [options] <args>...
 
   -p, --profile <value>    The AWS profile name to use for authenticating this execution
   -i, --instances <value>  Specify the instance ID(s) on which the specified command(s) should execute
-  -t, --tags <value>       Search for instances by tag e.g. '--tags app,stage,stack'
+  -t, --tags <value>       Search for instances by tag. If you provide less than 3 tags assumed order is app,stage,stack. e.g. '--tags riff-raff,prod' or '--tags grafana' Upper/lowercase variations will be tried.
   -r, --region <value>     AWS region name (defaults to eu-west-1)
   --verbose                enable more verbose logging
+  --use-default-credentials-provider
+                           Use the default AWS credentials provider chain rather than profile credentials. This option is required when running within AWS itself.
 Command: cmd [options]
 Execute a single (bash) command, or a file containing bash commands
   -u, --user <value>       Execute command on remote host as this user (default: ubuntu)
@@ -83,8 +86,9 @@ Create and upload a temporary ssh key
   --newest                 Selects the newest instance if more than one instance was specified
   --oldest                 Selects the oldest instance if more than one instance was specified
   --private                Use private IP address (must be routable via VPN Gateway)
-  --raw                    Unix pipe-able ssh connection string - note: you must use 'eval' to execute this due to nested quoting
-  -x, --execute            Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)
+  --raw                    Unix pipe-able ssh connection string. Note: disables automatic execution. You must use 'eval' to execute this due to nested quoting
+  -x, --execute            [Deprecated - new default behaviour] Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)
+  -d, --dryrun             Generate SSH command but do not execute (previous default behaviour)
   -A, --agent              Use the local ssh agent to register the private key (and do not use -i); only bastion connections
   -a, --no-agent           Do not use the local ssh agent
   -b, --bastion <value>    Connect through the given bastion specified by its instance id; implies -A (use agent) unless followed by -a.
@@ -94,7 +98,10 @@ Create and upload a temporary ssh key
   --bastion-user <value>   Connect to bastion as this user (default: ubuntu).
   --host-key-alg-preference <value>
                            The preferred host key algorithms, can be specified multiple times - last is preferred (default: ecdsa-sha2-nistp256, ssh-rsa)
+  --ssm-tunnel             [deprecated]
   --no-ssm-proxy           Do not connect to the host proxying via AWS Systems Manager - go direct to port 22. Useful for  instances running old versions of systems manager (< 2.3.672.0)
+  --tunnel <value>         Forward traffic from the given local port to the given host and port on the remote side. Accepts the format `localPort:host:remotePort`, e.g. --tunnel 5000:a.remote.host.com:5000
+  --rds-tunnel <value>     Forward traffic from a given local port to a RDS database specified by tags. Accepts the format `localPort:tags`, where `tags` is a comma-separated list of tag values, e.g. --rds-tunnel 5000:app,stack,stage
 Command: scp [options] [:]<sourceFile>... [:]<targetFile>...
 Secure Copy
   -u, --user <value>       Connect to remote host as this user (default: ubuntu)
@@ -103,7 +110,9 @@ Secure Copy
   --oldest                 Selects the oldest instance if more than one instance was specified
   --private                Use private IP address (must be routable via VPN Gateway)
   --raw                    Unix pipe-able scp connection string
-  -x, --execute            Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)
+  -x, --execute            [Deprecated - new default behaviour] Makes ssm behave like a single command (eg: `--raw` with automatic piping to the shell)
+  -d, --dryrun             Generate SCP command but do not execute (previous default behaviour)
+  --ssm-tunnel             [deprecated]
   --no-ssm-proxy           Do not connect to the host proxying via AWS Systems Manager - go direct to port 22. Useful for instances running old versions of systems manager (< 2.3.672.0)
   [:]<sourceFile>...       Source file for the scp sub command. See README for details
   [:]<targetFile>...       Target file for the scp sub command. See README for details
@@ -116,14 +125,14 @@ To specify your AWS profile (for more information see [AWS profiles](https://doc
 - `--profile`
 - AWS_PROFILE environment variable
 
-To target the command, either of: 
-	
-- `-i`, where you specify one or more instance ids, or 
-- `-t`, where you specify the app name, the stack and the stage. 
+To target the command, either of:
+
+- `-i`, where you specify one or more instance ids, or
+- `-t`, where you specify the app name, the stack and the stage.
 
 ### "Tainted" Instances
 
-When accessing to an instance the user is greeted with a message of the form 
+When accessing to an instance the user is greeted with a message of the form
 
 ```
 This instance should be considered tainted.
@@ -136,16 +145,16 @@ This message highlights the fact that access is being logged and that the next p
 
 This is the result of having too many keys in your agent and exceeding the servers configured authentication attempts. This is fixed as of 0.9.7 as we disable the use of the agent using `IdentitiesOnly`.
 
-If you still see "Too many authentication failures" then please raise an issue. You can work around it by running `ssh-add -D` to remove all keys from your agent. 
+If you still see "Too many authentication failures" then please raise an issue. You can work around it by running `ssh-add -D` to remove all keys from your agent.
 
 ### --raw usage
 
 If you need to add extra parameters to the SSH command then you can use `--raw`. In it's simplest form the following are equivalent:
 ```bash
-ssm ssh -i i-0123456789abcdef0 -p composer -x
-``` 
+ssm ssh -i i-0123456789abcdef0 -p composer
+```
 
-and 
+and
 
 ```bash
 eval $(ssm ssh -i i-0123456789abcdef0 -p composer --raw)
@@ -157,7 +166,7 @@ This helps to undertake actions such as construct tunnels. For example to access
 eval $(ssm ssh -i i-0123456789abcdef0 -p composer --raw) -L 5432:my-postgres-server-hostname:5432
 ```
 
-Note the use of `eval` in these examples - this is required in order to correctly parse the nested quotes that are output as part of the raw command. If you don't use `eval` then you are likely to see an error message such as `ssh: Could not resolve hostname yes": nodename nor servname provided, or not known`. 
+Note the use of `eval` in these examples - this is required in order to correctly parse the nested quotes that are output as part of the raw command. If you don't use `eval` then you are likely to see an error message such as `ssh: Could not resolve hostname yes": nodename nor servname provided, or not known`.
 
 ### Execution targets
 
@@ -220,9 +229,26 @@ ssm ssh --profile security -t security-hq,security,PROD --newest --raw | xargs -
 
 Will automatically ssh you to the newest instance running security-hq. Note that you still have to manually accept the new ECDSA key fingerprint.
 
+### -d, --dryrun
+
+Generate SSH command but do not execute (previous default behaviour)
+
+```
+ssm ssh --profile security -t security-hq,security,PROD --newest --dryrun
+```
+
+Example output:
+
+```
+========= i-0566a4df63c0c35bb =========
+# Dryrun mode. The command below will remain valid for 30 seconds:
+
+ssh -o "IdentitiesOnly yes" -o "UserKnownHostsFile ...
+```
+
 ### -x, --execute
 
-This flag makes ssm behave like ssh. The raw output is automatically piped to `xargs -0 -o bash -c`. You would then do
+DEPRECATED - flag is now the default behaviour. This flag makes ssm behave like ssh. The raw output is automatically piped to `xargs -0 -o bash -c`. You would then do
 
 ```
 ssm ssh --profile security -t security-hq,security,PROD --newest --execute
@@ -235,7 +261,7 @@ instead of the example given in the previous `--raw` section.
 This flag forwards traffic from a local port through the instance to the specified hostname and port. For example,
 
 ```
-ssm ssh --profile security -t security-hq,security,PROD --newest -x --tunnel 5000:example.com:6000
+ssm ssh --profile security -t security-hq,security,PROD --newest --tunnel 5000:example.com:6000
 ```
 
 would forward all traffic on your machine through the remote instance to example.com:6000.
@@ -245,7 +271,7 @@ would forward all traffic on your machine through the remote instance to example
 Similar to `tunnel`, this flag forwards traffic from a local port to an AWS RDS database specified by the given tags. For example,
 
 ```
-ssm ssh --profile security -t security-hq,security,PROD --newest -x --rds-tunnel 5000:example-db,security,CODE
+ssm ssh --profile security -t security-hq,security,PROD --newest --rds-tunnel 5000:example-db,security,CODE
 ```
 
 would try to find a single RDS instance with the tags `example-db,security,CODE`, and forward traffic from port 5000 to that RDS instance via the remote instance.
@@ -304,7 +330,7 @@ You'll also need to install the systems manager plugin on your machine:
 You can then SSH using SSM with the default arguments:
 
 ```
-  ssm ssh -x -i i-0937fe9baa578095b -p deployTools
+  ssm ssh -i i-0937fe9baa578095b -p deployTools
  ```
 
 (Useful tip - you can find the instance id using prism, e.g. `prism -f instanceName amigo`)
@@ -326,7 +352,7 @@ Bastion are proxy servers used as entry point to private networks and ssm scala 
 
 ### Introduction
 
-In this example we assume that you have a bastion with a public IP address (even though the bastion Ingress rules may restrict it to some IP ranges), identified by aws instance id `i-bastion12345`, and an application server, on a private network with private IP address, and with instance id `i-application-12345`, you would then use ssm to connect to it using 
+In this example we assume that you have a bastion with a public IP address (even though the bastion Ingress rules may restrict it to some IP ranges), identified by aws instance id `i-bastion12345`, and an application server, on a private network with private IP address, and with instance id `i-application-12345`, you would then use ssm to connect to it using
 
 ```
 ssm ssh --profile <profile-name> --bastion i-bastion12345 --bastion-port 2022 -i i-application-12345
@@ -344,7 +370,7 @@ You can specify a port that the bastion runs ssh on, with the option `--bastion-
 
 ```
 ssm ssh --profile <profile-name> --bastion i-bastion12345 --bastion-port 2345 -i i-application-12345
-``` 
+```
 
 
 ### Using tags to specify the target instance
@@ -381,20 +407,20 @@ When using the standard `ssh` command, the `--private` flag can be used to indic
 
 ### Bastions with private keys problems
 
-There's been occurences of bastions connections strings of the form 
+There's been occurences of bastions connections strings of the form
 
 ```
-ssh -A -i /path/to/temp/private/key -t -t ubuntu@bastion-hostname \ 
+ssh -A -i /path/to/temp/private/key -t -t ubuntu@bastion-hostname \
     -t -t ssh -t -t ubuntu@target-ip-address;
 ```
-not working, because the private file was not found for the second ssh connection, leading to a "Permission denied (publickey)" error message. 
+not working, because the private file was not found for the second ssh connection, leading to a "Permission denied (publickey)" error message.
 
 When this happens the user can use the `-a`, `--agent` flag that performs a registration of the private key at the local ssh agent. With this flag, ssm command
 
 ```
 ssm ssh --profile <account-name> --bastion <instanceId1> \
     -i <instanceId2> --agent
-``` 
+```
 
 returns
 
@@ -403,7 +429,7 @@ ssh-add /path/to/temp/private/key && \
     ssh -A ubuntu@bastion-hostname \
     -t -t ssh ubuntu@target-ip-address;
 ```
- 
+
 
 ## Secure Copy
 
@@ -411,11 +437,11 @@ ssh-add /path/to/temp/private/key && \
 
 ### Introduction
 
-An example of usage is 
+An example of usage is
 
 ```
 ./ssm scp -p account -t app,stage,stack /path/to/file1 :/path/to/file1
-``` 
+```
 
 Which outputs
 
@@ -424,20 +450,20 @@ Which outputs
 scp -i /path/to/identity/file.tmp /path/to/file1 ubuntu@34.242.32.40:/path/to/file2;
 ```
 
-Otherwise 
+Otherwise
 
 ```
 ./ssm scp -p account -t app,stage,stack :/path/to/file1 /path/to/file2
 ```
 
-outputs 
+outputs
 
 ```
 # simplified version
 scp -i /path/to/identity/file.tmp ubuntu@34.242.32.40:/path/to/file1 /path/to/file2 ;
 ```
 
-The convention is: the first (left hand side) file is always the source and the second (right hand side) is always the target and the colon, indicates which one is on the remote server. 
+The convention is: the first (left hand side) file is always the source and the second (right hand side) is always the target and the colon, indicates which one is on the remote server.
 
 ## Development
 
@@ -445,15 +471,15 @@ During development, the program can be run using sbt, either from an sbt shell o
 
     $ sbt "run cmd -c pwd --instances i-0123456 --profile xxx --region xxx"
 
-    sbt:ssm-scala> run cmd -c pwd --instances i-0123456 --profile xxx --region xxx 
+    sbt:ssm-scala> run cmd -c pwd --instances i-0123456 --profile xxx --region xxx
 
-However, `sbt` traps the program exit so in REPL mode you may find it easier to create and run an executable instead, for this just run 
+However, `sbt` traps the program exit so in REPL mode you may find it easier to create and run an executable instead, for this just run
 
 ```
 ./generate-executable.sh
 ```
 
-The result of this script is an executable called `ssm` in the target folder. If you are using a non unix operating system, run `sbt assembly` as you would normally do and then run the ssm.jar file using 
+The result of this script is an executable called `ssm` in the target folder. If you are using a non unix operating system, run `sbt assembly` as you would normally do and then run the ssm.jar file using
 
 ```
 java -jar <path-to-jar>/ssm.jar [arguments]
@@ -466,11 +492,11 @@ To release a new version of `ssm` perform the two following tasks:
 1. Update the version number in `build.sbt`
 
 1. Generate a new executable. Run the following at the top of the repository
- 
+
 	```
 	./generate-executable.sh
 	```
-	
+
 	Note that this script generates the **tar.gz** file needed for the github release as well as outputting the sha256 hash of that file needed for the homebrew-devtools' update.
 
 2. Increase the version number accordingly and release a new tag at [ssm-scala releases](https://github.com/guardian/ssm-scala/releases). Upload the raw executable (**file**: `ssm`) as well as a **tar.gz** version (**file**: `ssm.tar.gz`).
@@ -482,7 +508,7 @@ To release a new version of `ssm` perform the two following tasks:
 To use ssm-scala against the instances of your project, the following needs to happen:
 
 1. Add permissions with a policy like:
-	
+
     ```yaml
     ExampleAppSSMRunCommandPolicy:
       Type: AWS::IAM::Policy
@@ -508,15 +534,15 @@ To use ssm-scala against the instances of your project, the following needs to h
             - ssmmessages:CreateDataChannel
             - ssmmessages:OpenControlChannel
             - ssmmessages:OpenDataChannel
-        Roles: 
+        Roles:
         - !Ref ExampleAppInstanceRole
     ```
-	
+
 	Example stolen from the [Security-HQ cloudformation](https://github.com/guardian/security-hq/blob/master/cloudformation/security-hq.template.yaml) file.
 
 2. Download the executable from the [project release page](https://github.com/guardian/ssm-scala/releases). Instructions on usage can be found in the above sections.
 
-Note: SSM needs the target server to have outbound port 443 (ssm-agent's communication with AWS's SSM and EC2 Messages endpoints). 
+Note: SSM needs the target server to have outbound port 443 (ssm-agent's communication with AWS's SSM and EC2 Messages endpoints).
 
 
 ##License
