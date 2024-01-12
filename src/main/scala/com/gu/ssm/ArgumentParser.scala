@@ -11,6 +11,8 @@ object ArgumentParser {
 
   val argParser: OptionParser[Arguments] = new OptionParser[Arguments]("ssm") {
 
+    help("help").text("prints this usage text")
+
     opt[String]('p', "profile").optional()
       .action { (profile, args) =>
         args.copy(profile = Some(profile))
