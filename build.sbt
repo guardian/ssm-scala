@@ -15,7 +15,7 @@ libraryDependencies ++= Seq(
   "com.googlecode.lanterna" % "lanterna" % "3.1.2",
   "ch.qos.logback" %  "logback-classic" % "1.5.3",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
-  "com.fasterxml.jackson.core" % "jackson-databind" % "2.16.2",
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.17.0",
   "org.bouncycastle" % "bcpkix-jdk18on" % "1.77",
   "org.scalatest" %% "scalatest" % "3.2.18" % Test
 )
