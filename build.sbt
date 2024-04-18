@@ -28,5 +28,9 @@ assemblyMergeStrategy := {
 }
 assemblyJarName := "ssm.jar"
 
-scalacOptions := Seq("-unchecked", "-deprecation")
+scalacOptions := Seq(
+  "-unchecked",
+  "-deprecation",
+  "-release:11",
+)
 
