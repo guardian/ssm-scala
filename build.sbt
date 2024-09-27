@@ -1,4 +1,4 @@
-scalaVersion := "3.3.3"
+scalaVersion := "3.3.4"
 
 name := "ssm-scala"
 organization := "com.gu"
