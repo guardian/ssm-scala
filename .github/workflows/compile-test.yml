@@ -15,4 +15,5 @@ jobs:
         with:
           java-version: '21'
           distribution: 'adopt'
+      - uses: sbt/setup-sbt@646c82cdb36e794ff9ab674b60242d80d96910df # v1.1.1
       - run: sbt test
