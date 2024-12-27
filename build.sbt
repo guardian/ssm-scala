@@ -1,8 +1,9 @@
-scalaVersion := "3.3.4"
-
 name := "ssm-scala"
 organization := "com.gu"
 version := "3.5.0"
+
+// be sure to also update this in the `generate-executable.sh` script
+scalaVersion := "3.3.4"
 
 val awsSdkVersion = "1.12.729"
 
