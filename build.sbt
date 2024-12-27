@@ -1,6 +1,6 @@
 name := "ssm-scala"
 organization := "com.gu"
-version := "3.5.0"
+version := "3.6.0"
 
 // be sure to also update this in the `generate-executable.sh` script
 scalaVersion := "3.3.4"
