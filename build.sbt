@@ -3,7 +3,7 @@ organization := "com.gu"
 version := "3.6.0"
 
 // be sure to also update this in the `generate-executable.sh` script
-scalaVersion := "3.3.4"
+scalaVersion := "3.6.2"
 
 val awsSdkVersion = "1.12.780"
 
