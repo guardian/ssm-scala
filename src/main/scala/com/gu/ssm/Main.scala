@@ -15,9 +15,6 @@ object Main {
       case Some(Arguments(verbose, Some(executionTarget), toExecuteOpt, profile, region, Some(mode), Some(user), sism, _, _, onlyUsePrivateIP, rawOutput, bastionInstanceIdOpt, bastionPortNumberOpt, Some(bastionUser), targetInstancePortNumberOpt, useAgent, preferredAlgs, sourceFileOpt, targetFileOpt, tunnelThroughSystemsManager, useDefaultCredentialsProvider, tunnelTarget, rdsTunnelTarget)) =>
         val awsClients = Logic.getClients(profile, region, useDefaultCredentialsProvider)
         val r = mode match {
-          case SsmRepl =>
-            new InteractiveProgram(awsClients).main(profile, region, executionTarget)
-            ProgramResult(Nil)
           case SsmCmd =>
             toExecuteOpt match {
               case Some(toExecute) => execute(awsClients, executionTarget, user, toExecute)
