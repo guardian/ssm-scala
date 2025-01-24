@@ -1,6 +1,6 @@
 #!/bin/bash
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-SCALA_FOLDER="scala-3.6.2"
+SCALA_FOLDER="scala-3.6.3"
 cd $DIR
 sbt assembly
 cat "$DIR/generate-executable-prefix" "$DIR/target/$SCALA_FOLDER/ssm.jar" > "$DIR/target/$SCALA_FOLDER/ssm"
