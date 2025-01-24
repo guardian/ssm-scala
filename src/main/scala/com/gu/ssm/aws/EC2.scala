@@ -38,9 +38,7 @@ object EC2 {
       tagOrder.take(tagValues.length).map(makeFilter(_, allTags))
 
     val request = new DescribeInstancesRequest()
-      .withFilters(
-        filters: _*
-      )
+      .withFilters(filters*)
     handleAWSErrs(
       awsToScala(client.describeInstancesAsync)(request).map(extractInstances)
     )
