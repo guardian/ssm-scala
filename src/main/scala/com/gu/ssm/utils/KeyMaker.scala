@@ -14,7 +14,11 @@ import org.apache.commons.codec.binary.Base64
 
 object KeyMaker {
 
-  def makeKey (privateKeyFile: File, algorithm: String, provider: String): String = {
+  def makeKey(
+      privateKeyFile: File,
+      algorithm: String,
+      provider: String
+  ): String = {
     Security.addProvider(new BouncyCastleProvider)
     val keyPair = generateKeyPair(algorithm, provider)
     val priv = keyPair.getPrivate
@@ -33,26 +37,23 @@ object KeyMaker {
     val rsaPublicKey = key.asInstanceOf[BCRSAPublicKey]
     val byteOs: ByteArrayOutputStream = new ByteArrayOutputStream
     val dos = new DataOutputStream(byteOs)
-    dos.writeInt ("ssh-rsa".getBytes.length)
-    dos.write ("ssh-rsa".getBytes)
-    dos.writeInt (rsaPublicKey.getPublicExponent.toByteArray.length)
-    dos.write (rsaPublicKey.getPublicExponent.toByteArray)
-    dos.writeInt (rsaPublicKey.getModulus.toByteArray.length)
-    dos.write (rsaPublicKey.getModulus.toByteArray)
-    val publicKeyEncoded = new String (Base64.encodeBase64 (byteOs.toByteArray) )
+    dos.writeInt("ssh-rsa".getBytes.length)
+    dos.write("ssh-rsa".getBytes)
+    dos.writeInt(rsaPublicKey.getPublicExponent.toByteArray.length)
+    dos.write(rsaPublicKey.getPublicExponent.toByteArray)
+    dos.writeInt(rsaPublicKey.getModulus.toByteArray.length)
+    dos.write(rsaPublicKey.getModulus.toByteArray)
+    val publicKeyEncoded = new String(Base64.encodeBase64(byteOs.toByteArray))
     "ssh-rsa " + publicKeyEncoded + " " + description
   }
 
   private def writePemFile(key: Key, description: String, file: File): Unit = {
     val pemObject = new PemObject(description, key.getEncoded)
-    val pemWriter = new PemWriter(new OutputStreamWriter(new FileOutputStream(file)))
+    val pemWriter = new PemWriter(
+      new OutputStreamWriter(new FileOutputStream(file))
+    )
     pemWriter.writeObject(pemObject)
     pemWriter.close()
   }
 
 }
-
-
-
-
-

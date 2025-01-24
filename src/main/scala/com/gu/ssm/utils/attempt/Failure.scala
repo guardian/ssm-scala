@@ -1,6 +1,5 @@
 package com.gu.ssm.utils.attempt
 
-
 case class FailedAttempt(failures: List[Failure]) {
   def exitCode: ExitCode = failures.map(_.exitCode).maxBy(_.code)
 }
@@ -15,31 +14,40 @@ object FailedAttempt {
 }
 
 case class Failure(
-  message: String,
-  friendlyMessage: String,
-  exitCode: ExitCode,
-  context: Option[String] = None,
-  throwable: Option[Throwable] = None
+    message: String,
+    friendlyMessage: String,
+    exitCode: ExitCode,
+    context: Option[String] = None,
+    throwable: Option[Throwable] = None
 ) {
   def attempt: FailedAttempt = FailedAttempt(this)
 }
 object Failure {
-  def apply(message: String,
-            friendlyMessage: String,
-            exitCode: ExitCode): Failure = apply(message, friendlyMessage, exitCode, None, None)
-  def apply(message: String,
-            friendlyMessage: String,
-            exitCode: ExitCode,
-            context: String): Failure = apply(message, friendlyMessage, exitCode, Some(context), None)
-  def apply(message: String,
-            friendlyMessage: String,
-            exitCode: ExitCode,
-            throwable: Throwable): Failure = apply(message, friendlyMessage, exitCode, None, Some(throwable))
-  def apply(message: String,
-            friendlyMessage: String,
-            exitCode: ExitCode,
-            context: String,
-            throwable: Throwable): Failure = apply(message, friendlyMessage, exitCode, Some(context), Some(throwable))
+  def apply(
+      message: String,
+      friendlyMessage: String,
+      exitCode: ExitCode
+  ): Failure = apply(message, friendlyMessage, exitCode, None, None)
+  def apply(
+      message: String,
+      friendlyMessage: String,
+      exitCode: ExitCode,
+      context: String
+  ): Failure = apply(message, friendlyMessage, exitCode, Some(context), None)
+  def apply(
+      message: String,
+      friendlyMessage: String,
+      exitCode: ExitCode,
+      throwable: Throwable
+  ): Failure = apply(message, friendlyMessage, exitCode, None, Some(throwable))
+  def apply(
+      message: String,
+      friendlyMessage: String,
+      exitCode: ExitCode,
+      context: String,
+      throwable: Throwable
+  ): Failure =
+    apply(message, friendlyMessage, exitCode, Some(context), Some(throwable))
 }
 
 sealed abstract class ExitCode(val code: Int)

@@ -7,29 +7,35 @@ import org.scalatest.matchers.should.Matchers
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext}
 
-
 trait AttemptValues extends Matchers {
   implicit class RichAttempt[A](attempt: Attempt[A]) {
     private def stackTrace(failure: Failure): String = {
-      failure.throwable.map { t =>
-        val baos = new ByteArrayOutputStream()
-        val pw = new PrintWriter(baos)
-        t.printStackTrace(pw)
-        pw.close()
-        baos.toString
-      }.getOrElse("")
+      failure.throwable
+        .map { t =>
+          val baos = new ByteArrayOutputStream()
+          val pw = new PrintWriter(baos)
+          t.printStackTrace(pw)
+          pw.close()
+          baos.toString
+        }
+        .getOrElse("")
     }
 
     def value()(implicit ec: ExecutionContext): A = {
       val result = Await.result(attempt.asFuture, 5.seconds)
       withClue {
         result.fold(
-          fa => s"${fa.failures.map(_.message).mkString(", ")} - ${fa.failures.map(stackTrace).mkString("\n\n")}",
+          fa =>
+            s"${fa.failures.map(_.message).mkString(", ")} - ${fa.failures.map(stackTrace).mkString("\n\n")}",
           _ => ""
         )
       } {
         result.fold[A](
-          _ => throw new TestFailedException("Could not extract value from failed Attempt", 10),
+          _ =>
+            throw new TestFailedException(
+              "Could not extract value from failed Attempt",
+              10
+            ),
           identity
         )
       }
@@ -45,16 +51,22 @@ trait AttemptValues extends Matchers {
       } {
         result.fold[FailedAttempt](
           identity,
-          failed => throw new TestFailedException("Cannot extract failure from successful Attempt", 10)
+          failed =>
+            throw new TestFailedException(
+              "Cannot extract failure from successful Attempt",
+              10
+            )
         )
       }
     }
 
     def isSuccessfulAttempt()(implicit ec: ExecutionContext): Boolean = {
-      Await.result(attempt.asFuture, 5.seconds).fold (
-        _ => false,
-        _ => true
-      )
+      Await
+        .result(attempt.asFuture, 5.seconds)
+        .fold(
+          _ => false,
+          _ => true
+        )
     }
 
     def isFailedAttempt()(implicit ec: ExecutionContext): Boolean = {

@@ -10,8 +10,11 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
-
-class AttemptTest extends AnyFreeSpec with Matchers with EitherValues with AttemptValues {
+class AttemptTest
+    extends AnyFreeSpec
+    with Matchers
+    with EitherValues
+    with AttemptValues {
   "traverse" - {
     "returns the first failure" in {
       def failOnFourAndSix(i: Int): Attempt[Int] = {
@@ -21,12 +24,18 @@ class AttemptTest extends AnyFreeSpec with Matchers with EitherValues with Attem
           case n => Right(n)
         }
       }
-      val errors = Attempt.traverse(List(1, 2, 3, 4, 5, 6))(failOnFourAndSix).leftValue()
+      val errors =
+        Attempt.traverse(List(1, 2, 3, 4, 5, 6))(failOnFourAndSix).leftValue()
       checkError(errors, "fails on four")
     }
 
     "returns the successful result if there were no failures" in {
-      Attempt.traverse(List(1, 2, 3, 4))(Right).value() shouldEqual List(1, 2, 3, 4)
+      Attempt.traverse(List(1, 2, 3, 4))(Right).value() shouldEqual List(
+        1,
+        2,
+        3,
+        4
+      )
     }
   }
 
@@ -38,7 +47,8 @@ class AttemptTest extends AnyFreeSpec with Matchers with EitherValues with Attem
     }
 
     "returns only the successful attempts if there were failures" in {
-      val attempts: List[Attempt[Int]] = List(Right(1), Right(2), expectedFailure("failed"), Right(4))
+      val attempts: List[Attempt[Int]] =
+        List(Right(1), Right(2), expectedFailure("failed"), Right(4))
 
       Attempt.successfulAttempts(attempts).value() shouldEqual List(1, 2, 4)
     }
@@ -60,7 +70,9 @@ class AttemptTest extends AnyFreeSpec with Matchers with EitherValues with Attem
 
   "retry" - {
     "returns success if the attempt returns successfully" in {
-      Attempt.retryUntil(Duration.Zero, () => Attempt.Right(true))(_ == true).isSuccessfulAttempt() shouldEqual true
+      Attempt
+        .retryUntil(Duration.Zero, () => Attempt.Right(true))(_ == true)
+        .isSuccessfulAttempt() shouldEqual true
     }
 
     "returns true if the attempt returns after retrying" in {
@@ -70,17 +82,25 @@ class AttemptTest extends AnyFreeSpec with Matchers with EitherValues with Attem
         Attempt.Right(counter)
       }
 
-      Attempt.retryUntil(Duration.Zero, () => incr())(_ > 3).value() shouldEqual 4
+      Attempt
+        .retryUntil(Duration.Zero, () => incr())(_ > 3)
+        .value() shouldEqual 4
     }
 
     "returns failure if the attempt fails" in {
       val failure = Failure("test failure", "Test failure", ErrorCode).attempt
-      Attempt.retryUntil(Duration.Zero, () => Attempt.Left[Boolean](failure))(_ => true).leftValue() shouldEqual failure
+      Attempt
+        .retryUntil(Duration.Zero, () => Attempt.Left[Boolean](failure))(_ =>
+          true
+        )
+        .leftValue() shouldEqual failure
     }
 
     "delays between retrying" - {
       "and thus will time out in this test" in {
-        val future = Attempt.retryUntil(10.millis, () => Attempt.Right(false))(_ == true).asFuture
+        val future = Attempt
+          .retryUntil(10.millis, () => Attempt.Right(false))(_ == true)
+          .asFuture
         intercept[TimeoutException] {
           Await.result(future, 25.millis)
         }
@@ -88,11 +108,11 @@ class AttemptTest extends AnyFreeSpec with Matchers with EitherValues with Attem
     }
   }
 
-  /**
-    * Utilities for checking the failure state of attempts
+  /** Utilities for checking the failure state of attempts
     */
   def checkError(errors: FailedAttempt, expected: String): Unit = {
     errors.failures.head.message shouldEqual expected
   }
-  def expectedFailure[A](message: String): Attempt[A] = Left[A](Failure(message, "this will fail", ErrorCode))
+  def expectedFailure[A](message: String): Attempt[A] =
+    Left[A](Failure(message, "this will fail", ErrorCode))
 }
