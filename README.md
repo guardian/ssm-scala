@@ -63,8 +63,9 @@ One potential workaround for this is rebooting the box using the EC2 console (ma
 The automatically generated help section for `ssm` is
 
 ```
-Usage: ssm [cmd|repl|ssh|scp] [options] <args>...
+Usage: ssm [cmd|ssh|scp] [options] <args>...
 
+  --help                   prints this usage text
   -p, --profile <value>    The AWS profile name to use for authenticating this execution
   -i, --instances <value>  Specify the instance ID(s) on which the specified command(s) should execute
   -t, --tags <value>       Search for instances by tag. If you provide less than 3 tags assumed order is app,stage,stack. e.g. '--tags riff-raff,prod' or '--tags grafana' Upper/lowercase variations will be tried.
@@ -77,8 +78,6 @@ Execute a single (bash) command, or a file containing bash commands
   -u, --user <value>       Execute command on remote host as this user (default: ubuntu)
   -c, --cmd <value>        A bash command to execute
   -f, --file <value>       A file containing bash commands to execute
-Command: repl
-Run SSM in interactive/repl mode
 Command: ssh [options]
 Create and upload a temporary ssh key
   -u, --user <value>       Connect to remote host as this user (default: ubuntu)
@@ -198,14 +197,6 @@ export AWS_PROFILE=security
 ```
 
 where the `date` command will be ran on all matching instances.
-
-An example of using `repl` is:
-
-```
-./ssm repl --profile <aws-profile> -t security-hq,security,PROD
-```
-
-The REPL mode causes `ssm` to generate a list of instances and then wait for commands to be specified. Each command will be executed on all instances and the user can select the instance to display.
 
 An example of using `ssh` command is:
 

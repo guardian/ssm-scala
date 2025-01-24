@@ -73,10 +73,6 @@ object ArgumentParser {
           .text("A file containing bash commands to execute")
       )
 
-    cmd("repl")
-      .action((_, c) => c.copy(mode = Some(SsmRepl)))
-      .text("Run SSM in interactive/repl mode")
-
     cmd("ssh")
       .action((_, c) => c.copy(mode = Some(SsmSsh)))
       .text("Create and upload a temporary ssh key")
@@ -267,7 +263,7 @@ object ArgumentParser {
       )
 
     checkConfig { args =>
-      if (args.mode.isEmpty) Left("You must select a mode to use: cmd, repl or ssh")
+      if (args.mode.isEmpty) Left("You must select a mode to use: cmd or ssh")
       else if (args.toExecute.isEmpty && args.mode.contains(SsmCmd)) Left("You must provide commands to execute (src-file or cmd)")
       else if (args.executionTarget.isEmpty) Left("You must provide a list of target instances (-i) or instance App/Stage/Stack tags (-t)")
       else if (!args.useDefaultCredentialsProvider && args.profile.isEmpty && !System.getenv().containsKey("AWS_PROFILE")) Left("Expected --profile, --use-default-credentials-provider or AWS_PROFILE environment variable")

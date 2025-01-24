@@ -89,7 +89,6 @@ case object InvocationDoesNotExist extends CommandStatus
 
 sealed trait SsmMode
 case object SsmCmd extends SsmMode
-case object SsmRepl extends SsmMode
 case object SsmSsh extends SsmMode
 case object SsmScp extends SsmMode
 
