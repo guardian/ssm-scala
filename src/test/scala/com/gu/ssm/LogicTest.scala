@@ -44,7 +44,8 @@ class LogicTest extends AnyFreeSpec with Matchers with EitherValues {
     import Logic.extractRDSTunnelConfig
 
     "extracts tunnel config given ports and tags" in {
-      val expected = Right(TunnelTargetWithRDSTags(5432, List("APP", "STACK", "STAGE")))
+      val expected =
+        Right(TunnelTargetWithRDSTags(5432, List("APP", "STACK", "STAGE")))
       extractRDSTunnelConfig(s"5432:APP,STACK,STAGE") shouldBe expected
     }
 
@@ -68,8 +69,23 @@ class LogicTest extends AnyFreeSpec with Matchers with EitherValues {
   "getSSHInstance" - {
     import Logic.getSSHInstance
 
-    def makeInstance(id: String, publicIpOpt: Option[String], privateIp: String, launchDateDayShift: Int): Instance =
-      Instance(InstanceId(id), None, publicIpOpt, privateIp, LocalDateTime.now().plusDays(launchDateDayShift).atZone(ZoneId.systemDefault()).toInstant())
+    def makeInstance(
+        id: String,
+        publicIpOpt: Option[String],
+        privateIp: String,
+        launchDateDayShift: Int
+    ): Instance =
+      Instance(
+        InstanceId(id),
+        None,
+        publicIpOpt,
+        privateIp,
+        LocalDateTime
+          .now()
+          .plusDays(launchDateDayShift)
+          .atZone(ZoneId.systemDefault())
+          .toInstant()
+      )
 
     "if given no instances, should be Left" in {
       getSSHInstance(List(), SismUnspecified).isLeft shouldBe true
@@ -115,38 +131,63 @@ class LogicTest extends AnyFreeSpec with Matchers with EitherValues {
   "getIpAddress" - {
     import Logic.getAddress
 
-    def makeInstance(id: String, publicDnsOpt: Option[String], publicIpOpt: Option[String], privateIp: String): Instance =
-      Instance(InstanceId(id), publicDnsOpt, publicIpOpt, privateIp, Instant.now())
+    def makeInstance(
+        id: String,
+        publicDnsOpt: Option[String],
+        publicIpOpt: Option[String],
+        privateIp: String
+    ): Instance =
+      Instance(
+        InstanceId(id),
+        publicDnsOpt,
+        publicIpOpt,
+        privateIp,
+        Instant.now()
+      )
 
-    val instanceWithPrivateIpOnly = makeInstance("id-e32cb1c9d09d", None, None, "10.1.1.10")
-    val instanceWithPublicIpAndPrivateIp = makeInstance("id-a78414cb9b14", None, Some("34.1.1.10"), "10.1.1.10")
-    val instanceWithPublicDnsAndPublicIPAndPrivateIp = makeInstance("id-a78414cb9b14", Some("ec2-dnsname"), Some("34.1.1.10"), "10.1.1.10")
+    val instanceWithPrivateIpOnly =
+      makeInstance("id-e32cb1c9d09d", None, None, "10.1.1.10")
+    val instanceWithPublicIpAndPrivateIp =
+      makeInstance("id-a78414cb9b14", None, Some("34.1.1.10"), "10.1.1.10")
+    val instanceWithPublicDnsAndPublicIPAndPrivateIp = makeInstance(
+      "id-a78414cb9b14",
+      Some("ec2-dnsname"),
+      Some("34.1.1.10"),
+      "10.1.1.10"
+    )
 
     "specifying we want private IP" - {
       "return private if only private exists" in {
-        val result = getAddress(instanceWithPrivateIpOnly, onlyUsePrivateIP = true)
+        val result =
+          getAddress(instanceWithPrivateIpOnly, onlyUsePrivateIP = true)
         result.value shouldEqual "10.1.1.10"
       }
 
       "return private if public and private exists" in {
-        val result = getAddress(instanceWithPublicIpAndPrivateIp, onlyUsePrivateIP = true)
+        val result =
+          getAddress(instanceWithPublicIpAndPrivateIp, onlyUsePrivateIP = true)
         result.value shouldEqual "10.1.1.10"
       }
     }
 
     "not specifying we want private IP" - {
       "return public if it exists" in {
-        val result = getAddress(instanceWithPublicIpAndPrivateIp, onlyUsePrivateIP = false)
+        val result =
+          getAddress(instanceWithPublicIpAndPrivateIp, onlyUsePrivateIP = false)
         result.value shouldEqual "34.1.1.10"
       }
 
       "return private if no public and no dns" in {
-        val result = getAddress(instanceWithPrivateIpOnly, onlyUsePrivateIP = false)
+        val result =
+          getAddress(instanceWithPrivateIpOnly, onlyUsePrivateIP = false)
         result.value shouldEqual "10.1.1.10"
       }
 
       "return public IP if it exists, even if public DNS exists" in {
-        val result = getAddress(instanceWithPublicDnsAndPublicIPAndPrivateIp, onlyUsePrivateIP = false)
+        val result = getAddress(
+          instanceWithPublicDnsAndPublicIPAndPrivateIp,
+          onlyUsePrivateIP = false
+        )
         result.value shouldEqual "34.1.1.10"
       }
     }
@@ -166,24 +207,34 @@ class LogicTest extends AnyFreeSpec with Matchers with EitherValues {
         """.stripMargin
 
       "return the host key using the first algorithm when there is a match" in {
-        val hostKey = Logic.getHostKeyEntry(Right(CommandResult(results, "", true)), List("ecdsa-sha2-nistp256", "ssh-rsa"))
+        val hostKey = Logic.getHostKeyEntry(
+          Right(CommandResult(results, "", true)),
+          List("ecdsa-sha2-nistp256", "ssh-rsa")
+        )
         hostKey.value shouldBe "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBKDHXJ6sXLoKprcNzMDLF6YVroaf5ycshemnS1TJggIA6cf/FW5EmdzUlf+P0QfBdLsqjBVBxQhyWTtHXD4Byds= root@ip-10-248-50-51"
       }
 
       "return the host key using the second algorithm when there is a match for the first" in {
-        val hostKey = Logic.getHostKeyEntry(Right(CommandResult(results, "", true)), List("ecdsa-idontexist", "ssh-rsa"))
+        val hostKey = Logic.getHostKeyEntry(
+          Right(CommandResult(results, "", true)),
+          List("ecdsa-idontexist", "ssh-rsa")
+        )
         hostKey.value shouldBe "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCgfV3YLgQ6PKhz3NHwFOhQA1ZgBBxYq9duNF0RdHezuBDQAdz51UKssvsIBi74/DuHk7RjaPPMZaC6yNkAuRMTyJk82S93GGow36iMTQD4HTpDuUFloT+SiTrjez/mkS2Wk+fm4brhjo9Xb8M3TXpOn65AXC/3mrB8JrZwx5Y9d2IwEQT1/r6aM1mUo2JJrSQJ1zv+3+ZFKfij1UncjG7rXsUegmR0lmt8bfAkpef1I+LK3CERgxRNCcuM80ptTws3vgxyP9cS60IiF7W1lwuwtvDvZ9LuDnHlrMi+t1t5EvwRm1CE9eLw9+qTQQijBFVjZlXT03St/6IJLMvBazI7 root@ip-10-248-50-51"
       }
 
       "error when there are no suitable host keys" in {
-        val hostKey = Logic.getHostKeyEntry(Right(CommandResult(results, "", true)), List("ssh-bob"))
+        val hostKey = Logic.getHostKeyEntry(
+          Right(CommandResult(results, "", true)),
+          List("ssh-bob")
+        )
         hostKey.left.value.failures.head.friendlyMessage shouldBe "The remote instance did not return a host key with any preferred algorithm (preferred: List(ssh-bob))"
       }
     }
 
     "when the query goes wrong" - {
       "error when there are no suitable host keys" in {
-        val hostKey = Logic.getHostKeyEntry(Left(ExecutionTimedOut), List("ssh-bob"))
+        val hostKey =
+          Logic.getHostKeyEntry(Left(ExecutionTimedOut), List("ssh-bob"))
         hostKey.left.value.failures.head.friendlyMessage shouldBe "The remote instance failed to return the host keys within the timeout window (status: ExecutionTimedOut)"
       }
     }
