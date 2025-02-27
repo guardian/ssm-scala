@@ -26,28 +26,35 @@ brew upgrade ssm
 
 Otherwise, fetch the most recently released version of the program from the [Github releases page](https://github.com/guardian/ssm-scala/releases/latest) and make sure it is executable (`chmod +x ssm`). You may then want to put it somewhere in your PATH.
 
-
 ## First time here, just show me the SSH thing real quick
 
 The readme is quite detailed (and shows how to do many more things than what will be shown in this section) but you are probably reading it because you just want to ssh to a box. Here is what you need to do:
 
 1. Install ssm. How to do so was explained in the previous section.
 2. Ensure that you have the Janus credentials of the account you want to work with. We are going to assume `frontend` in this section for the examples.
-2. Identify the instance number of the box you want to reach. It can be found in the AWS developer console. Instance numbers look like this `i-00032c76140bc9140`.
-3. At your console type
+3. Identify the instance number of the box you want to reach. It can be found in the AWS developer console. Instance numbers look like this `i-00032c76140bc9140`.
+4. At your console type
 
 	```
 	ssm ssh -i i-00032c76140bc9140 -p frontend
 	```
-
-	and more generally
-
-	```
-	ssm ssh -i <instance-id> -p <accountName>
-	ssm ssh -i <instance-id> -p <accountName>
-	```
-
 5. And that's it! If all went well you have been ssh'ed to the box.
+
+### Targeting an instance
+
+Generally, connecting to a specific AWS instance looks like:
+
+```
+ssm ssh -i <instance-id> -p <accountName>
+ssm ssh -i <instance-id> -p <accountName>
+```
+
+You can also select an instance by app, stack, and stage tag(s). If multiple instances match the provided tag(s) you can `--newest` or `--oldest` to select one of them.
+
+```
+ssm ssh -t security-hq -p <accountName>
+ssm ssh -t security-hq,security,PROD -p <accountName>
+```
 
 
 ## Known issues
@@ -473,13 +480,13 @@ During development, the program can be run using sbt, either from an sbt shell o
 
     sbt:ssm-scala> run cmd -c pwd --instances i-0123456 --profile xxx --region xxx
 
-However, `sbt` traps the program exit so in REPL mode you may find it easier to create and run an executable instead, for this just run
+However, `sbt` traps the program exit so you may find it easier to create and run an executable instead, for this just run
 
 ```
 ./generate-executable.sh
 ```
 
-The result of this script is an executable called `ssm` in the target folder. If you are using a non unix operating system, run `sbt assembly` as you would normally do and then run the ssm.jar file using
+The result of this script is an executable called `ssm` in the target folder. If you are using a non unix operating system, run `sbt assembly` as you would normally do and then execute the ssm.jar file using
 
 ```
 java -jar <path-to-jar>/ssm.jar [arguments]
@@ -545,6 +552,6 @@ To use ssm-scala against the instances of your project, the following needs to h
 Note: SSM needs the target server to have outbound port 443 (ssm-agent's communication with AWS's SSM and EC2 Messages endpoints).
 
 
-##License
+## License
 
 Copyright (c) 2018 Guardian News & Media. Available under the Apache License.
