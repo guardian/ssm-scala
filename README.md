@@ -475,7 +475,7 @@ During development, the program can be run using sbt, either from an sbt shell o
 
 However, `sbt` traps the program exit so in REPL mode you may find it easier to create and run an executable instead, for this just run
 
-```
+```bash
 ./generate-executable.sh
 ```
 
@@ -493,7 +493,7 @@ To release a new version of `ssm` perform the two following tasks:
 
 1. Generate a new executable. Run the following at the top of the repository
 
-	```
+	```bash
 	./generate-executable.sh
 	```
 
