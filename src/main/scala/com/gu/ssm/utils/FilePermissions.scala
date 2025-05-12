@@ -18,7 +18,7 @@ object FilePermissions {
     * @param perms in octal format
     */
   def apply(file: File, perms: String): Unit = {
-    val posix = PosixFilePermissions fromString convert(perms)
+    val posix = PosixFilePermissions.fromString(convert(perms))
     val result = Try {
       Files.setPosixFilePermissions(file.toPath, posix)
     } recoverWith {
@@ -45,9 +45,9 @@ object FilePermissions {
       require(perms.length == 4 || perms.length == 3, s"Permissions must have 3 or 4 digits, got [$perms]")
       // ignore setuid/setguid/sticky bit
       val i = if (perms.length == 3) 0 else 1
-      val user = Character getNumericValue (perms charAt i)
-      val group = Character getNumericValue (perms charAt i + 1)
-      val other = Character getNumericValue (perms charAt i + 2)
+      val user = Character.getNumericValue((perms.charAt(i)))
+      val group = Character.getNumericValue((perms.charAt(i + 1)))
+      val other = Character.getNumericValue((perms.charAt(i + 2)))
 
       permissionAsString(user) + permissionAsString(group) + permissionAsString(other)
     }
@@ -65,7 +65,7 @@ object FilePermissions {
 
     /** Enriches string with `oct` interpolator, parsing string as base 8 integer. */
     implicit class OctalString(val sc: StringContext) extends AnyVal {
-      def oct(args: Any*): Int = Integer.parseInt(sc.s(args: _*), 8)
+      def oct(args: Any*): Int = Integer.parseInt(sc.s(args*), 8)
     }
 
 }

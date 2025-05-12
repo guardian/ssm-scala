@@ -86,7 +86,7 @@ object UI {
 class UI(verbose: Boolean) {
   import UI._
 
-  def printAll(output: Seq[Output]): Unit = print(output: _*)
+  def printAll(output: Seq[Output]): Unit = print(output*)
 
   def print(output: Output*): Unit = {
     output.foreach {
