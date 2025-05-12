@@ -5,7 +5,7 @@ version := "3.7.0"
 // be sure to also update this in the `generate-executable.sh` script
 scalaVersion := "3.6.4"
 
-val awsSdkVersion = "1.12.782"
+val awsSdkVersion = "1.12.783"
 
 libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk-ssm" % awsSdkVersion,
