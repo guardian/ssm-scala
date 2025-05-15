@@ -32,7 +32,7 @@ object EC2 {
 
     val request = new DescribeInstancesRequest()
       .withFilters(
-        filters: _*
+        filters*
       )
     handleAWSErrs(awsToScala(client.describeInstancesAsync)(request).map(extractInstances))
   }

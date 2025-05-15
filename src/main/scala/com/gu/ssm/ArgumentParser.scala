@@ -1,9 +1,8 @@
 package com.gu.ssm
 
 import java.io.File
-
-import com.amazonaws.regions.{Region, Regions}
-import com.gu.ssm.Arguments.{targetInstanceDefaultUser, bastionDefaultUser, defaultHostKeyAlgPreference}
+import com.amazonaws.regions.{Region, RegionUtils, Regions}
+import com.gu.ssm.Arguments.{bastionDefaultUser, defaultHostKeyAlgPreference, targetInstanceDefaultUser}
 import scopt.OptionParser
 
 
@@ -40,14 +39,14 @@ object ArgumentParser {
     opt[String]('r', "region").optional()
       .validate { region =>
         try {
-          Region.getRegion(Regions.fromName(region))
+          RegionUtils.getRegion(region)
           success
         } catch {
           case _: IllegalArgumentException =>
             failure(s"Invalid AWS region name, $region")
         }
       } action { (region, args) =>
-      args.copy(region = Region.getRegion(Regions.fromName(region)))
+      args.copy(region = RegionUtils.getRegion(region))
     } text "AWS region name (defaults to eu-west-1)"
 
     opt[Unit]("verbose").action( (_, c) =>

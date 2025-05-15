@@ -1,6 +1,6 @@
 name := "ssm-scala"
 organization := "com.gu"
-version := "3.7.0"
+version := "3.7.1"
 
 // be sure to also update this in the `generate-executable.sh` script
 scalaVersion := "3.7.0"
@@ -34,4 +34,3 @@ scalacOptions := Seq(
   "-deprecation",
   "-release:11",
 )
-

@@ -51,7 +51,7 @@ object Logic {
       case localPortStr :: tagsStr :: Nil =>
         localPortStr.toIntOption match {
           case Some(localPort) =>
-            extractSASTags(tagsStr.split(",")).flatMap { tags =>
+            extractSASTags(tagsStr.split(",").toSeq).flatMap { tags =>
               Right(TunnelTargetWithRDSTags(localPort, tags))
             }
           case None => Left(rdsTunnelValidationErrorMsg)
@@ -72,6 +72,7 @@ object Logic {
       case _ :: _ :: _ if sism == SismUnspecified => Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Error choosing single instance, found ${instances.map(_.id.id).mkString(", ")}.  Use --oldest or --newest to select single instance", UnhandledError)))
       case instances if sism == SismNewest => Right(instances.last) // we know that `instances` is not empty, otherwise first case would have applied, therefore calling `.last` is safe
       case instance :: _ if sism == SismOldest => Right(instance)
+      case _ => Left(FailedAttempt(Failure(s"Unable to identify a single instance", s"Could not find any instance", UnhandledError)))
     }
   }
 

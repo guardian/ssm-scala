@@ -125,7 +125,7 @@ class InteractiveUI(program: InteractiveProgram) extends LazyLogging {
         }
       }
 
-      val instancesComboBox: ComboBox[String] = new ComboBox(instances.map(_.id):_*).addListener(listener)
+      val instancesComboBox: ComboBox[String] = new ComboBox(instances.map(_.id)*).addListener(listener)
       contentPanel.addComponent(instancesComboBox)
 
       contentPanel.addComponent(new EmptySpace())
