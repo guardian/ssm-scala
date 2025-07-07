@@ -1,16 +1,14 @@
 package com.gu.ssm
 
 import org.scalatest.EitherValues
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
+import software.amazon.awssdk.regions.Region.EU_WEST_1
 
 import java.io.File
 import java.time.Instant
-import com.amazonaws.regions.{Region, Regions}
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
 class SSHTest extends AnyFreeSpec with Matchers with EitherValues {
-  private val EU_WEST_1 = Region.getRegion(Regions.EU_WEST_1)
-
   "create add key command" - {
     import SSH.addPublicKeyCommand
 
@@ -57,9 +55,7 @@ class SSHTest extends AnyFreeSpec with Matchers with EitherValues {
   }
 
   "create ssh command" - {
-    import SSH.sshCmdStandard
-    import SSH.sshCmdBastion
-    import SSH.sshCredentialsLifetimeSeconds
+    import SSH.{sshCmdBastion, sshCmdStandard, sshCredentialsLifetimeSeconds}
 
     "create standard ssh command" - {
 

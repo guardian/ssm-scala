@@ -1,11 +1,11 @@
 package com.gu.ssm
 
-import com.amazonaws.regions.Region
-import com.gu.ssm.utils.attempt._
-
-import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
 import com.gu.ssm.ArgumentParser.argParser
+import com.gu.ssm.utils.attempt.*
+import software.amazon.awssdk.regions.Region
+
+import scala.concurrent.duration.*
+import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
 
 object Main {
   implicit val ec: ExecutionContextExecutor = ExecutionContext.global

@@ -1,12 +1,12 @@
 package com.gu.ssm
 
-import java.io._
+import com.gu.ssm.utils.attempt.*
+import com.gu.ssm.utils.{FilePermissions, KeyMaker}
+import software.amazon.awssdk.regions.Region
+
+import java.io.*
 import java.security.{NoSuchAlgorithmException, NoSuchProviderException}
 import java.util.Calendar
-
-import com.amazonaws.regions.Region
-import com.gu.ssm.utils.attempt._
-import com.gu.ssm.utils.{FilePermissions, KeyMaker}
 
 object SSH {
 
