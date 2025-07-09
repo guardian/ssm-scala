@@ -5,13 +5,13 @@ version := "3.7.1"
 // be sure to also update this in the `generate-executable.sh` script
 scalaVersion := "3.7.1"
 
-val awsSdkVersion = "1.12.787"
+val awsSdkVersion = "2.31.76"
 
 libraryDependencies ++= Seq(
-  "com.amazonaws" % "aws-java-sdk-ssm" % awsSdkVersion,
-  "com.amazonaws" % "aws-java-sdk-sts" % awsSdkVersion,
-  "com.amazonaws" % "aws-java-sdk-ec2" % awsSdkVersion,
-  "com.amazonaws" % "aws-java-sdk-rds" % awsSdkVersion,
+  "software.amazon.awssdk" % "ssm" % awsSdkVersion,
+  "software.amazon.awssdk" % "sts" % awsSdkVersion,
+  "software.amazon.awssdk" % "ec2" % awsSdkVersion,
+  "software.amazon.awssdk" % "rds" % awsSdkVersion,
   "com.github.scopt" %% "scopt" % "4.1.0",
   "com.googlecode.lanterna" % "lanterna" % "3.1.3",
   "ch.qos.logback" %  "logback-classic" % "1.5.18",

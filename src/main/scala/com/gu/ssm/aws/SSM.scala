@@ -1,69 +1,71 @@
 package com.gu.ssm.aws
 
-import com.amazonaws.auth.AWSCredentialsProvider
-import com.amazonaws.regions.Region
-import com.amazonaws.services.simplesystemsmanagement.model._
-import com.amazonaws.services.simplesystemsmanagement.{AWSSimpleSystemsManagementAsync, AWSSimpleSystemsManagementAsyncClientBuilder}
 import com.gu.ssm.aws.AwsAsyncHandler.{awsToScala, handleAWSErrs}
 import com.gu.ssm.utils.attempt.Attempt
-import com.gu.ssm.{CommandStatus, _}
+import com.gu.ssm.*
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.ssm.SsmAsyncClient
+import software.amazon.awssdk.services.ssm.model.{GetCommandInvocationRequest, GetCommandInvocationResponse, InvocationDoesNotExistException, SendCommandRequest, SendCommandResponse}
 
-import scala.jdk.CollectionConverters._
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
-
+import scala.concurrent.duration.*
+import scala.jdk.CollectionConverters.*
 
 object SSM {
-  def client(credentialsProvider: AWSCredentialsProvider, region: Region): AWSSimpleSystemsManagementAsync = {
-    AWSSimpleSystemsManagementAsyncClientBuilder.standard()
-      .withCredentials(credentialsProvider)
-      .withRegion(region.getName)
+  def client(credentialsProvider: AwsCredentialsProvider, region: Region): SsmAsyncClient = {
+    SsmAsyncClient.builder()
+      .credentialsProvider(credentialsProvider)
+      .region(region)
       .build()
   }
 
-  def sendCommand(instanceIds: List[InstanceId], cmd: String, username: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[String] = {
+  def sendCommand(instanceIds: List[InstanceId], cmd: String, username: String, client: SsmAsyncClient)(implicit ec: ExecutionContext): Attempt[String] = {
     val parameters = Map("commands" -> List(cmd).asJava).asJava
-    val sendCommandRequest = new SendCommandRequest()
-      .withComment(s"Command submitted by $username")
-      .withInstanceIds(instanceIds.map(_.id).asJava)
-      .withDocumentName("AWS-RunShellScript")
-      .withParameters(parameters)
-    handleAWSErrs(awsToScala(client.sendCommandAsync)(sendCommandRequest).map(extractCommandId))
+    val sendCommandRequest = SendCommandRequest.builder()
+      .comment(s"Command submitted by $username")
+      .instanceIds(instanceIds.map(_.id).asJava)
+      .documentName("AWS-RunShellScript")
+      .parameters(parameters)
+      .build()
+    handleAWSErrs(awsToScala(client.sendCommand(sendCommandRequest))).map(extractCommandId)
   }
 
-  def extractCommandId(sendCommandResult: SendCommandResult): String = {
-    sendCommandResult.getCommand.getCommandId
+  def extractCommandId(sendCommandResult: SendCommandResponse): String = {
+    sendCommandResult.command().commandId()
   }
 
-  def getCommandInvocation(instance: InstanceId, commandId: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[Either[CommandStatus, CommandResult]] = {
-    val request = new GetCommandInvocationRequest()
-      .withCommandId(commandId)
-      .withInstanceId(instance.id)
+  def getCommandInvocation(instance: InstanceId, commandId: String, client: SsmAsyncClient)(implicit ec: ExecutionContext): Attempt[Either[CommandStatus, CommandResult]] = {
+    val request = GetCommandInvocationRequest.builder()
+      .commandId(commandId)
+      .instanceId(instance.id)
+      .build()
     handleAWSErrs(
-      awsToScala(client.getCommandInvocationAsync)(request)
+      awsToScala(client.getCommandInvocation(request))
         .map(extractCommandResult)
-        .recover { case _:InvocationDoesNotExistException => Left(InvocationDoesNotExist) }
+        .recover { case _: InvocationDoesNotExistException =>
+          Left(InvocationDoesNotExist) }
     )
   }
 
-  def extractCommandResult(getCommandInvocationResult: GetCommandInvocationResult): Either[CommandStatus, CommandResult] = {
-    commandStatus(getCommandInvocationResult.getStatusDetails) match {
+  def extractCommandResult(getCommandInvocationResult: GetCommandInvocationResponse): Either[CommandStatus, CommandResult] = {
+    commandStatus(getCommandInvocationResult.statusDetails()) match {
       case Success =>
-        Right(CommandResult(getCommandInvocationResult.getStandardOutputContent, getCommandInvocationResult.getStandardErrorContent, commandFailed = false))
+        Right(CommandResult(getCommandInvocationResult.standardOutputContent(), getCommandInvocationResult.standardErrorContent(), commandFailed = false))
       case Failed =>
-        Right(CommandResult(getCommandInvocationResult.getStandardOutputContent, getCommandInvocationResult.getStandardErrorContent, commandFailed = true))
+        Right(CommandResult(getCommandInvocationResult.standardOutputContent(), getCommandInvocationResult.standardErrorContent(), commandFailed = true))
       case status =>
         Left(status)
     }
   }
 
-  def getCmdOutput(instance: InstanceId, commandId: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[(InstanceId, Either[CommandStatus, CommandResult])] = {
+  def getCmdOutput(instance: InstanceId, commandId: String, client: SsmAsyncClient)(implicit ec: ExecutionContext): Attempt[(InstanceId, Either[CommandStatus, CommandResult])] = {
     for {
       cmdResult <- Attempt.retryUntil(delayBetweenRetries = 500.millis, () => getCommandInvocation(instance, commandId, client))(_.isRight)
     } yield instance -> cmdResult
   }
 
-  def getCmdOutputs(instanceIds: List[InstanceId], commandId: String, client: AWSSimpleSystemsManagementAsync)(implicit ec: ExecutionContext): Attempt[List[(InstanceId, Either[CommandStatus, CommandResult])]] = {
+  def getCmdOutputs(instanceIds: List[InstanceId], commandId: String, client: SsmAsyncClient)(implicit ec: ExecutionContext): Attempt[List[(InstanceId, Either[CommandStatus, CommandResult])]] = {
     Attempt.traverse(instanceIds)(getCmdOutput(_, commandId, client))
   }
 

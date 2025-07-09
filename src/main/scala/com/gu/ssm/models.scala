@@ -1,11 +1,12 @@
 package com.gu.ssm
 
-import com.amazonaws.regions.{Region, Regions}
-import com.amazonaws.services.ec2.AmazonEC2Async
-import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceAsync
-import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.ec2.Ec2AsyncClient
+import software.amazon.awssdk.services.rds.RdsAsyncClient
+import software.amazon.awssdk.services.ssm.SsmAsyncClient
+import software.amazon.awssdk.services.sts.StsAsyncClient
+
 import java.time.Instant
-import com.amazonaws.services.rds.AmazonRDSAsync
 
 case class InstanceId(id: String) extends AnyVal
 case class Instance(id: InstanceId, publicDomainNameOpt: Option[String], publicIpAddressOpt: Option[String], privateIpAddress: String, launchInstant: Instant)
@@ -51,7 +52,7 @@ object Arguments {
     executionTarget = None,
     toExecute = None,
     profile = None,
-    region = Region.getRegion(Regions.EU_WEST_1),
+    region = Region.EU_WEST_1,
     mode = None,
     targetInstanceUser = Some(targetInstanceDefaultUser),
     singleInstanceSelectionMode = SismUnspecified,
@@ -101,10 +102,10 @@ case class SSMConfig (
 )
 
 case class AWSClients (
-  ssmClient: AWSSimpleSystemsManagementAsync,
-  stsClient: AWSSecurityTokenServiceAsync,
-  ec2Client: AmazonEC2Async,
-  rdsClient: AmazonRDSAsync
+  ssmClient: SsmAsyncClient,
+  stsClient: StsAsyncClient,
+  ec2Client: Ec2AsyncClient,
+  rdsClient: RdsAsyncClient
 )
 
 case class ResultsWithInstancesNotFound(

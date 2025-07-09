@@ -1,14 +1,14 @@
 package com.gu.ssm
 
-import com.amazonaws.regions.Region
-import com.googlecode.lanterna.{TerminalSize, TextColor}
+import com.googlecode.lanterna.gui2.*
 import com.googlecode.lanterna.gui2.Interactable.Result
-import com.googlecode.lanterna.gui2._
 import com.googlecode.lanterna.gui2.dialogs.{MessageDialog, WaitingDialog}
 import com.googlecode.lanterna.input.{KeyStroke, KeyType}
 import com.googlecode.lanterna.terminal.{DefaultTerminalFactory, Terminal, TerminalResizeListener}
+import com.googlecode.lanterna.{TerminalSize, TextColor}
 import com.gu.ssm.utils.attempt.{Attempt, ErrorCode, FailedAttempt, Failure}
 import com.typesafe.scalalogging.LazyLogging
+import software.amazon.awssdk.regions.Region
 
 import scala.concurrent.{ExecutionContext, Future}
 

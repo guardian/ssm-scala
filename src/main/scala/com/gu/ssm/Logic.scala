@@ -1,20 +1,17 @@
 package com.gu.ssm
 
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
-import com.amazonaws.auth.profile.ProfileCredentialsProvider
+
+import com.gu.ssm.aws.{EC2, RDS, SSM, STS}
+import com.gu.ssm.utils.attempt.*
+import software.amazon.awssdk.auth.credentials.{AwsCredentialsProvider, DefaultCredentialsProvider, ProfileCredentialsProvider}
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.ec2.Ec2AsyncClient
+import software.amazon.awssdk.services.rds.RdsAsyncClient
+import software.amazon.awssdk.services.ssm.SsmAsyncClient
+import software.amazon.awssdk.services.sts.StsAsyncClient
 
 import java.io.File
-import com.amazonaws.regions.Region
-import com.amazonaws.services.ec2.AmazonEC2Async
-import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceAsync
-import com.amazonaws.services.simplesystemsmanagement.AWSSimpleSystemsManagementAsync
-import com.gu.ssm.aws.{EC2, SSM, STS}
-import com.gu.ssm.utils.attempt._
-
 import scala.io.Source
-import com.amazonaws.services.rds.AmazonRDSClient
-import com.amazonaws.services.rds.AmazonRDSAsync
-import com.gu.ssm.aws.RDS
 
 object Logic {
   def generateScript(toExecute: Either[String, File]): String = {
@@ -77,17 +74,17 @@ object Logic {
   }
 
   def getClients(profile: Option[String], region: Region, useDefaultCredentialsProvider: Boolean): AWSClients = {
-    val credentialsProvider = profile match {
-      case _ if useDefaultCredentialsProvider => DefaultAWSCredentialsProviderChain.getInstance()
-      case Some(profile) => new ProfileCredentialsProvider(profile)
+    val credentialsProvider: AwsCredentialsProvider = profile match {
+      case _ if useDefaultCredentialsProvider => DefaultCredentialsProvider.builder().build()
+      case Some(profile) => ProfileCredentialsProvider.create(profile)
       // In this case it's set using the AWS_PROFILE environment variable
-      case _ => new ProfileCredentialsProvider()
+      case _ => ProfileCredentialsProvider.create()
     }
 
-    val ssmClient: AWSSimpleSystemsManagementAsync = SSM.client(credentialsProvider, region)
-    val stsClient: AWSSecurityTokenServiceAsync = STS.client(credentialsProvider, region)
-    val ec2Client: AmazonEC2Async = EC2.client(credentialsProvider, region)
-    val rdsClient: AmazonRDSAsync = RDS.client(credentialsProvider, region)
+    val ssmClient: SsmAsyncClient = SSM.client(credentialsProvider, region)
+    val stsClient: StsAsyncClient = STS.client(credentialsProvider, region)
+    val ec2Client: Ec2AsyncClient = EC2.client(credentialsProvider, region)
+    val rdsClient: RdsAsyncClient = RDS.client(credentialsProvider, region)
     AWSClients(ssmClient, stsClient, ec2Client, rdsClient)
   }
 

@@ -1,19 +1,19 @@
 package com.gu.ssm.aws
 
-import com.amazonaws.AmazonWebServiceRequest
-import com.amazonaws.handlers.AsyncHandler
 import com.gu.ssm.utils.attempt.{Attempt, AwsError, AwsPermissionsError, Failure}
-import com.typesafe.scalalogging.LazyLogging
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import java.util.concurrent.{CompletableFuture, CompletionException}
+import scala.concurrent.{ExecutionContext, Future}
 
 
 object AwsAsyncHandler {
   private val ServiceName = ".*Service: ([^;]+);.*".r
-  def awsToScala[R <: AmazonWebServiceRequest, T](sdkMethod: ( (R, AsyncHandler[R, T]) => java.util.concurrent.Future[T])): (R => Future[T]) = { req =>
-    val p = Promise[T]()
-    sdkMethod(req, new AwsAsyncPromiseHandler(p))
-    p.future
+
+  def awsToScala[T](cf: CompletableFuture[T])(using ExecutionContext): Future[T] = {
+    import scala.jdk.FutureConverters.*
+    cf.asScala.recoverWith {
+      case ex: CompletionException if ex.getCause != null => Future.failed(ex.getCause)
+    }
   }
 
   /**
@@ -45,16 +45,6 @@ object AwsAsyncHandler {
         }
         Failure(details, friendlyMessage, AwsError, e).attempt
       }
-    }
-  }
-
-  class AwsAsyncPromiseHandler[R <: AmazonWebServiceRequest, T](promise: Promise[T]) extends AsyncHandler[R, T] with LazyLogging {
-    def onError(e: Exception): Unit = {
-      logger.warn("Failed to execute AWS SDK operation", e)
-      promise failure e
-    }
-    def onSuccess(r: R, t: T): Unit = {
-      promise success t
     }
   }
 }
