@@ -21,11 +21,14 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.2.19" % Test
 )
 
-// Required as jackson causes a merge issue with sbt-assembly
-// See: https://github.com/sbt/sbt-assembly/issues/391
+// Discard required as jackson causes a merge issue with sbt-assembly,
+// while we need to keep services for AWS SDK.
+// See: https://github.com/sbt/sbt-assembly/issues/391,
+// https://github.com/aws/aws-sdk-java-v2/issues/446
 assemblyMergeStrategy := {
-  case PathList("META-INF", _*) => MergeStrategy.discard
-  case _                        => MergeStrategy.first
+  case PathList("META-INF", "services", _*) => MergeStrategy.deduplicate
+  case PathList("META-INF", _*)             => MergeStrategy.discard
+  case _                                    => MergeStrategy.first
 }
 assemblyJarName := "ssm.jar"
 
