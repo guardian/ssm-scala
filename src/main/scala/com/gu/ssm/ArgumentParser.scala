@@ -13,6 +13,11 @@ object ArgumentParser {
 
     help("help").text("prints this usage text")
 
+    opt[Unit]('v', "version").action((_, _) => {
+      println(s"${BuildInfo.name} ${BuildInfo.version}")
+      sys.exit(0)
+    }).text("Show version information")
+
     opt[String]('p', "profile").optional()
       .action { (profile, args) =>
         args.copy(profile = Some(profile))
