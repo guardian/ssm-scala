@@ -8,6 +8,6 @@ chmod +x "$DIR/target/$SCALA_FOLDER/ssm"
 echo "ssm executable now available at $DIR/target/$SCALA_FOLDER/ssm"
 cd "$DIR/target/$SCALA_FOLDER"
 tar -czf ssm.tar.gz ssm
-echo "ssm tar.zg file now available at $DIR/target/$SCALA_FOLDER/ssm.tar.gz"
+echo "ssm tar.gz file now available at $DIR/target/$SCALA_FOLDER/ssm.tar.gz"
 echo "ssm.tar.gz sha256:"
 shasum -a 256 ssm.tar.gz
