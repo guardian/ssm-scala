@@ -517,7 +517,7 @@ To release a new version of `ssm` perform the following tasks:
 
 1. Upload the binary assets:
    * The raw executable file (target/scala-X.Y.Z/ssm)
-   * The tarball (ssm.tar.gz)
+   * The tarball (target/scala-X.Y.Z/ssm.tar.gz)
 
 1. Publish the release.
 
