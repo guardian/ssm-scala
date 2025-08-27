@@ -5,6 +5,11 @@ version := "3.8.1"
 // be sure to also update this in the `generate-executable.sh` script
 scalaVersion := "3.7.2"
 
+// Enable BuildInfo plugin to generate version information
+enablePlugins(BuildInfoPlugin)
+buildInfoKeys := Seq[BuildInfoKey](name, version)
+buildInfoPackage := "com.gu.ssm"
+
 val awsSdkVersion = "2.32.26"
 
 libraryDependencies ++= Seq(
