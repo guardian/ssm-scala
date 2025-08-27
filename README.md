@@ -487,35 +487,42 @@ java -jar <path-to-jar>/ssm.jar [arguments]
 
 ## Release a new version
 
-To release a new version of `ssm` perform the two following tasks:
+To release a new version of `ssm` perform the following tasks:
 
 1. Update the version number in `build.sbt`
 
-2. Generate a new executable. Run the following at the top of the repository
+1. Generate a new executable. Run the following from the base of the repository
    ```bash
    ./generate-executable.sh
    ```
-	Note that this script generates the **tar.gz** file needed for the github release as well as outputting the sha256 hash of that file needed for the homebrew-devtools' update.
+   Note that this script generates the **tar.gz** file needed for the github release as well as outputting the sha256
+   hash of that file needed for the homebrew-devtools' update.
 
-3. Create and merge a PR with the new version number (Eg. #459).
+1. Test the newly-generated executable locally.
 
-4. Create a new tag locally and push it:
+   Eg.
+   ```
+   java -jar target/scala-x.y.z/ssm.jar cmd -c date --profile security -t security-hq,security,PROD
+   ```
+
+1. Create and merge a PR with the new version number (Eg. https://github.com/guardian/ssm-scala/pull/491).
+
+1. Create a new tag locally and push it:
    ```
    git tag v[version-number]
    git push origin v[version-number]
    ```
 
-5. Go to the GitHub repository at https://github.com/guardian/ssm-scala/releases
+1. Draft a new release based on the new tag in the repo [releases](https://github.com/guardian/ssm-scala/releases).
 
-6. Draft a new release
-
-7. Upload the binary assets:
+1. Upload the binary assets:
    * The raw executable file (target/scala-X.Y.Z/ssm)
    * The tarball (ssm.tar.gz)
 
-8. Publish the release
+1. Publish the release.
 
-9. Make a PR to [https://github.com/guardian/homebrew-devtools/blob/master/Formula/ssm.rb](https://github.com/guardian/homebrew-devtools/blob/master/Formula/ssm.rb) to update the new version's details.
+1. Make a PR to [https://github.com/guardian/homebrew-devtools/blob/master/Formula/ssm.rb](https://github.com/guardian/homebrew-devtools/blob/master/Formula/ssm.rb) to update the new
+   version's details.
 
 
 ## How to use SSM Scala with your own project
