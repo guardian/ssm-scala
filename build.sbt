@@ -3,7 +3,7 @@ organization := "com.gu"
 version := "3.8.1"
 
 // be sure to also update this in the `generate-executable.sh` script
-scalaVersion := "3.7.2"
+scalaVersion := "3.7.3"
 
 // Enable BuildInfo plugin to generate version information
 enablePlugins(BuildInfoPlugin)
