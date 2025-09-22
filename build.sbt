@@ -20,7 +20,7 @@ libraryDependencies ++= Seq(
   "com.github.scopt" %% "scopt" % "4.1.0",
   "com.googlecode.lanterna" % "lanterna" % "3.1.3",
   "ch.qos.logback" %  "logback-classic" % "1.5.18",
-  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
   "com.fasterxml.jackson.core" % "jackson-databind" % "2.20.0",
   "org.bouncycastle" % "bcpkix-jdk18on" % "1.81",
   "org.scalatest" %% "scalatest" % "3.2.19" % Test
