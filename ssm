@@ -125,72 +125,115 @@ if [[ -z "$INSTANCE" ]]; then
   fi
   info "Discovering instances matching ${SEARCH_DESC} ..."
 
+  # Use JMESPath to extract and flatten fields directly, returning tab-separated text.
+  # Each row: InstanceId \t LaunchTime \t Name \t App \t Stack \t Stage
+  JMESPATH="Reservations[].Instances[].["
+  JMESPATH+="InstanceId,"
+  JMESPATH+="LaunchTime,"
+  JMESPATH+="(Tags[?Key=='Name'].Value)[0] || '-',"
+  JMESPATH+="(Tags[?Key=='App'].Value)[0] || '-',"
+  JMESPATH+="(Tags[?Key=='Stack'].Value)[0] || '-',"
+  JMESPATH+="(Tags[?Key=='Stage'].Value)[0] || '-'"
+  JMESPATH+="]"
+
   RESULT=$(aws ec2 describe-instances \
     --profile "$PROFILE" \
     --region "$REGION" \
     --filters "${FILTERS[@]}" \
-    --query 'Reservations[].Instances[].{InstanceId:InstanceId,LaunchTime:LaunchTime,Tags:Tags}' \
-    --output json) || die "Failed to query EC2 instances"
+    --query "$JMESPATH" \
+    --output text) || die "Failed to query EC2 instances"
 
-  # Flatten tags into top-level App/Stack/Stage fields and compute a human-friendly age
-  NOW_EPOCH=$(date +%s)
-  RESULT=$(echo "$RESULT" | jq --argjson now "$NOW_EPOCH" '
-    [ .[] | {
-      InstanceId,
-      LaunchTime,
-      Name:  ((.Tags // []) | map(select(.Key == "Name"))  | first | .Value // null),
-      App:   ((.Tags // []) | map(select(.Key == "App"))   | first | .Value // "-"),
-      Stack: ((.Tags // []) | map(select(.Key == "Stack")) | first | .Value // "-"),
-      Stage: ((.Tags // []) | map(select(.Key == "Stage")) | first | .Value // "-"),
-      Age: (
-        ($now - (.LaunchTime | sub("\\.[0-9]+"; "") | sub("\\+00:00$"; "Z") | strptime("%Y-%m-%dT%H:%M:%SZ") | mktime)) |
-        if   . >= 86400 then "\(. / 86400 | floor)d ago"
-        elif . >= 3600  then "\(. / 3600  | floor)h ago"
-        elif . >= 60    then "\(. / 60    | floor)m ago"
-        else                 "\(.)s ago"
-        end
-      )
-    } ]
-  ')
-
-  INSTANCE_COUNT=$(echo "$RESULT" | jq 'length')
-
-  if [[ "$INSTANCE_COUNT" -eq 0 ]]; then
-    die "No running instances found matching tags: ${TAGS}"
+  if [[ -z "$RESULT" ]]; then
+    echo ""
+    die "No running instances found using profile $(value "$PROFILE")"
   fi
 
+  # Parse rows into arrays
+  INSTANCE_IDS=()
+  LAUNCH_TIMES=()
+  NAMES=()
+  APPS=()
+  STACKS=()
+  STAGES=()
+
+  while IFS=$'\t' read -r id launch name app stack stage; do
+    INSTANCE_IDS+=("$id")
+    LAUNCH_TIMES+=("$launch")
+    NAMES+=("$name")
+    APPS+=("$app")
+    STACKS+=("$stack")
+    STAGES+=("$stage")
+  done <<< "$RESULT"
+
+  INSTANCE_COUNT=${#INSTANCE_IDS[@]}
+
+  # Convert an ISO-8601 timestamp to a human-friendly relative age.
+  # Works with both GNU date (Linux) and BSD date (macOS).
+  human_age() {
+    local timestamp="$1"
+    local launch_epoch now_epoch seconds
+
+    # Try GNU date first, fall back to BSD date
+    if launch_epoch=$(date -d "$timestamp" +%s 2>/dev/null); then
+      : # GNU date worked
+    else
+      # BSD date: strip fractional seconds and normalise +00:00 → +0000
+      local cleaned
+      cleaned=$(echo "$timestamp" | sed -E 's/\.[0-9]+//; s/:([0-9]{2})$/\1/')
+      launch_epoch=$(date -j -f "%Y-%m-%dT%H:%M:%S%z" "$cleaned" +%s 2>/dev/null) \
+        || launch_epoch=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$cleaned" +%s 2>/dev/null) \
+        || { echo "$timestamp"; return; }
+    fi
+
+    now_epoch=$(date +%s)
+    seconds=$(( now_epoch - launch_epoch ))
+
+    if   (( seconds >= 86400 )); then echo "$(( seconds / 86400 ))d ago"
+    elif (( seconds >= 3600  )); then echo "$(( seconds / 3600  ))h ago"
+    elif (( seconds >= 60    )); then echo "$(( seconds / 60    ))m ago"
+    else                              echo "${seconds}s ago"
+    fi
+  }
+
   if [[ "$INSTANCE_COUNT" -eq 1 ]]; then
-    INSTANCE=$(echo "$RESULT" | jq -r '.[0].InstanceId')
+    INSTANCE="${INSTANCE_IDS[0]}"
   else
     # Multiple instances found
     if [[ -z "$SORT_ORDER" ]]; then
-      echo ""
+      echo "" >&2
       heading "Multiple instances found:"
-      count=$(echo "$RESULT" | jq 'length')
-      for (( idx=0; idx<count; idx++ )); do
-        row=$(echo "$RESULT" | jq -r ".[$idx]")
-        id=$(echo "$row"    | jq -r '.InstanceId')
-        name=$(echo "$row"  | jq -r '.Name // empty')
-        app=$(echo "$row"   | jq -r '.App')
-        stack=$(echo "$row" | jq -r '.Stack')
-        stage=$(echo "$row" | jq -r '.Stage')
-        age=$(echo "$row"   | jq -r '.Age')
-        if [[ -n "$name" ]]; then
-          echo "  $(instance "$id")  ${name}" >&2
+      for (( idx=0; idx<INSTANCE_COUNT; idx++ )); do
+        age=$(human_age "${LAUNCH_TIMES[$idx]}")
+        if [[ "${NAMES[$idx]}" != "-" ]]; then
+          echo "  $(instance "${INSTANCE_IDS[$idx]}")  ${NAMES[$idx]}" >&2
         else
-          echo "  $(instance "$id")  $(dim "-")" >&2
+          echo "  $(instance "${INSTANCE_IDS[$idx]}")  $(dim "-")" >&2
         fi
-        echo "    $(label "App=" "$app") $(label "Stack=" "$stack") $(label "Stage=" "$stage")  $(label "launched " "$age")" >&2
+        echo "    $(label "App=" "${APPS[$idx]}") $(label "Stack=" "${STACKS[$idx]}") $(label "Stage=" "${STAGES[$idx]}")  $(label "launched " "$age")" >&2
       done
-      echo ""
+      echo "" >&2
       die "Use $(arg "--newest") or $(arg "--oldest") to automatically select an instance\n       or use $(arg "-i") / $(arg "--instance") to specify an instance directly"
     fi
 
+    # Sort by launch time (lexicographic sort works for ISO-8601 timestamps)
+    # Build "launch_time<TAB>index" lines, sort them, pick first or last
+    sorted_indices=()
+    while IFS=$'\t' read -r _ idx; do
+      sorted_indices+=("$idx")
+    done < <(
+      for (( idx=0; idx<INSTANCE_COUNT; idx++ )); do
+        printf '%s\t%d\n' "${LAUNCH_TIMES[$idx]}" "$idx"
+      done | sort -t$'\t' -k1
+    )
+
     if [[ "$SORT_ORDER" == "newest" ]]; then
-      INSTANCE=$(echo "$RESULT" | jq -r 'sort_by(.LaunchTime) | last | .InstanceId')
+      pick=${sorted_indices[${#sorted_indices[@]}-1]}
+    elif [[ "$SORT_ORDER" == "oldest" ]]; then
+      pick=${sorted_indices[0]}
     else
-      INSTANCE=$(echo "$RESULT" | jq -r 'sort_by(.LaunchTime) | first | .InstanceId')
+      die "Unexpected sort order: $(arg "$SORT_ORDER")"
     fi
+    INSTANCE="${INSTANCE_IDS[$pick]}"
   fi
 
   info "Resolved instance: $(instance "$INSTANCE")"
