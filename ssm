@@ -1,0 +1,204 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# --- Colour support (disabled when not writing to a terminal) ---
+if [[ -t 2 ]]; then
+  _reset=$'\033[0m'
+  _bold=$'\033[1m'
+  _red=$'\033[31m'
+  _green=$'\033[32m'
+  _yellow=$'\033[33m'
+  _cyan=$'\033[36m'
+  _dim=$'\033[2m'
+else
+  _reset="" _bold="" _red="" _green="" _yellow="" _cyan="" _dim=""
+fi
+
+# Semantic output helpers — these give meaning to the colours so we don't
+# scatter escape codes throughout the script.
+
+die()     { echo -e "${_red}${_bold}Error:${_reset} $1" >&2; exit 1; }
+info()    { echo "${_cyan}▸${_reset} $1" >&2; }
+heading() { echo "${_bold}$1${_reset}" >&2; }
+value()   { printf '%s' "${_green}$1${_reset}"; }
+instance(){ printf '%s' "${_cyan}$1${_reset}"; }
+label()   { printf '%s' "${_dim}$1${_reset}${_green}$2${_reset}"; }
+dim()     { printf '%s' "${_dim}$1${_reset}"; }
+arg()     { printf '%s' "${_yellow}$1${_reset}"; }
+
+usage() {
+  cat <<EOF
+${_bold}Usage:${_reset} ssm [ssh] -p <profile> [-r <region>] (-i <instance-id> | -t <app[,stack[,stage]]>) [--newest | --oldest]
+
+${_bold}Required:${_reset}
+  -p, --profile <profile>       The AWS profile name to use for authenticating this execution
+
+${_bold}Optional:${_reset}
+  -r, --region <region>         AWS region (default: eu-west-1)
+
+${_bold}One of these must be provided:${_reset}
+  -i, --instance <instance-id>  Connect directly to this EC2 instance
+  -t, --tags <app[,stack[,stage]]>
+                                Discover instance by App, Stack, Stage tags
+
+${_bold}Instance discovery flags${_reset} (when -t finds multiple matching instances):
+  --newest                      Select the most recently launched instance
+  --oldest                      Select the least recently launched instance
+EOF
+  exit 1
+}
+
+# --- Defaults ---
+PROFILE=""
+REGION="eu-west-1"
+INSTANCE=""
+TAGS=""
+SORT_ORDER="" # "newest" or "oldest"
+
+# --- Optionally consume 'ssh' for compatibility with ssm-scala's ssh subcommand ---
+if [[ $# -gt 0 ]] && [[ "$1" == "ssh" ]]; then
+  shift
+fi
+
+if [[ $# -eq 0 ]]; then
+  usage
+fi
+
+# --- Parse arguments ---
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -p|--profile)
+      [[ $# -ge 2 ]] || die "Missing value for $(arg "$1")"
+      PROFILE="$2"; shift 2 ;;
+    -r|--region)
+      [[ $# -ge 2 ]] || die "Missing value for $(arg "$1")"
+      REGION="$2"; shift 2 ;;
+    -i|--instance)
+      [[ $# -ge 2 ]] || die "Missing value for $(arg "$1")"
+      INSTANCE="$2"; shift 2 ;;
+    -t|--tags)
+      [[ $# -ge 2 ]] || die "Missing value for $(arg "$1")"
+      TAGS="$2"; shift 2 ;;
+    --newest)
+      SORT_ORDER="newest"; shift ;;
+    --oldest)
+      SORT_ORDER="oldest"; shift ;;
+    -h|--help)
+      usage ;;
+    *)
+      die "Unknown argument: $(arg "$1")" ;;
+  esac
+done
+
+# --- Validate required arguments ---
+[[ -n "$PROFILE" ]] || die "$(arg "-p") / $(arg "--profile") is required"
+[[ -n "$INSTANCE" || -n "$TAGS" ]] || die "Either $(arg "--instance") or $(arg "--tags") must be provided"
+[[ -z "$INSTANCE" || -z "$TAGS" ]] || die "Cannot specify both $(arg "--instance") and $(arg "--tags")"
+
+# --- Resolve instance ID from tags if needed ---
+if [[ -z "$INSTANCE" ]]; then
+  # Parse comma-separated tags into App, Stack, Stage
+  IFS=',' read -ra TAG_PARTS <<< "$TAGS"
+  TAG_COUNT=${#TAG_PARTS[@]}
+
+  if [[ $TAG_COUNT -lt 1 || $TAG_COUNT -gt 3 ]]; then
+    die "Tags must have 1 to 3 comma-separated values (App[,Stack[,Stage]])"
+  fi
+
+  # Build the EC2 describe-instances filter
+  FILTERS=("Name=tag:App,Values=${TAG_PARTS[0]}")
+  if [[ $TAG_COUNT -ge 2 ]]; then
+    FILTERS+=("Name=tag:Stack,Values=${TAG_PARTS[1]}")
+  fi
+  if [[ $TAG_COUNT -ge 3 ]]; then
+    FILTERS+=("Name=tag:Stage,Values=${TAG_PARTS[2]}")
+  fi
+  # Only look at running instances
+  FILTERS+=("Name=instance-state-name,Values=running")
+
+  SEARCH_DESC="$(label "App=" "${TAG_PARTS[0]}")"
+  if [[ $TAG_COUNT -ge 2 ]]; then
+    SEARCH_DESC+=", $(label "Stack=" "${TAG_PARTS[1]}")"
+  fi
+  if [[ $TAG_COUNT -ge 3 ]]; then
+    SEARCH_DESC+=", $(label "Stage=" "${TAG_PARTS[2]}")"
+  fi
+  info "Discovering instances matching ${SEARCH_DESC} ..."
+
+  RESULT=$(aws ec2 describe-instances \
+    --profile "$PROFILE" \
+    --region "$REGION" \
+    --filters "${FILTERS[@]}" \
+    --query 'Reservations[].Instances[].{InstanceId:InstanceId,LaunchTime:LaunchTime,Tags:Tags}' \
+    --output json) || die "Failed to query EC2 instances"
+
+  # Flatten tags into top-level App/Stack/Stage fields and compute a human-friendly age
+  NOW_EPOCH=$(date +%s)
+  RESULT=$(echo "$RESULT" | jq --argjson now "$NOW_EPOCH" '
+    [ .[] | {
+      InstanceId,
+      LaunchTime,
+      Name:  ((.Tags // []) | map(select(.Key == "Name"))  | first | .Value // null),
+      App:   ((.Tags // []) | map(select(.Key == "App"))   | first | .Value // "-"),
+      Stack: ((.Tags // []) | map(select(.Key == "Stack")) | first | .Value // "-"),
+      Stage: ((.Tags // []) | map(select(.Key == "Stage")) | first | .Value // "-"),
+      Age: (
+        ($now - (.LaunchTime | sub("\\.[0-9]+"; "") | sub("\\+00:00$"; "Z") | strptime("%Y-%m-%dT%H:%M:%SZ") | mktime)) |
+        if   . >= 86400 then "\(. / 86400 | floor)d ago"
+        elif . >= 3600  then "\(. / 3600  | floor)h ago"
+        elif . >= 60    then "\(. / 60    | floor)m ago"
+        else                 "\(.)s ago"
+        end
+      )
+    } ]
+  ')
+
+  INSTANCE_COUNT=$(echo "$RESULT" | jq 'length')
+
+  if [[ "$INSTANCE_COUNT" -eq 0 ]]; then
+    die "No running instances found matching tags: ${TAGS}"
+  fi
+
+  if [[ "$INSTANCE_COUNT" -eq 1 ]]; then
+    INSTANCE=$(echo "$RESULT" | jq -r '.[0].InstanceId')
+  else
+    # Multiple instances found
+    if [[ -z "$SORT_ORDER" ]]; then
+      echo ""
+      heading "Multiple instances found:"
+      count=$(echo "$RESULT" | jq 'length')
+      for (( idx=0; idx<count; idx++ )); do
+        row=$(echo "$RESULT" | jq -r ".[$idx]")
+        id=$(echo "$row"    | jq -r '.InstanceId')
+        name=$(echo "$row"  | jq -r '.Name // empty')
+        app=$(echo "$row"   | jq -r '.App')
+        stack=$(echo "$row" | jq -r '.Stack')
+        stage=$(echo "$row" | jq -r '.Stage')
+        age=$(echo "$row"   | jq -r '.Age')
+        if [[ -n "$name" ]]; then
+          echo "  $(instance "$id")  ${name}" >&2
+        else
+          echo "  $(instance "$id")  $(dim "-")" >&2
+        fi
+        echo "    $(label "App=" "$app") $(label "Stack=" "$stack") $(label "Stage=" "$stage")  $(label "launched " "$age")" >&2
+      done
+      echo ""
+      die "Use $(arg "--newest") or $(arg "--oldest") to automatically select an instance\n       or use $(arg "-i") / $(arg "--instance") to specify an instance directly"
+    fi
+
+    if [[ "$SORT_ORDER" == "newest" ]]; then
+      INSTANCE=$(echo "$RESULT" | jq -r 'sort_by(.LaunchTime) | last | .InstanceId')
+    else
+      INSTANCE=$(echo "$RESULT" | jq -r 'sort_by(.LaunchTime) | first | .InstanceId')
+    fi
+  fi
+
+  info "Resolved instance: $(instance "$INSTANCE")"
+fi
+
+# --- Start SSM session ---
+info "Starting SSM session to $(instance "$INSTANCE") $(dim "(profile=${PROFILE}, region=${REGION})")"
+exec aws ssm start-session \
+  --target "$INSTANCE" \
+  --profile "$PROFILE" \
+  --region "$REGION"
