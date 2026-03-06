@@ -167,11 +167,12 @@ if [[ -z "$INSTANCE" ]]; then
 
   INSTANCE_COUNT=${#INSTANCE_IDS[@]}
 
-  # Convert an ISO-8601 timestamp to a human-friendly relative age.
+  # Convert an ISO-8601 timestamp to a human-friendly relative age
+  # followed by the absolute time, e.g. "3d ago 2026-03-03 12:15UTC".
   # Works with both GNU date (Linux) and BSD date (macOS).
   human_age() {
     local timestamp="$1"
-    local launch_epoch now_epoch seconds
+    local launch_epoch now_epoch seconds absolute
 
     # Try GNU date first, fall back to BSD date
     if launch_epoch=$(date -d "$timestamp" +%s 2>/dev/null); then
@@ -185,14 +186,26 @@ if [[ -z "$INSTANCE" ]]; then
         || { echo "$timestamp"; return; }
     fi
 
+    # Absolute time in UTC
+    if absolute=$(TZ=UTC date -d "@$launch_epoch" +"%Y-%m-%d %H:%M %Z" 2>/dev/null); then
+      : # GNU date worked
+    else
+      absolute=$(TZ=UTC date -j -f "%s" "$launch_epoch" +"%Y-%m-%d %H:%M %Z" 2>/dev/null) \
+        || absolute=""
+    fi
+
     now_epoch=$(date +%s)
     seconds=$(( now_epoch - launch_epoch ))
 
-    if   (( seconds >= 86400 )); then echo "$(( seconds / 86400 ))d ago"
-    elif (( seconds >= 3600  )); then echo "$(( seconds / 3600  ))h ago"
-    elif (( seconds >= 60    )); then echo "$(( seconds / 60    ))m ago"
-    else                              echo "${seconds}s ago"
+    local relative
+    if   (( seconds >= 86400 )); then relative="$(( seconds / 86400 ))d ago"
+    elif (( seconds >= 3600  )); then relative="$(( seconds / 3600  ))h ago"
+    elif (( seconds >= 60    )); then relative="$(( seconds / 60    ))m ago"
+    else                              relative="${seconds}s ago"
     fi
+
+    # Output: relative<TAB>absolute (or just relative if absolute unavailable)
+    printf '%s\t%s' "${relative}" "${absolute}"
   }
 
   if [[ "$INSTANCE_COUNT" -eq 1 ]]; then
@@ -203,13 +216,17 @@ if [[ -z "$INSTANCE" ]]; then
       echo "" >&2
       heading "Multiple instances found:"
       for (( idx=0; idx<INSTANCE_COUNT; idx++ )); do
-        age=$(human_age "${LAUNCH_TIMES[$idx]}")
+        IFS=$'\t' read -r age_relative age_absolute <<< "$(human_age "${LAUNCH_TIMES[$idx]}")"
         if [[ "${NAMES[$idx]}" != "-" ]]; then
           echo "  $(instance "${INSTANCE_IDS[$idx]}")  ${NAMES[$idx]}" >&2
         else
           echo "  $(instance "${INSTANCE_IDS[$idx]}")  $(dim "-")" >&2
         fi
-        echo "    $(label "App=" "${APPS[$idx]}") $(label "Stack=" "${STACKS[$idx]}") $(label "Stage=" "${STAGES[$idx]}")  $(label "launched " "$age")" >&2
+        if [[ -n "$age_absolute" ]]; then
+          echo "    $(label "App=" "${APPS[$idx]}") $(label "Stack=" "${STACKS[$idx]}") $(label "Stage=" "${STAGES[$idx]}")  $(label "launched " "$age_relative") $(dim "$age_absolute")" >&2
+        else
+          echo "    $(label "App=" "${APPS[$idx]}") $(label "Stack=" "${STACKS[$idx]}") $(label "Stage=" "${STAGES[$idx]}")  $(label "launched " "$age_relative")" >&2
+        fi
       done
       echo "" >&2
       die "Use $(arg "--newest") or $(arg "--oldest") to automatically select an instance\n       or use $(arg "-i") / $(arg "--instance") to specify an instance directly"
