@@ -1,4 +1,4 @@
-package com.gu.devenv
+package com.gu.ssm
 
 import org.scalacheck.Gen
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
@@ -14,12 +14,12 @@ class ReleasesTest extends AnyFreeSpec with Matchers with ScalaCheckPropertyChec
     assets = List(
       ReleaseAsset(
         id = 1L,
-        name = "devenv-20250115-120000-linux-x86_64",
+        name = "ssm-20250115-120000-linux-x86_64",
         browserDownloadUrl = "https://example.com/download",
         digest = "sha256:abc123"
       )
     ),
-    htmlUrl = "https://github.com/guardian/devenv/releases/tag/20250115-120000"
+    htmlUrl = "https://github.com/guardian/ssm/releases/tag/20250115-120000"
   )
 
   "Releases.checkForUpdate" - {
@@ -99,7 +99,7 @@ class ReleasesTest extends AnyFreeSpec with Matchers with ScalaCheckPropertyChec
         result match {
           case UpdateCheckResult.UpdateAvailable(release, asset) =>
             release shouldBe testRelease
-            asset.name shouldBe "devenv-20250115-120000-linux-x86_64"
+            asset.name shouldBe "ssm-20250115-120000-linux-x86_64"
           case other =>
             fail(s"Expected UpdateAvailable but got: $other")
         }

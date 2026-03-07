@@ -9,31 +9,31 @@ import sttp.client4.httpurlconnection.HttpURLConnectionBackend
 
 import scala.util.{Failure, Success, Try}
 
-/** Handles fetching and parsing release information from the devenv GitHub repository.
- *
- * This is to support the CLI tool's ability to check if it is running the latest version, and to
- * recommend a compatible update, if available.
- *
- * See https://docs.github.com/en/rest/releases/releases?apiVersion=2022-11-28
- */
+/** Handles fetching and parsing release information from the ssm GitHub repository.
+  *
+  * This is to support the CLI tool's ability to check if it is running the latest version, and to
+  * recommend a compatible update, if available.
+  *
+  * See https://docs.github.com/en/rest/releases/releases?apiVersion=2022-11-28
+  */
 object Releases {
   private val OWNER = "guardian"
-  private val REPO  = "devenv"
+  private val REPO  = "ssm-scala"
   private val API_URL =
     s"https://api.github.com/repos/$OWNER/$REPO/releases/latest"
 
-  // extracts the release name and architecture from devenv's asset name
-  private val ReleaseNameParts = """devenv-(\d{8}-\d{6}(?:-dev)?)-(\w+-\w+)""".r
+  // extracts the release name and architecture from ssm's asset name
+  private val ReleaseNameParts = """ssm-(\d{8}-\d{6}(?:-dev)?)-(\w+-\w+)""".r
 
   // this backend works with graalvm
   private val httpBackend = HttpURLConnectionBackend()
 
   def checkForUpdate(
-                      currentReleaseVersion: String,
-                      architectureOpt: Option[String],
-                      branch: Option[String],
-                      latestRelease: Release
-                    ): UpdateCheckResult =
+      currentReleaseVersion: String,
+      architectureOpt: Option[String],
+      branch: Option[String],
+      latestRelease: Release
+  ): UpdateCheckResult =
     if (currentReleaseVersion == "dev" || !branch.contains("main")) {
       UpdateCheckResult.DevMode(latestRelease)
     } else {
@@ -67,15 +67,15 @@ object Releases {
   }
 
   def formatUpdateCheckResult(
-                               result: Try[UpdateCheckResult],
-                               currentVersion: String,
-                               architecture: Option[String]
-                             ): String =
+      result: Try[UpdateCheckResult],
+      currentVersion: String,
+      architecture: Option[String]
+  ): String =
     result match {
       case Success(UpdateCheckResult.UpToDate) =>
         val header  = Bold.On(Color.Green("✅ Up-to-date"))
         val divider = Color.Green("━" * 60)
-        val message = Color.Green(s"Devenv ${Bold.On(currentVersion)} is the latest version.")
+        val message = Color.Green(s"ssm ${Bold.On(currentVersion)} is the latest version.")
         s"""$header
            |$divider
            |$message
@@ -85,7 +85,7 @@ object Releases {
         val header  = Bold.On(Color.Yellow("✓ Development mode"))
         val divider = Color.Yellow("━" * 60)
         val message =
-          Color.Yellow("Devenv is in development mode; cannot check for updates.")
+          Color.Yellow("ssm is in development mode; cannot check for updates.")
         val latest =
           Color.Yellow(s"The latest released version is ${Bold.On(latestRelease.tagName)}")
         s"""$header
@@ -170,9 +170,9 @@ object Releases {
     }
 
   private def isNewerVersion(
-                              currentReleaseVersion: String,
-                              latestRelease: Release
-                            ): Option[Release] =
+      currentReleaseVersion: String,
+      latestRelease: Release
+  ): Option[Release] =
     if (latestRelease.tagName != currentReleaseVersion) {
       Some(latestRelease)
     } else {
@@ -180,9 +180,9 @@ object Releases {
     }
 
   private def compatibleAsset(
-                               architecture: String,
-                               latestRelease: Release
-                             ): Option[ReleaseAsset] =
+      architecture: String,
+      latestRelease: Release
+  ): Option[ReleaseAsset] =
     latestRelease.assets.find { asset =>
       asset.name match {
         case ReleaseNameParts(_, arch) =>
@@ -196,31 +196,31 @@ object Releases {
     case UpToDate                  extends UpdateCheckResult(successful = true)
     case DevMode(release: Release) extends UpdateCheckResult(successful = true)
     case UpdateAvailable(release: Release, asset: ReleaseAsset)
-      extends UpdateCheckResult(successful = true)
+        extends UpdateCheckResult(successful = true)
     case NoCompatibleAsset(release: Release)  extends UpdateCheckResult(successful = false)
     case NoArchitectureInfo(release: Release) extends UpdateCheckResult(successful = false)
   }
 
   /** Represents a GitHub release and its assets.
-   *
-   * These are subsets of GitHub's datastructures that focus in on the relevant fields.
-   *
-   * https://docs.github.com/en/rest/releases/releases?apiVersion=2022-11-28
-   */
+    *
+    * These are subsets of GitHub's datastructures that focus in on the relevant fields.
+    *
+    * https://docs.github.com/en/rest/releases/releases?apiVersion=2022-11-28
+    */
 
   // ensures our derived codecs will convert GitHub's snake case fields to normal Scala names
   given Configuration = Configuration.default.withSnakeCaseMemberNames
 
   case class Release(
-                      id: Long,
-                      tagName: String,
-                      assets: List[ReleaseAsset],
-                      htmlUrl: String
-                    )
+      id: Long,
+      tagName: String,
+      assets: List[ReleaseAsset],
+      htmlUrl: String
+  )
   case class ReleaseAsset(
-                           id: Long,
-                           name: String,
-                           browserDownloadUrl: String,
-                           digest: String
-                         )
+      id: Long,
+      name: String,
+      browserDownloadUrl: String,
+      digest: String
+  )
 }
