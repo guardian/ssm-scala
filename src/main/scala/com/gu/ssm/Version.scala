@@ -11,7 +11,7 @@ object Version {
     * This is set at build time via the SSM_RELEASE environment variable and gets baked into the
     * native binary during GraalVM compilation.
     *
-    * This environment variable is allowlisted in the build.sbt settings for the cli project.
+    * This environment variable is allowlisted in the build.sbt settings for the project.
     *
     * Defaults to "dev" for local development builds (running via sbt or JVM packaging).
     */
@@ -22,7 +22,7 @@ object Version {
     * This is set at build time via the SSM_ARCHITECTURE environment variable and gets baked into
     * the native binary during GraalVM compilation.
     *
-    * This environment variable is allowlisted in the build.sbt settings for the cli project.
+    * This environment variable is allowlisted in the build.sbt settings for the project.
     *
     * Returns None for local development builds (running via sbt or JVM packaging).
     */
@@ -33,7 +33,7 @@ object Version {
     * This is set at build time via the SSM_BRANCH environment variable and gets baked into the
     * native binary during GraalVM compilation.
     *
-    * This environment variable is allowlisted in the build.sbt settings for the cli project.
+    * This environment variable is allowlisted in the build.sbt settings for the project.
     *
     * Returns None for local development builds (running via sbt or JVM packaging).
     */

@@ -1,23 +1,9 @@
 package com.gu.ssm
 
-import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider
-import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.ec2.Ec2Client
-import software.amazon.awssdk.services.ec2.model.{DescribeInstancesRequest, Filter}
-
 import java.time.Instant
-import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 
 object InstanceResolution {
-  def makeEc2Client(profile: String, region: String): Ec2Client = Ec2Client
-    .builder()
-    .credentialsProvider(ProfileCredentialsProvider.create(profile))
-    .region(Region.of(region))
-    .httpClient(UrlConnectionHttpClient.create())
-    .build()
-
   def resolveInstanceStrategy(
       instance: Option[String],
       tags: Option[String],
@@ -46,54 +32,13 @@ object InstanceResolution {
 
   def resolveInstance(
       strategy: InstanceResolutionStrategy,
-      ec2Client: Ec2Client
+      instanceResolver: InstanceResolver
   ): Try[InstanceResolutionResult] =
     strategy match {
       case InstanceResolutionStrategy.InstanceId(instanceId) =>
         Success(InstanceResolutionResult.ResolvedInstance(instanceId))
       case InstanceResolutionStrategy.TagDiscovery(tags, tagDiscoveryStrategy) =>
-        Try {
-          val stateFilter = Filter
-            .builder()
-            .name("instance-state-name")
-            .values("running")
-            .build()
-          val tagFilters = (tags.stackStage match {
-            case None =>
-              List(("tag:App", tags.app))
-            case Some((stack, None)) =>
-              List(
-                ("tag:App", tags.app),
-                ("tag:Stack", stack)
-              )
-            case Some((stack, Some(stage))) =>
-              List(
-                ("tag:App", tags.app),
-                ("tag:Stack", stack),
-                ("tag:Stage", stage)
-              )
-          }).map { case (name, value) =>
-            Filter.builder().name(name).values(value).build()
-          }
-          val request = DescribeInstancesRequest
-            .builder()
-            .filters(stateFilter :: tagFilters: _*)
-            .build()
-          val response = ec2Client.describeInstances(request)
-          val instances: List[InstanceInfo] = response
-            .reservations()
-            .asScala
-            .flatMap(_.instances().asScala)
-            .toList
-            .map { instance =>
-              val tags = instance.tags().asScala.map(tag => tag.key() -> tag.value()).toMap
-              InstanceInfo(
-                instance.instanceId(),
-                tags.getOrElse("Name", "-"),
-                tags,
-                instance.launchTime()
-              )
-            }
+        instanceResolver.describeMatchingInstances(tags).map { instances =>
           tagDiscoveryStrategy match {
             case TagDiscoveryStrategy.Single =>
               instances match {
@@ -160,6 +105,13 @@ enum TagDiscoveryStrategy {
 case class InstanceTags(app: String, stackStage: Option[(String, Option[String])]) {
   val stack: Option[String] = stackStage.map(_._1)
   val stage: Option[String] = stackStage.flatMap(_._2)
+
+  val asPairs: List[(String, String)] =
+    List(
+      Some("App" -> app),
+      stack.map("Stack" -> _),
+      stage.map("Stage" -> _)
+    ).flatten
 }
 
 class InstanceResolutionException(message: String) extends Exception(message)
