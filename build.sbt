@@ -21,7 +21,7 @@ ThisBuild / excludeDependencies ++= Seq(
 )
 
 // shared library versions
-val awsSdkVersion        = "2.42.8"
+val awsSdkVersion        = "2.42.17"
 val circeVersion         = "0.14.15"
 val scalatestVersion     = "3.2.19"
 val scalaCheckVersion    = "1.19.0"
@@ -53,7 +53,7 @@ lazy val ssm = (project in file("."))
     // GraalVM Native Image configuration
     graalVMNativeImageOptions ++= {
       // Use compatibility mode for Linux builds to support older CPUs and containers
-      // macOS builds use native optimizations for best performance
+      // macOS builds use native optimisations for best performance
       val marchOption = sys.env.get("SSM_ARCHITECTURE") match {
         case Some(arch) if arch.startsWith("linux") => Seq("-march=compatibility")
         case _                                      => Seq.empty

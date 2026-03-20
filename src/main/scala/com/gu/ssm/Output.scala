@@ -12,15 +12,17 @@ object Output {
         val tagDescriptions = formatInstanceTags(tags)
         val strategyDescription = tagDiscoverStrategy match {
           case TagDiscoveryStrategy.Single =>
-            ""
+            """
+              |    Will select the instance to connect to if exactly one matching instance is found.
+              |""".stripMargin
           case TagDiscoveryStrategy.Newest =>
-            """
-              |Will select the most recently launched matching instance
-              |""".stripMargin
+            s""" ${parameter("(newest)")}
+               |    Will select the most recently launched matching instance
+               |""".stripMargin
           case TagDiscoveryStrategy.Oldest =>
-            """
-              |Will select the longest running matching instance
-              |""".stripMargin
+            s""" ${parameter("(oldest)")}
+               |    Will select the longest running matching instance
+               |""".stripMargin
         }
         s"${operation("Discovering instances matching")} $tagDescriptions$strategyDescription"
     }
@@ -36,7 +38,7 @@ object Output {
           s"Starting Main session to ${instance(targetInstanceId)} (${label("profile=", profile)}, ${label("region=", region)})"
         )
       case InstanceResolutionResult.NoInstancesFound(tags) =>
-        error(s"No running instances found matching $profile")
+        error(s"No running instances found matching ${parameter(profile)}")
       case InstanceResolutionResult.MultipleInstancesFound(tags, instances) =>
         val tagInfo = formatInstanceTags(tags)
         val instanceList = instances
@@ -74,6 +76,7 @@ object Output {
   private def error(message: String): Str     = s"${Color.Red(Bold.On("Error:"))} $message"
   private def operation(message: String): Str = s"${Color.Cyan("▸")} $message"
   private def heading(msg: String): Str       = s"${Bold.On(msg)}"
+  private def parameter(name: String): Str    = s"${Color.LightCyan(name)}"
   private def label(key: String, value: String): Str =
     dim(key) ++ emphasised(value)
 }

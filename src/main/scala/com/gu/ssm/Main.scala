@@ -2,7 +2,7 @@ package com.gu.ssm
 
 import com.gu.ssm
 import fansi.Bold
-import mainargs.{arg, main, ParserForMethods}
+import mainargs.{arg, main, Flag, ParserForMethods}
 
 import scala.util.{Failure, Success}
 
@@ -23,21 +23,20 @@ object Main {
       @arg(short = 'r', doc = "AWS region (default: eu-west-1)") region: String = "eu-west-1",
       @arg(short = 'i', doc = "Connect to this EC2 instance ID") instance: Option[String] = None,
       @arg(short = 't', doc = "Discover by App[,Stack[,Stage]] tags") tags: Option[String] = None,
-      @arg(doc = "Select the most recently launched instance") newest: Boolean = false,
-      @arg(doc = "Select the least recently launched instance") oldest: Boolean = false
+      @arg(doc = "Select the most recently launched instance") newest: Flag,
+      @arg(doc = "Select the least recently launched instance") oldest: Flag
   ): Unit = {
     val instanceResolver = new AwsInstanceManager(profile, region)
-    Ssm.ssh(profile, region, instance, tags, newest, oldest, instanceResolver) match {
+    Ssm.ssh(profile, region, instance, tags, newest.value, oldest.value, instanceResolver) match {
       case Success(exitCode) =>
         if (exitCode != 0) {
           // for convenience in dev mode, only terminate with non-default exit codes
-//          sys.exit(exitCode)
+          sys.exit(exitCode)
         }
       case Failure(exception) =>
         // handle unexpected errors
         System.err.println(s"Error: ${exception.getMessage}")
-        exception.printStackTrace()
-//        sys.exit(1)
+        sys.exit(1)
     }
   }
 

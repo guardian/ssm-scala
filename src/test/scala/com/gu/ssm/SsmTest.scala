@@ -16,10 +16,10 @@ class SsmTest extends AnyFreeSpec with Matchers with TryValues with ScalaCheckPr
   "resolveInstanceStrategy" - {
     "InstanceId" - {
       "should succeed with InstanceId strategy when only instance is given" in {
-        forAll(genInstanceId, Gen.oneOf(true, false), Gen.oneOf(true, false)) {
-          (instanceId, newest, oldest) =>
-            val result = Ssm.resolveInstanceStrategy(Some(instanceId), None, newest, oldest)
-            result shouldEqual Success(InstanceResolutionStrategy.InstanceId(instanceId))
+        forAll(genInstanceId) { instanceId =>
+          val result =
+            Ssm.resolveInstanceStrategy(Some(instanceId), None, newest = false, oldest = false)
+          result shouldEqual Success(InstanceResolutionStrategy.InstanceId(instanceId))
         }
       }
     }
