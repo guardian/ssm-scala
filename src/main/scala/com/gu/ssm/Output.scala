@@ -55,6 +55,10 @@ object Output {
             "<id>"
           )}.
            |""".stripMargin
+      case InstanceResolutionResult.ResolutionError(message, tags) =>
+        val tagInfo = formatInstanceTags(tags)
+        s"""${heading(s"Could not resolve instance from")} $tagInfo
+           |${error(message)}""".stripMargin
     }
 
   private def formatInstanceTags(tags: InstanceTags) =

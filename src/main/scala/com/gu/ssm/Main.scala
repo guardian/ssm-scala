@@ -26,7 +26,7 @@ object Main {
       @arg(doc = "Select the most recently launched instance") newest: Boolean = false,
       @arg(doc = "Select the least recently launched instance") oldest: Boolean = false
   ): Unit = {
-    val instanceResolver = new AwsInstanceResolver(profile, region)
+    val instanceResolver = new AwsInstanceManager(profile, region)
     Ssm.ssh(profile, region, instance, tags, newest, oldest, instanceResolver) match {
       case Success(exitCode) =>
         if (exitCode != 0) {
@@ -36,6 +36,7 @@ object Main {
       case Failure(exception) =>
         // handle unexpected errors
         System.err.println(s"Error: ${exception.getMessage}")
+        exception.printStackTrace()
 //        sys.exit(1)
     }
   }
