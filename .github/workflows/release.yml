@@ -1,0 +1,262 @@
+name: Release
+
+# This workflow creates a draft GitHub Release with native binaries.
+#
+# Steps:
+# 1. Generates a version based on the current date and time (appends -dev for non-default branches)
+# 2. Builds native binaries for macOS (ARM64) and Linux (AMD64 and ARM64)
+# 3. Signs and notarizes the macOS binary using an Apple Developer ID Application certificate
+# 4. Creates a draft GitHub Release with the built binaries attached
+# 5. Marks the release as a prerelease if built from a non-default branch
+#
+# -----------------------------------------------------------------------------
+# Required secrets for macOS signing and notarization
+# -----------------------------------------------------------------------------
+#
+# GU_APPLE_APP_CERTIFICATE
+#   Base64-encoded .p12 file containing a "Developer ID Application" certificate.
+#
+# GU_APPLE_APP_CERTIFICATE_PASSWORD
+#   The password for the .p12 certificate file
+#
+# GU_APPLE_TEAM_ID
+#   10-character Apple Developer Team ID.
+#
+# GU_APPLE_ID
+#   The Apple ID (email) associated with the Apple Developer account.
+#
+# GU_APPLE_ID_PASSWORD
+#   An app-specific password for the Apple ID (not your regular Apple password).
+
+on:
+  # Manually trigger the workflow to create a draft release
+  workflow_dispatch:
+
+jobs:
+  generate-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+    - name: Generate version
+      id: version
+      run: |
+        VERSION="$(date +%Y%m%d-%H%M%S)"
+        # Append -dev suffix for non-default branch builds to distinguish them from "production" releases
+        if [ "${{ github.ref_name }}" != "${{ github.event.repository.default_branch }}" ]; then
+          VERSION="${VERSION}-dev"
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Generated version: $VERSION"
+
+  build-native-images:
+    needs: generate-version
+    strategy:
+      matrix:
+        include:
+          - runner: macos-26
+            architecture: macos-arm64
+          - runner: ubuntu-24.04
+            architecture: linux-amd64
+          - runner: ubuntu-24.04-arm
+            architecture: linux-arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Java and sbt
+      uses: guardian/setup-scala@v1
+
+    - uses: graalvm/setup-graalvm@eec48106e0bf45f2976c2ff0c3e22395cced8243 # v1.4.2
+      with:
+        java-version: '21'
+        distribution: 'graalvm'
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        native-image-job-reports: 'true'
+
+    - name: Build native image
+      run: sbt GraalVMNativeImage/packageBin
+      env:
+        # these are configured in build.sbt as environment variables to bake into the binary
+        SSM_RELEASE: ${{ needs.generate-version.outputs.version }}
+        SSM_ARCHITECTURE: ${{ matrix.architecture }}
+        SSM_BRANCH: ${{ github.ref_name }}
+
+    - name: Verify and rename binary
+      run: |
+        ls -lh target/graalvm-native-image/ssm
+        file target/graalvm-native-image/ssm
+        ./target/graalvm-native-image/ssm version || true
+        cp target/graalvm-native-image/ssm ssm-${{ needs.generate-version.outputs.version }}-${{ matrix.architecture }}
+
+    - name: Import Apple code signing certificate
+      if: matrix.architecture == 'macos-arm64'
+      env:
+        CERTIFICATE_BASE64: ${{ secrets.GU_APPLE_APP_CERTIFICATE }}
+        CERTIFICATE_PASSWORD: ${{ secrets.GU_APPLE_APP_CERTIFICATE_PASSWORD }}
+      run: |
+        # Create a temporary keychain
+        KEYCHAIN_PATH="$RUNNER_TEMP/signing.keychain-db"
+        KEYCHAIN_PASSWORD="$(openssl rand -base64 32)"
+
+        security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+        security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+        security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+        # Import the certificate
+        CERT_PATH="$RUNNER_TEMP/certificate.p12"
+        echo "$CERTIFICATE_BASE64" | base64 --decode > "$CERT_PATH"
+
+        security import "$CERT_PATH" \
+          -P "$CERTIFICATE_PASSWORD" \
+          -A \
+          -t cert \
+          -f pkcs12 \
+          -k "$KEYCHAIN_PATH"
+
+        # Allow codesign to access the keychain
+        security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+        # Add the keychain to the search list
+        security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+        # Clean up the certificate file
+        rm "$CERT_PATH"
+
+        # Store keychain path for cleanup step
+        echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+        echo "KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> "$GITHUB_ENV"
+
+    - name: Sign the binary
+      if: matrix.architecture == 'macos-arm64'
+      run: |
+        # Find the signing identity from the imported certificate
+        SIGNING_IDENTITY=$(security find-identity -v -p codesigning | grep "Developer ID Application" | head -1 | sed 's/.*"\(.*\)".*/\1/')
+
+        if [ -z "$SIGNING_IDENTITY" ]; then
+          echo "Error: No 'Developer ID Application' identity found"
+          echo "Please ensure GU_APPLE_APP_CERTIFICATE contains a Developer ID Application certificate"
+          exit 1
+        fi
+
+        echo "Using signing identity: $SIGNING_IDENTITY"
+
+        # Sign the binary with hardened runtime (required for notarization)
+        codesign --force --options runtime --sign "$SIGNING_IDENTITY" \
+          ssm-${{ needs.generate-version.outputs.version }}-${{ matrix.architecture }}
+
+        # Verify the signature
+        codesign --verify --verbose \
+          ssm-${{ needs.generate-version.outputs.version }}-${{ matrix.architecture }}
+
+    - name: Notarize the binary
+      if: matrix.architecture == 'macos-arm64'
+      env:
+        APPLE_ID: ${{ secrets.GU_APPLE_ID }}
+        APPLE_ID_PASSWORD: ${{ secrets.GU_APPLE_ID_PASSWORD }}
+        APPLE_TEAM_ID: ${{ secrets.GU_APPLE_TEAM_ID }}
+      run: |
+        BINARY="ssm-${{ needs.generate-version.outputs.version }}-${{ matrix.architecture }}"
+
+        # Create a ZIP file for notarization (notarytool requires a zip, pkg, or dmg)
+        ditto -c -k --keepParent "$BINARY" "${BINARY}.zip"
+
+        # Submit for notarization and wait for completion
+        xcrun notarytool submit "${BINARY}.zip" \
+          --apple-id "$APPLE_ID" \
+          --password "$APPLE_ID_PASSWORD" \
+          --team-id "$APPLE_TEAM_ID" \
+          --wait
+
+        # Note: stapling doesn't work on standalone binaries, only on .app bundles, dmg, and pkg files.
+        # The notarization is still valid - macOS will check online when the binary is first run.
+
+        # Clean up the zip
+        rm "${BINARY}.zip"
+
+    - name: Clean up keychain
+      if: matrix.architecture == 'macos-arm64' && always()
+      run: |
+        if [ -n "$KEYCHAIN_PATH" ] && [ -f "$KEYCHAIN_PATH" ]; then
+          security delete-keychain "$KEYCHAIN_PATH"
+        fi
+
+    - name: Upload native binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: ssm-${{ matrix.architecture }}
+        path: ssm-${{ needs.generate-version.outputs.version }}-${{ matrix.architecture }}
+        retention-days: 90
+
+  create-release:
+    needs: [generate-version, build-native-images]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download macOS binary
+      uses: actions/download-artifact@v4
+      with:
+        name: ssm-macos-arm64
+        path: .
+
+    - name: Download Linux AMD64 binary
+      uses: actions/download-artifact@v4
+      with:
+        name: ssm-linux-amd64
+        path: .
+
+    - name: Download Linux ARM64 binary
+      uses: actions/download-artifact@v4
+      with:
+        name: ssm-linux-arm64
+        path: .
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@6da8fa9354ddfdc4aeace5fc48d7f679b5214090 # v2.4.1
+      with:
+        tag_name: ${{ needs.generate-version.outputs.version }}
+        name: ssm ${{ needs.generate-version.outputs.version }}
+        files: |
+          ssm-${{ needs.generate-version.outputs.version }}-macos-arm64
+          ssm-${{ needs.generate-version.outputs.version }}-linux-amd64
+          ssm-${{ needs.generate-version.outputs.version }}-linux-arm64
+        body: |
+          ## ssm ${{ needs.generate-version.outputs.version }}
+
+          **Build Date:** ${{ needs.generate-version.outputs.version }}
+
+          This release was built from the `${{ github.ref_name }}` branch.
+
+          ### Installation
+
+          The release includes native binaries for macOS and Linux architectures.
+
+          **macOS (Apple Silicon):**
+          ```bash
+          curl -L --create-dirs -o ~/.local/bin/ssm https://github.com/${{ github.repository }}/releases/download/${{ needs.generate-version.outputs.version }}/ssm-${{ needs.generate-version.outputs.version }}-macos-arm64
+          chmod +x ~/.local/bin/ssm
+          ```
+
+          **Linux (x86_64/AMD64):**
+          ```bash
+          curl -L --create-dirs -o ~/.local/bin/ssm https://github.com/${{ github.repository }}/releases/download/${{ needs.generate-version.outputs.version }}/ssm-${{ needs.generate-version.outputs.version }}-linux-amd64
+          chmod +x ~/.local/bin/ssm
+          ```
+
+          **Linux (ARM64):**
+          ```bash
+          curl -L --create-dirs -o ~/.local/bin/ssm https://github.com/${{ github.repository }}/releases/download/${{ needs.generate-version.outputs.version }}/ssm-${{ needs.generate-version.outputs.version }}-linux-arm64
+          chmod +x ~/.local/bin/ssm
+          ```
+
+          > **Note:** `~/.local/bin` may not be on your `PATH` by default. If `ssm` isn't found after installation, add `export PATH="$HOME/.local/bin:$PATH"` to your `~/.zshrc` or `~/.bashrc`, or install to `/usr/local/bin` instead.
+        draft: true
+        # Mark as prerelease for non-default branch builds (e.g., dev branches)
+        prerelease: ${{ github.ref_name != github.event.repository.default_branch }}
+

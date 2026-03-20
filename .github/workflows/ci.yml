@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-package:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Java and sbt
+      uses: guardian/setup-scala@v1
+
+    - name: Test and package
+      run: sbt test universal:packageBin
+
+    - name: Find package file
+      id: find-package
+      run: |
+        ls -la target/universal || true
+        PACKAGE_FILE=$(ls target/universal/ssm-*.zip)
+        if [[ ! -f "$PACKAGE_FILE" ]]; then
+          echo "ERROR: package not found: $PACKAGE_FILE"
+          exit 1
+        fi
+        echo "package_file=$PACKAGE_FILE" >> $GITHUB_OUTPUT
+        echo "package_name=$(basename $PACKAGE_FILE)" >> $GITHUB_OUTPUT
+
+    - name: Upload package artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ssm-package
+        path: ${{ steps.find-package.outputs.package_file }}
+        retention-days: 30
+
