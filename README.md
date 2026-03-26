@@ -324,7 +324,7 @@ Upgrade your local version of ssm and awscli:
 You'll also need to install the systems manager plugin on your machine:
 
 ```
-  brew cask install session-manager-plugin
+  brew install --cask session-manager-plugin
 ```
 
 You can then SSH using SSM with the default arguments:
