@@ -465,6 +465,48 @@ scp -i /path/to/identity/file.tmp ubuntu@34.242.32.40:/path/to/file1 /path/to/fi
 
 The convention is: the first (left hand side) file is always the source and the second (right hand side) is always the target and the colon, indicates which one is on the remote server.
 
+## Modern alternatives
+
+Much of the functionality provided by this tool is now available directly through the AWS CLI and AWS console
+without requiring a separate tool. If you are setting up a new workflow, consider using these native alternatives.
+
+| ssm-scala feature | Modern AWS alternative |
+|---|---|
+| SSH to an EC2 instance | `aws ssm start-session --target <instance-id>` |
+| Run a command on instances | `aws ssm send-command --document-name AWS-RunShellScript` |
+| Port forwarding to a remote host | `aws ssm start-session` with the `AWS-StartPortForwardingSessionToRemoteHost` document |
+| Port forwarding to RDS | `aws ssm start-session` with the `AWS-StartPortForwardingSessionToRemoteHost` document |
+| Tag-based instance lookup | `aws ec2 describe-instances --filters "Name=tag:App,Values=myapp"` |
+| Secure file copy | Standard `scp` over an SSM-proxied SSH session |
+
+### SSH via Session Manager
+
+```bash
+aws ssm start-session --target i-0123456789abcdef0 --profile myprofile
+```
+
+### Port forwarding
+
+```bash
+aws ssm start-session \
+  --target i-0123456789abcdef0 \
+  --document-name AWS-StartPortForwardingSessionToRemoteHost \
+  --parameters host=my-rds-host.example.com,portNumber=5432,localPortNumber=5432
+```
+
+### Running a command
+
+```bash
+aws ssm send-command \
+  --instance-ids i-0123456789abcdef0 \
+  --document-name AWS-RunShellScript \
+  --parameters commands=["date"]
+```
+
+The main remaining advantage of ssm-scala is its ergonomics: resolving instances by tag, managing temporary SSH keys
+and providing a single command for common workflows. The AWS CLI equivalents are more verbose.
+However, for new projects the native tooling is simpler to depend on and keep up to date.
+
 ## Development
 
 During development, the program can be run using sbt, either from an sbt shell or from the CLI in that project.
@@ -567,6 +609,6 @@ To use ssm-scala against the instances of your project, the following needs to h
 Note: SSM needs the target server to have outbound port 443 (ssm-agent's communication with AWS's SSM and EC2 Messages endpoints).
 
 
-##License
+## Licence
 
-Copyright (c) 2018 Guardian News & Media. Available under the Apache License.
+Copyright (c) 2018 Guardian News & Media. Available under the Apache Licence.
