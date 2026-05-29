@@ -147,9 +147,16 @@ project/plugins/project/
 .cache
 .lib/
 .bsp
+.bloop
 
 ### Scala ###
 *.class
 *.log
 
 # End of https://www.gitignore.io/api/sbt,scala,emacs,intellij
+
+### VS Code ###
+.vscode
+.DS_Store
+.metals
+metals.sbt
