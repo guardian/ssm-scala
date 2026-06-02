@@ -10,7 +10,7 @@ import java.security.KeyPairGenerator
 import java.security.Security
 
 import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPublicKey
-import org.apache.commons.codec.binary.Base64
+import java.util.Base64
 
 object KeyMaker {
 
@@ -39,7 +39,7 @@ object KeyMaker {
     dos.write (rsaPublicKey.getPublicExponent.toByteArray)
     dos.writeInt (rsaPublicKey.getModulus.toByteArray.length)
     dos.write (rsaPublicKey.getModulus.toByteArray)
-    val publicKeyEncoded = new String (Base64.encodeBase64 (byteOs.toByteArray) )
+    val publicKeyEncoded = Base64.getEncoder.encodeToString(byteOs.toByteArray)
     "ssh-rsa " + publicKeyEncoded + " " + description
   }
 
@@ -51,8 +51,3 @@ object KeyMaker {
   }
 
 }
-
-
-
-
-
