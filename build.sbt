@@ -10,7 +10,7 @@ enablePlugins(BuildInfoPlugin)
 buildInfoKeys := Seq[BuildInfoKey](name, version)
 buildInfoPackage := "com.gu.ssm"
 
-val awsSdkVersion = "2.47.0"
+val awsSdkVersion = "2.47.1"
 
 libraryDependencies ++= Seq(
   "software.amazon.awssdk" % "ssm" % awsSdkVersion,
