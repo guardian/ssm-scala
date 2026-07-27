@@ -10,7 +10,7 @@ enablePlugins(BuildInfoPlugin)
 buildInfoKeys := Seq[BuildInfoKey](name, version)
 buildInfoPackage := "com.gu.ssm"
 
-val awsSdkVersion = "2.46.2"
+val awsSdkVersion = "2.47.0"
 
 libraryDependencies ++= Seq(
   "software.amazon.awssdk" % "ssm" % awsSdkVersion,
@@ -21,8 +21,8 @@ libraryDependencies ++= Seq(
   "com.googlecode.lanterna" % "lanterna" % "3.1.5",
   "ch.qos.logback" %  "logback-classic" % "1.5.35",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
-  "com.fasterxml.jackson.core" % "jackson-databind" % "2.22.0",
-  "org.bouncycastle" % "bcpkix-jdk18on" % "1.84",
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.22.1",
+  "org.bouncycastle" % "bcpkix-jdk18on" % "1.85",
   "org.scalatest" %% "scalatest" % "3.2.20" % Test
 )
 
