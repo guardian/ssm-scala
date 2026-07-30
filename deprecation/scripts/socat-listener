@@ -1,0 +1,15 @@
+#!/bin/sh
+set -e
+
+if [ -z "$CONTAINER_PORT" ] || [ -z "$SSM_PORT" ]; then
+    echo "NB: No CONTAINER_PORT or no SSM_PORT provided; tunnelling will not be possible"
+else
+    echo "✅ Port validation passed."
+    echo "🚀 Starting socat background bridge: ${CONTAINER_PORT} -> 127.0.0.1:${SSM_PORT}"
+
+    # Fire up socat on the explicit ports provided by the user
+    socat TCP-LISTEN:${CONTAINER_PORT},fork,reuseaddr TCP:127.0.0.1:${SSM_PORT} &>/dev/null &
+fi
+
+# Hand control over to the Docker CMD (e.g., bash)
+exec "$@"
