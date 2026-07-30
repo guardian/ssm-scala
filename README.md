@@ -1,3 +1,27 @@
+Deprecation Announcement
+========================
+
+SSM-Scala is now considered deprecated.  All its functionality is available within the AWS CLI.  eg:
+
+Finding oldest running instance by Guardian tags:
+```
+aws ec2 describe-instances \
+    --filters \
+        "Name=tag:App,Values=$app" \
+        "Name=tag:Stack,Values=$stack" \
+        "Name=tag:Stage,Values=$stage" \
+        "Name=instance-state-name,Values=running" \
+    --query "Reservations[].Instances[] | sort_by(@, &LaunchTime)[0] | InstanceId"
+```
+and starting a session on an instance:
+```
+aws ssm start-session --target $instanceid
+```
+
+For more information and worked examples, visit [the deprecation documentation](deprecation/README.md).
+
+Original Documentation follows
+
 SSM-Scala
 =========
 

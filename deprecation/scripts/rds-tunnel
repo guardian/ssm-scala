@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+aws sts get-caller-identity > /dev/null 2>&1 || { echo "Default AWS Credentials are NOT valid"; exit 1; }
+
+usage() {
+  echo "Usage:"
+  echo "  rds-tunnel <app> <stack> <stage> <rdsapp> <rdsstack>"
+  exit 1
+}
+
+app=$1; shift
+stack=$1; shift
+stage=$1; shift
+rdsapp=$1; shift
+rdsstack=$1; shift
+
+if [[ -z $rdsstack || $1 ]]; then
+   usage
+fi
+
+function getHost() {
+  aws rds describe-db-instances \
+    --query "DBInstances[?
+        contains(TagList[?Key=='App'].Value, '$rdsstage') && 
+        contains(TagList[?Key=='Stack'].Value, '$rdsstack') && 
+        contains(TagList[?Key=='Stage'].Value, '$stage')
+    ].Endpoint.Address" \
+    --output text
+}
+
+host=getHost
+if [[ -z $host ]]; then
+    echo "No host found"
+    exit 1
+fi
+
+aws ec2 describe-instances \
+    --filters \
+        "Name=tag:App,Values=$app" \
+        "Name=tag:Stack,Values=$stack" \
+        "Name=tag:Stage,Values=$stage" \
+        "Name=instance-state-name,Values=running" \
+    --query "Reservations[].Instances[] | sort_by(@, &LaunchTime)[0] | InstanceId" \
+  | xargs aws ssm start-session \
+    --document-name AWS-StartPortForwardingSessionToRemoteHost \
+    --parameters "{\"host\":[\"$host\"],\"portNumber\":[\"$REMOTE_PORT\"],\"localPortNumber\":[\"$SSM_PORT\"]}" \
+    --target 
