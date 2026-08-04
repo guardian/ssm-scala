@@ -1,26 +1,73 @@
 Deprecation Announcement
 ========================
 
-SSM-Scala is now considered deprecated.  All its functionality is available within the AWS CLI.  eg:
+tl;dr
 
-Finding oldest running instance by Guardian tags:
+You should stop using SSM Scala.  It is no longer maintained, and the AWS CLI has all the same functionality, and more.
+SSM Scala is no longer worth the maintenance cost.  It won't be deleted, but you should consider moving away from it.
+
+In an ideal world, you don't need ssh access to an instance at all.  Consider _why_ you want to do this.
+
+The simplest way to get ssh access to an instance is to
+ * obtain the `.ssh` permission in Janus for your account
+ * access the EC2 instance page console
+ * find the instance you want to access
+ * click the Connect button:
+
+![deprecation/connect.png](deprecation/connect.png)
+
+This has the advantage that you don't need to put any credentials on your laptop, just click through from Janus to the
+AWS console to the ssh session.  This is preferable, because credentials for ssh access are sufficient to access all the
+secrets that the instance has access to, and also to obtain the instance's role credentials, which can be used to access
+other AWS resources.
+
+If that's not sufficient, see the [./deprecation/scripts](./deprecation/scripts) directory for worked example command line scripts,
+and below for instructions on how to use aws ssm to access instances from a container to avoid putting credentials on
+your laptop.
+
+# Quick scripts
+
+These commands should be run inside a dev container with the AWS CLI installed and configured with credentials.
+
+Replace values in capitals.
+
+## Starting a session on an instance
+
 ```
-aws ec2 describe-instances \
+aws --profile $PROFILE --region $REGION ssm start-session --target $INSTANCEID
+```
+
+## Starting a tunnel to a remote host via an instance
+
+```
+aws ssm start-session \
+    --document-name AWS-StartPortForwardingSessionToRemoteHost \
+    --parameters '{
+      "host":["$HOST"],
+      "portNumber":["$REMOTE_PORT"],
+      "localPortNumber":[
+        "$SSM_PORT"
+      ]
+    }' \
+    --target $INSTANCEID
+```
+
+## Finding oldest running instance by Guardian tags
+```
+aws --profile $PROFILE --region $REGION ec2 describe-instances \
     --filters \
-        "Name=tag:App,Values=$app" \
-        "Name=tag:Stack,Values=$stack" \
-        "Name=tag:Stage,Values=$stage" \
+        "Name=tag:App,Values=$APP" \
+        "Name=tag:Stack,Values=$STACK" \
+        "Name=tag:Stage,Values=$STAGE" \
         "Name=instance-state-name,Values=running" \
     --query "Reservations[].Instances[] | sort_by(@, &LaunchTime)[0] | InstanceId"
 ```
-and starting a session on an instance:
-```
-aws ssm start-session --target $instanceid
-```
 
-For more information and worked examples, visit [the deprecation documentation](deprecation/README.md).
+For more information and worked examples, visit the [deprecation documentation](deprecation/README.md).
 
-Original Documentation follows
+
+
+**Original Documentation follows:**
 
 SSM-Scala
 =========
