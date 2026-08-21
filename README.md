@@ -70,7 +70,7 @@ For more information and worked examples, visit the [deprecation documentation](
 You can use ec2 instance connect to push a temporary public key to the target instance so you can perform scp operations:
 
 ```
-# 1. Generate a temporary keypair locally
+# 1. Generate a temporary keypair locally (note, if you already have a public key (e.g. ~/.ssh/id_rsa.pub) you are using for github you can reuse that rather than generating a new key
 ssh-keygen -t rsa -f /tmp/temp_key -N ""
 
 # 2. Push the temporary public key to the instance RAM
