@@ -65,6 +65,25 @@ aws --profile $PROFILE --region $REGION ec2 describe-instances \
 
 For more information and worked examples, visit the [deprecation documentation](deprecation/README.md).
 
+## Replacing scp functionality.
+
+You can use ec2 instance connect to push a temporary public key to the target instance so you can perform scp operations:
+
+```
+# 1. Generate a temporary keypair locally
+ssh-keygen -t rsa -f /tmp/temp_key -N ""
+
+# 2. Push the temporary public key to the instance RAM
+aws ec2-instance-connect send-ssh-public-key \
+  --instance-id i-0123456789abcdef0 \
+  --instance-os-user ec2-user \
+  --ssh-public-key file:///tmp/temp_key.pub
+
+# 3. SCP using the temp key routed over SSM within 60 seconds
+scp -i /tmp/temp_key \
+  -o "ProxyCommand=aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters 'portNumber=%p'" \
+  localfile.txt ec2-user@i-0123456789abcdef0:/remote/path/
+```
 
 
 **Original Documentation follows:**
