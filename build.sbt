@@ -19,7 +19,7 @@ libraryDependencies ++= Seq(
   "software.amazon.awssdk" % "rds" % awsSdkVersion,
   "com.github.scopt" %% "scopt" % "4.1.0",
   "com.googlecode.lanterna" % "lanterna" % "3.1.5",
-  "ch.qos.logback" %  "logback-classic" % "1.5.38",
+  "ch.qos.logback" %  "logback-classic" % "1.6.3",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
   "com.fasterxml.jackson.core" % "jackson-databind" % "2.22.2",
   "org.bouncycastle" % "bcpkix-jdk18on" % "1.85",
