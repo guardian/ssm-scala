@@ -83,7 +83,7 @@ aws ec2-instance-connect send-ssh-public-key \
 # 3. SCP using the temp key routed over SSM within 60 seconds
 scp -i /tmp/temp_key \
   -o "ProxyCommand=aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters 'portNumber=%p'" \
-  localfile.txt ec2-user@i-0123456789abc:/remote/path/
+  localfile.txt ubuntu@i-0123456789abc:/remote/path/
 ```
 
 
