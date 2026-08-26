@@ -70,19 +70,19 @@ For more information and worked examples, visit the [deprecation documentation](
 You can use ec2 instance connect to push a temporary public key to the target instance so you can perform scp operations:
 
 ```
-# 1. Generate a temporary keypair locally (note, if you already have a public key (e.g. ~/.ssh/id_rsa.pub) you are using for github you can reuse that rather than generating a new key
-ssh-keygen -t rsa -f /tmp/temp_key -N ""
+# 1. Generate a temporary keypair locally (note, if you already have a public key (e.g. ~/.ssh/id_ed25519.pub) you are using for github you can reuse that rather than generating a new key)
+ssh-keygen -f /tmp/temp_key -N ""
 
 # 2. Push the temporary public key to the instance RAM
 aws ec2-instance-connect send-ssh-public-key \
-  --instance-id i-0123456789abcdef0 \
-  --instance-os-user ec2-user \
+  --instance-id i-0123456789abc \
+  --instance-os-user ubuntu \
   --ssh-public-key file:///tmp/temp_key.pub
 
 # 3. SCP using the temp key routed over SSM within 60 seconds
 scp -i /tmp/temp_key \
   -o "ProxyCommand=aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters 'portNumber=%p'" \
-  localfile.txt ec2-user@i-0123456789abcdef0:/remote/path/
+  localfile.txt ec2-user@i-0123456789abc:/remote/path/
 ```
 
 
