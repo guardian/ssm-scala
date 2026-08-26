@@ -73,7 +73,8 @@ You can use ec2 instance connect to push a temporary public key to the target in
 # 1. Generate a temporary keypair locally (note, if you already have a public key (e.g. ~/.ssh/id_ed25519.pub) you are using for github you can reuse that rather than generating a new key)
 ssh-keygen -f /tmp/temp_key -N ""
 
-# 2. Push the temporary public key to the instance RAM
+# 2. Push the temporary public key to the instance (see https://docs.aws.amazon.com/cli/latest/reference/ec2-instance-connect/send-ssh-public-key.html)
+# Note: --instance-os-user varies depending on the OS, if using amazon linux it will be ec2-user
 aws ec2-instance-connect send-ssh-public-key \
   --instance-id i-0123456789abc \
   --instance-os-user ubuntu \
