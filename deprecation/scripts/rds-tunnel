@@ -1,47 +1,106 @@
 #!/usr/bin/env bash
 
-aws sts get-caller-identity > /dev/null 2>&1 || { echo "Default AWS Credentials are NOT valid"; exit 1; }
-
 usage() {
   echo "Usage:"
-  echo "  rds-tunnel <app> <stack> <stage> <rdsapp> <rdsstack>"
+  echo "  rds-tunnel --app <value> --stack <value> --stage <value> \
+    --region <value> --profile <value> [options]"
+  echo ""
+  echo "Options:"
+  echo "  --app <value>"
+  echo "  --stack <value>"
+  echo "  --stage <value>"
+  echo "  --region <value>"
+  echo "  --profile <value>"
+  echo "  --rdsapp <value>       Defaults to --app"
+  echo "  --rdsstack <value>     Defaults to --stack"
+  echo "  --rdsstage <value>     Defaults to --stage"
+  echo "  --remote-port <value>  Defaults to 5432"
+  echo "  --local-port <value>   Defaults to 5432"
   exit 1
 }
 
-app=$1; shift
-stack=$1; shift
-stage=$1; shift
-rdsapp=$1; shift
-rdsstack=$1; shift
+app=""
+stack=""
+stage=""
+region=""
+profile=""
+rdsapp=""
+rdsstack=""
+rdsstage=""
+remote_port="5432"
+local_port="5432"
 
-if [[ -z $rdsstack || $1 ]]; then
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --app|--stack|--stage|--region|--profile|--rdsapp|--rdsstack|--rdsstage|--remote-port|--local-port)
+      [[ $# -ge 2 && -n $2 ]] || usage
+      case "$1" in
+        --app) app=$2 ;;
+        --stack) stack=$2 ;;
+        --stage) stage=$2 ;;
+        --region) region=$2 ;;
+        --profile) profile=$2 ;;
+        --rdsapp) rdsapp=$2 ;;
+        --rdsstack) rdsstack=$2 ;;
+        --rdsstage) rdsstage=$2 ;;
+        --remote-port) remote_port=$2 ;;
+        --local-port) local_port=$2 ;;
+      esac
+      shift 2
+      ;;
+    *)
+      usage
+      ;;
+  esac
+done
+
+rdsapp=${rdsapp:-$app}
+rdsstack=${rdsstack:-$stack}
+rdsstage=${rdsstage:-$stage}
+
+if [[ -z $app || -z $stack || -z $stage || -z $region || -z $profile ]]; then
    usage
 fi
 
+aws sts get-caller-identity --region "$region" --profile "$profile" > /dev/null 2>&1 || { echo "AWS Credentials are NOT valid"; exit 1; }
+
 function getHost() {
   aws rds describe-db-instances \
+    --region "$region" \
+    --profile "$profile" \
     --query "DBInstances[?
-        contains(TagList[?Key=='App'].Value, '$rdsstage') && 
-        contains(TagList[?Key=='Stack'].Value, '$rdsstack') && 
-        contains(TagList[?Key=='Stage'].Value, '$stage')
+        contains(TagList[?Key=='App'].Value, '$rdsapp') &&
+        contains(TagList[?Key=='Stack'].Value, '$rdsstack') &&
+        contains(TagList[?Key=='Stage'].Value, '$rdsstage')
     ].Endpoint.Address" \
     --output text
 }
 
-host=getHost
+host=$(getHost)
 if [[ -z $host ]]; then
     echo "No host found"
     exit 1
 fi
 
-aws ec2 describe-instances \
+instance_id=$(aws ec2 describe-instances \
+  --region "$region" \
+  --profile "$profile" \
     --filters \
         "Name=tag:App,Values=$app" \
         "Name=tag:Stack,Values=$stack" \
         "Name=tag:Stage,Values=$stage" \
         "Name=instance-state-name,Values=running" \
-    --query "Reservations[].Instances[] | sort_by(@, &LaunchTime)[0] | InstanceId" \
-  | xargs aws ssm start-session \
+    --query "Reservations[].Instances[] | sort_by(@, &LaunchTime)[-1] | InstanceId" \
+  --output text)
+
+if [[ -z $instance_id || $instance_id == "None" ]]; then
+  echo "No running instance found"
+  exit 1
+fi
+
+aws ssm start-session \
+    --region "$region" \
+    --profile "$profile" \
     --document-name AWS-StartPortForwardingSessionToRemoteHost \
-    --parameters "{\"host\":[\"$host\"],\"portNumber\":[\"$REMOTE_PORT\"],\"localPortNumber\":[\"$SSM_PORT\"]}" \
-    --target 
+    --parameters "{\"host\":[\"$host\"],\"portNumber\":[\"$remote_port\"],\"localPortNumber\":[\"$local_port\"]}" \
+  --target "$instance_id"
