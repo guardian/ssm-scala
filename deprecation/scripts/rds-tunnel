@@ -28,7 +28,7 @@ rdsapp=""
 rdsstack=""
 rdsstage=""
 remote_port="5432"
-local_port="5432"
+local_port="${SSM_PORT:-5432}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
