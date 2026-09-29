@@ -3,7 +3,7 @@ organization := "com.gu"
 version := "3.8.1"
 
 // be sure to also update this in the `generate-executable.sh` script
-scalaVersion := "3.3.8"
+scalaVersion := "3.9.0"
 
 // Enable BuildInfo plugin to generate version information
 enablePlugins(BuildInfoPlugin)
@@ -19,10 +19,10 @@ libraryDependencies ++= Seq(
   "software.amazon.awssdk" % "rds" % awsSdkVersion,
   "com.github.scopt" %% "scopt" % "4.1.0",
   "com.googlecode.lanterna" % "lanterna" % "3.1.5",
-  "ch.qos.logback" %  "logback-classic" % "1.6.3",
+  "ch.qos.logback" %  "logback-classic" % "1.6.4",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
-  "com.fasterxml.jackson.core" % "jackson-databind" % "2.22.2",
-  "org.bouncycastle" % "bcpkix-jdk18on" % "1.85",
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.22.3",
+  "org.bouncycastle" % "bcpkix-jdk18on" % "1.86",
   "org.scalatest" %% "scalatest" % "3.2.20" % Test
 )
 
