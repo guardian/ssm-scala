@@ -40,5 +40,5 @@ assemblyJarName := "ssm.jar"
 scalacOptions := Seq(
   "-unchecked",
   "-deprecation",
-  "-release:11",
+  "-release:17",
 )
